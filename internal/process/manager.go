@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 )
 
@@ -31,7 +32,6 @@ func NewManager() *Manager {
 }
 
 // Start initiates a new background process in the specified working directory.
-// It returns an explicit error if the process is already running or fails to start.
 func (m *Manager) Start(id, name, workDir, commandName string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -42,9 +42,6 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 
 	cmd := exec.Command(commandName, args...)
 	cmd.Dir = workDir
-
-	// KRİTİK DEĞİŞİKLİK: Çalışan uygulamanın terminal çıktılarını ve hatalarını
-	// doğrudan DionyHub'ı çalıştırdığımız terminale yönlendiriyoruz.
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -65,7 +62,7 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 	return nil
 }
 
-// Stop gracefully terminates a running background process.
+// Stop gracefully terminates a running background process AND its children.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -75,10 +72,19 @@ func (m *Manager) Stop(id string) error {
 		return fmt.Errorf("process with ID '%s' is not currently running", id)
 	}
 
-	// Attempt to kill the underlying OS process
-	err := p.Cmd.Process.Kill()
+	var err error
+	// İşletim sistemine göre akıllı öldürme stratejisi (Strategy Pattern)
+	if runtime.GOOS == "windows" {
+		// Windows: /T (Tree - tüm alt süreçler) ve /F (Force - zorla) parametreleriyle öldür
+		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(p.Cmd.Process.Pid))
+		err = killCmd.Run()
+	} else {
+		// Linux/Mac fallback
+		err = p.Cmd.Process.Kill()
+	}
+
 	if err != nil {
-		return fmt.Errorf("failed to stop process '%s': %w", p.Name, err)
+		return fmt.Errorf("failed to stop process tree '%s': %w", p.Name, err)
 	}
 
 	p.Running = false
@@ -86,9 +92,7 @@ func (m *Manager) Stop(id string) error {
 }
 
 // monitor waits for the OS process to finish and updates the internal state.
-// It ensures we don't leave zombie processes and keeps our dashboard accurate.
 func (m *Manager) monitor(id string) {
-	// Safely retrieve the process reference
 	m.mu.RLock()
 	p, exists := m.processes[id]
 	m.mu.RUnlock()
@@ -97,16 +101,14 @@ func (m *Manager) monitor(id string) {
 		return
 	}
 
-	// Actively block this goroutine UNTIL the process completes or is killed.
 	err := p.Cmd.Wait()
 
-	// Update state thread-safely once it exits
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	p.Running = false
 	if err != nil {
-		fmt.Printf("[MONITOR] Process '%s' exited/stopped: %v\n", p.Name, err)
+		fmt.Printf("[MONITOR] Process '%s' exited/stopped.\n", p.Name)
 	} else {
 		fmt.Printf("[MONITOR] Process '%s' finished execution successfully.\n", p.Name)
 	}
