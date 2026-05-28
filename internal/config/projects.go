@@ -12,7 +12,8 @@ type Project struct {
 	Name        string `json:"name"`
 	Path        string `json:"path"`
 	Command     string `json:"command"`
-	Interactive bool   `json:"interactive"` // YENİ: Uygulama yeni pencere gerektiriyor mu?
+	Interactive bool   `json:"interactive"`
+	Status      string `json:"status"` // YENİ EKLENDİ: Arayüze canlı durum yollamak için gerekli
 }
 
 // projectConfig is a wrapper to match the JSON structure.
