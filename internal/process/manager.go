@@ -124,3 +124,12 @@ func (m *Manager) monitor(id string) {
 		fmt.Printf("[MONITOR] Process '%s' finished execution successfully.\n", p.Name)
 	}
 }
+
+// IsRunning safely checks the current live status of a process.
+func (m *Manager) IsRunning(id string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	p, exists := m.processes[id]
+	return exists && p.Running
+}

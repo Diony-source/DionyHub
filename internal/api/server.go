@@ -33,15 +33,28 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 }
 
-// handleGetProjects returns the list of projects.
+// handleGetProjects returns the list of projects combined with their LIVE running status.
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Projelerin canlı kopyasını oluştur
+	liveProjects := make([]config.Project, len(s.projects))
+	for i, p := range s.projects {
+		liveProjects[i] = p
+
+		// Eğer process yöneticisi bu projenin çalıştığını söylüyorsa, statüyü ez.
+		if s.manager.IsRunning(p.ID) {
+			liveProjects[i].Status = "running"
+		} else {
+			liveProjects[i].Status = "stopped"
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(s.projects)
+	json.NewEncoder(w).Encode(liveProjects)
 }
 
 // handleStartProject starts a specific background process based on its ID.
