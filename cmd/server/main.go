@@ -12,27 +12,25 @@ import (
 )
 
 func main() {
-	// 1. Load Environment Configuration
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to initialize environment: %v", err)
 	}
 
-	// 2. Load Projects Configuration
 	projects, err := config.LoadProjects("config.json")
 	if err != nil {
 		log.Fatalf("Failed to load projects: %v", err)
 	}
 
-	// 3. Initialize Process Manager
 	manager := process.NewManager()
 
-	// 4. Initialize API Server & Routes
 	apiServer := api.NewServer(manager, projects)
 	mux := http.NewServeMux()
 	apiServer.RegisterRoutes(mux)
 
-	// 5. Start HTTP Server
+	// YENİ: web klasöründeki HTML dosyasını sunmak için statik dosya sunucusu eklendi
+	mux.Handle("/", http.FileServer(http.Dir("web")))
+
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Println("----------------------------------------")
 	log.Printf("Starting DionyHub Backend...")
