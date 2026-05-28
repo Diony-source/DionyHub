@@ -7,12 +7,7 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
-	"syscall"
 )
-
-// Windows API constant for creating a new console window.
-// Using the raw hex value (0x10) prevents cross-platform linting warnings in VS Code.
-const createNewConsole = 0x10
 
 // Process represents a single background application managed by DionyHub.
 type Process struct {
@@ -35,7 +30,7 @@ func NewManager() *Manager {
 	}
 }
 
-// Start initiates a new process. If interactive, it natively allocates a new console window.
+// Start initiates a new process. If interactive, it natively spawns a new visible Windows terminal.
 func (m *Manager) Start(id, name, workDir string, interactive bool, commandName string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -44,18 +39,23 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 		return fmt.Errorf("process '%s' is already running", name)
 	}
 
-	cmd := exec.Command(commandName, args...)
-	cmd.Dir = workDir
+	var cmd *exec.Cmd
 
 	if interactive && runtime.GOOS == "windows" {
-		// VS Code uyarısını önlemek için raw hex değeri kullanıyoruz
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: createNewConsole,
-		}
+		// KRİTİK ÇÖZÜM:
+		// /WAIT : cmd.exe'nin arka planda kapanmasını engeller, böylece PID'yi takip edebiliriz.
+		// ""    : Boş başlık, Windows'un tırnak işareti (quote parsing) krizini çözer.
+		fullArgs := []string{"/C", "start", "/WAIT", "", commandName}
+		fullArgs = append(fullArgs, args...)
+
+		cmd = exec.Command("cmd", fullArgs...)
 	} else {
+		cmd = exec.Command(commandName, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
+
+	cmd.Dir = workDir
 
 	err := cmd.Start()
 	if err != nil {
@@ -69,6 +69,7 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 		Running: true,
 	}
 
+	// /WAIT parametresi sayesinde etkileşimli pencereler de dahil tüm süreçleri takip edebiliriz.
 	go m.monitor(id)
 
 	return nil
@@ -86,6 +87,7 @@ func (m *Manager) Stop(id string) error {
 
 	var err error
 	if runtime.GOOS == "windows" {
+		// Taskkill /T (Tree) parametresi cmd.exe'yi, start komutunu ve içindeki uygulamayı kökten temizler.
 		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(p.Cmd.Process.Pid))
 		err = killCmd.Run()
 	} else {
