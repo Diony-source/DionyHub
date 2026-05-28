@@ -7,8 +7,14 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
+	"syscall"
 )
 
+// Windows API constant for creating a new console window.
+// Using the raw hex value (0x10) prevents cross-platform linting warnings in VS Code.
+const createNewConsole = 0x10
+
+// Process represents a single background application managed by DionyHub.
 type Process struct {
 	ID      string
 	Name    string
@@ -16,18 +22,20 @@ type Process struct {
 	Running bool
 }
 
+// Manager holds the state of all running processes.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
 }
 
+// NewManager initializes and returns a new thread-safe process manager.
 func NewManager() *Manager {
 	return &Manager{
 		processes: make(map[string]*Process),
 	}
 }
 
-// Start initiates a process. If interactive is true, it spawns a new visible terminal (Windows only).
+// Start initiates a new process. If interactive, it natively allocates a new console window.
 func (m *Manager) Start(id, name, workDir string, interactive bool, commandName string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -36,23 +44,18 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 		return fmt.Errorf("process '%s' is already running", name)
 	}
 
-	var cmd *exec.Cmd
+	cmd := exec.Command(commandName, args...)
+	cmd.Dir = workDir
 
 	if interactive && runtime.GOOS == "windows" {
-		// YENİ: Windows'ta yeni bir komut istemi penceresi açar ("DionyHub - ProjeAdı" başlığıyla)
-		title := fmt.Sprintf(`"DionyHub - %s"`, name)
-		fullArgs := []string{"/C", "start", title, commandName}
-		fullArgs = append(fullArgs, args...)
-
-		cmd = exec.Command("cmd", fullArgs...)
+		// VS Code uyarısını önlemek için raw hex değeri kullanıyoruz
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: createNewConsole,
+		}
 	} else {
-		// Arka planda (sessiz) çalışan servisler için
-		cmd = exec.Command(commandName, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-
-	cmd.Dir = workDir
 
 	err := cmd.Start()
 	if err != nil {
@@ -66,18 +69,12 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 		Running: true,
 	}
 
-	// Etkileşimli (yeni pencerede açılan) uygulamalar işletim sisteminden kopuk çalıştığı için
-	// onların kapanmasını beklemek tutarlı olmaz. Sadece arka plan uygulamalarını izliyoruz.
-	if !interactive {
-		go m.monitor(id)
-	} else {
-		// Yeni pencere açıldığı an bizim için işlem tamamdır.
-		m.processes[id].Running = false
-	}
+	go m.monitor(id)
 
 	return nil
 }
 
+// Stop gracefully terminates a running background process AND its children.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -103,6 +100,7 @@ func (m *Manager) Stop(id string) error {
 	return nil
 }
 
+// monitor waits for the OS process to finish and updates the internal state.
 func (m *Manager) monitor(id string) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
