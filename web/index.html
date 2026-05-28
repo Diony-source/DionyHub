@@ -6,51 +6,64 @@
     <title>DionyHub | Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Rapid Trigger hissi veren keskin ve hızlı geçişler */
+        /* Rapid Trigger hissi veren keskin ve hızlı buton geçişleri */
         .btn-action {
-            transition: all 0.05s ease-in-out;
+            transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
         }
         .btn-action:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden">
 
-    <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-        <div class="h-16 flex items-center px-6 border-b border-gray-700">
-            <span class="text-xl font-bold tracking-wider text-indigo-400">DionyHub</span>
+    <!-- Sol Menü (Sidebar) -->
+    <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10">
+        <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
+            <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md">DionyHub</span>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2">
-            <a href="#" class="block px-4 py-2 bg-gray-700 rounded-md text-white font-medium">📋 Board</a>
-            <a href="#" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md transition-colors">⚙️ Settings</a>
+            <a href="#" class="block px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner">📋 Board</a>
+            <a href="#" class="block px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors">⚙️ Settings</a>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-y-auto">
-        <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8">
-            <h2 class="text-lg font-semibold">Active Library</h2>
-            <div class="text-sm text-gray-400">System Status: <span class="text-green-400 font-bold">Online</span></div>
+    <!-- Ana Ekran -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
+        <!-- Üst Bar -->
+        <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm">
+            <h2 class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
+            <div class="text-sm text-gray-400 flex items-center gap-2">
+                System Status: 
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-green-400 font-bold ml-1">Online</span>
+            </div>
         </header>
 
+        <!-- Proje Kartları Alanı -->
         <div class="p-8">
-            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-gray-900/50 text-gray-400 text-sm border-b border-gray-700">
-                            <th class="p-4 font-medium">Project Name</th>
-                            <th class="p-4 font-medium">Path</th>
-                            <th class="p-4 font-medium">Status</th>
-                            <th class="p-4 font-medium text-right">Actions</th>
+                        <tr class="bg-gray-900/80 text-gray-400 text-sm border-b border-gray-700 uppercase tracking-wider">
+                            <th class="p-5 font-medium w-1/4">Project Name</th>
+                            <th class="p-5 font-medium w-1/3">Path</th>
+                            <th class="p-5 font-medium w-1/6">Status</th>
+                            <th class="p-5 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="project-list">
-                        <tr class="border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors">
-                            <td class="p-4 font-medium">PC Kapatma Zamanlayıcısı</td>
-                            <td class="p-4 text-sm text-gray-400">C:/.../shutdown-timer</td>
-                            <td class="p-4"><span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full border border-red-500/30">Stopped</span></td>
-                            <td class="p-4 text-right space-x-2">
-                                <button class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium">Start</button>
+                        <!-- Projeler JavaScript ile buraya eklenecek -->
+                        <tr>
+                            <td colspan="4" class="p-8 text-center text-gray-500">
+                                <svg class="animate-spin h-6 w-6 text-indigo-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Loading projects...
                             </td>
                         </tr>
                     </tbody>
@@ -59,5 +72,82 @@
         </div>
     </main>
 
+    <script>
+        // Sayfa yüklendiğinde projeleri çek
+        document.addEventListener("DOMContentLoaded", loadProjects);
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                if (!response.ok) throw new Error("API'den veri alınamadı.");
+                
+                const projects = await response.json();
+                const tbody = document.getElementById('project-list');
+                tbody.innerHTML = ''; // Yükleniyor yazısını temizle
+
+                projects.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group';
+                    
+                    tr.innerHTML = `
+                        <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
+                            <div class="h-8 w-8 rounded bg-gray-700 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors">
+                                ${p.name.charAt(0).toUpperCase()}
+                            </div>
+                            ${p.name}
+                        </td>
+                        <td class="p-5 text-sm text-gray-400 font-mono text-xs truncate max-w-xs" title="${p.path}">
+                            ${p.path}
+                        </td>
+                        <td class="p-5">
+                            <span id="status-${p.id}" class="px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium">Ready</span>
+                        </td>
+                        <td class="p-5 text-right space-x-3">
+                            <button onclick="startProject('${p.id}')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded shadow-lg shadow-emerald-900/20 text-sm font-medium">Start</button>
+                            <button onclick="stopProject('${p.id}')" class="btn-action bg-rose-600/90 hover:bg-rose-500 text-white px-5 py-2 rounded shadow-lg shadow-rose-900/20 text-sm font-medium">Stop</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Proje yükleme hatası:", error);
+                document.getElementById('project-list').innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Veriler yüklenirken bir hata oluştu. Sunucunun çalıştığından emin olun.</td></tr>`;
+            }
+        }
+
+        async function startProject(id) {
+            try {
+                const response = await fetch('/api/projects/start?id=' + id, { method: 'POST' });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const badge = document.getElementById('status-' + id);
+                    badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-medium shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+                    badge.innerText = 'Running';
+                } else {
+                    alert('Hata: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Başlatma hatası:', error);
+            }
+        }
+
+        async function stopProject(id) {
+            try {
+                const response = await fetch('/api/projects/stop?id=' + id, { method: 'POST' });
+                const result = await response.json();
+
+                if (response.ok) {
+                    const badge = document.getElementById('status-' + id);
+                    badge.className = 'px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium';
+                    badge.innerText = 'Stopped';
+                } else {
+                    alert('Hata: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Durdurma hatası:', error);
+            }
+        }
+    </script>
 </body>
 </html>
