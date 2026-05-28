@@ -3,6 +3,7 @@ package process
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"sync"
 )
@@ -35,7 +36,6 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Prevent starting an already running process
 	if p, exists := m.processes[id]; exists && p.Running {
 		return fmt.Errorf("process '%s' is already running", name)
 	}
@@ -43,7 +43,11 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 	cmd := exec.Command(commandName, args...)
 	cmd.Dir = workDir
 
-	// Start the command asynchronously
+	// KRİTİK DEĞİŞİKLİK: Çalışan uygulamanın terminal çıktılarını ve hatalarını
+	// doğrudan DionyHub'ı çalıştırdığımız terminale yönlendiriyoruz.
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to start process '%s': %w", name, err)
@@ -56,8 +60,6 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 		Running: true,
 	}
 
-	// Launch a goroutine to actively monitor the process lifecycle.
-	// This replaces blind sleep timers by actively waiting for the process to exit.
 	go m.monitor(id)
 
 	return nil

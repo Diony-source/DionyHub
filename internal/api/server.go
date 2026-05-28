@@ -4,6 +4,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -77,6 +78,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("[API] START request received for project: %s", target.Name)
 	err := s.manager.Start(target.ID, target.Name, target.Path, parts[0], parts[1:]...)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
@@ -101,6 +103,7 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("[API] STOP request received for project ID: %s", id)
 	err := s.manager.Stop(id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
