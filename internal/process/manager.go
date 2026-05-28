@@ -9,7 +9,6 @@ import (
 	"sync"
 )
 
-// Process represents a single background application managed by DionyHub.
 type Process struct {
 	ID      string
 	Name    string
@@ -17,22 +16,19 @@ type Process struct {
 	Running bool
 }
 
-// Manager holds the state of all running processes.
-// It uses a RWMutex to ensure thread-safe operations during concurrent API requests.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
 }
 
-// NewManager initializes and returns a new thread-safe process manager.
 func NewManager() *Manager {
 	return &Manager{
 		processes: make(map[string]*Process),
 	}
 }
 
-// Start initiates a new background process in the specified working directory.
-func (m *Manager) Start(id, name, workDir, commandName string, args ...string) error {
+// Start initiates a process. If interactive is true, it spawns a new visible terminal (Windows only).
+func (m *Manager) Start(id, name, workDir string, interactive bool, commandName string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -40,10 +36,23 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 		return fmt.Errorf("process '%s' is already running", name)
 	}
 
-	cmd := exec.Command(commandName, args...)
+	var cmd *exec.Cmd
+
+	if interactive && runtime.GOOS == "windows" {
+		// YENİ: Windows'ta yeni bir komut istemi penceresi açar ("DionyHub - ProjeAdı" başlığıyla)
+		title := fmt.Sprintf(`"DionyHub - %s"`, name)
+		fullArgs := []string{"/C", "start", title, commandName}
+		fullArgs = append(fullArgs, args...)
+
+		cmd = exec.Command("cmd", fullArgs...)
+	} else {
+		// Arka planda (sessiz) çalışan servisler için
+		cmd = exec.Command(commandName, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
 	cmd.Dir = workDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	err := cmd.Start()
 	if err != nil {
@@ -57,12 +66,18 @@ func (m *Manager) Start(id, name, workDir, commandName string, args ...string) e
 		Running: true,
 	}
 
-	go m.monitor(id)
+	// Etkileşimli (yeni pencerede açılan) uygulamalar işletim sisteminden kopuk çalıştığı için
+	// onların kapanmasını beklemek tutarlı olmaz. Sadece arka plan uygulamalarını izliyoruz.
+	if !interactive {
+		go m.monitor(id)
+	} else {
+		// Yeni pencere açıldığı an bizim için işlem tamamdır.
+		m.processes[id].Running = false
+	}
 
 	return nil
 }
 
-// Stop gracefully terminates a running background process AND its children.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -73,13 +88,10 @@ func (m *Manager) Stop(id string) error {
 	}
 
 	var err error
-	// İşletim sistemine göre akıllı öldürme stratejisi (Strategy Pattern)
 	if runtime.GOOS == "windows" {
-		// Windows: /T (Tree - tüm alt süreçler) ve /F (Force - zorla) parametreleriyle öldür
 		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(p.Cmd.Process.Pid))
 		err = killCmd.Run()
 	} else {
-		// Linux/Mac fallback
 		err = p.Cmd.Process.Kill()
 	}
 
@@ -91,7 +103,6 @@ func (m *Manager) Stop(id string) error {
 	return nil
 }
 
-// monitor waits for the OS process to finish and updates the internal state.
 func (m *Manager) monitor(id string) {
 	m.mu.RLock()
 	p, exists := m.processes[id]

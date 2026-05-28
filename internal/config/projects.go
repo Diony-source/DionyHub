@@ -8,10 +8,11 @@ import (
 
 // Project represents the configuration for a single manageable application.
 type Project struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Path    string `json:"path"`
-	Command string `json:"command"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Command     string `json:"command"`
+	Interactive bool   `json:"interactive"` // YENİ: Uygulama yeni pencere gerektiriyor mu?
 }
 
 // projectConfig is a wrapper to match the JSON structure.
@@ -19,7 +20,7 @@ type projectConfig struct {
 	Projects []Project `json:"projects"`
 }
 
-// LoadProjects safely reads and parses the given JSON file to extract project definitions.
+// LoadProjects safely reads and parses the given JSON file.
 func LoadProjects(filePath string) ([]Project, error) {
 	file, err := os.ReadFile(filePath)
 	if err != nil {

@@ -78,8 +78,10 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[API] START request received for project: %s", target.Name)
-	err := s.manager.Start(target.ID, target.Name, target.Path, parts[0], parts[1:]...)
+	log.Printf("[API] START request received for project: %s (Interactive: %t)", target.Name, target.Interactive)
+
+	// YENİ: target.Interactive parametresini gönderiyoruz
+	err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, parts[0], parts[1:]...)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return

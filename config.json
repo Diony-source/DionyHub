@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "id": "1",
+      "name": "Noteapp",
+      "path": "C:/Users/Diony/Desktop/noteapp",
+      "command": "go run main.go",
+      "interactive": true,
+      "status": "stopped"
+    },
+    {
+      "id": "2",
+      "name": "focus_timer",
+      "path": "C:/Users/Diony/Desktop/focus_timer",
+      "command": "go run main.go",
+      "interactive": false,
+      "status": "stopped"
+    }
+  ]
+}
