@@ -1,0 +1,12 @@
+/* DionyHub - Global Styles & Animations */
+
+/* Rapid Trigger hissi veren keskin ve hızlı buton geçişleri */
+.btn-action {
+    transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+}
+
+.btn-action:active {
+    transform: scale(0.92);
+}
+
+/* İleride eklenebilecek custom scrollbar veya diğer global stiller buraya gelecek */
