@@ -34,9 +34,13 @@ async function loadProjects() {
                 <td class="p-5">
                     <span id="status-${p.id}" class="px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium">Loading...</span>
                 </td>
-                <td class="p-5 text-right space-x-3">
-                    <button onclick="startProject('${p.id}')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded shadow-lg shadow-emerald-900/20 text-sm font-medium">Start</button>
-                    <button onclick="stopProject('${p.id}')" class="btn-action bg-rose-600/90 hover:bg-rose-500 text-white px-5 py-2 rounded shadow-lg shadow-rose-900/20 text-sm font-medium">Stop</button>
+                <td class="p-5 text-right space-x-2">
+                    <button onclick="startProject('${p.id}')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-4 py-2 rounded shadow-lg shadow-emerald-900/20 text-sm font-medium">Start</button>
+                    <button onclick="stopProject('${p.id}')" class="btn-action bg-rose-600/90 hover:bg-rose-500 text-white px-4 py-2 rounded shadow-lg shadow-rose-900/20 text-sm font-medium">Stop</button>
+                    
+                    <button onclick="deleteProject('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-2 rounded shadow-lg text-sm font-medium transition-colors" title="Delete Project">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -94,7 +98,28 @@ async function stopProject(id) {
     }
 }
 
-// YENİ: Modal ve Form Kontrol Fonksiyonları
+// YENİ: Projeyi Silme Fonksiyonu
+async function deleteProject(id) {
+    // Kazara silmelere karşı basit bir onay penceresi
+    if (!confirm("Are you sure you want to permanently remove this project from DionyHub?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/projects/delete?id=' + id, { method: 'DELETE' });
+        const result = await response.json();
+        
+        if (response.ok) {
+            loadProjects(); // Tabloyu anında yenile
+        } else {
+            alert('Hata: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('Projeyi silerken sunucuya ulaşılamadı.');
+    }
+}
+
 function openModal() {
     const modal = document.getElementById('addModal');
     modal.classList.remove('hidden');
@@ -105,11 +130,11 @@ function closeModal() {
     const modal = document.getElementById('addModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-    document.getElementById('addForm').reset(); // Formu temizle
+    document.getElementById('addForm').reset();
 }
 
 async function submitNewProject(event) {
-    event.preventDefault(); // Sayfanın yenilenmesini engelle
+    event.preventDefault();
 
     const newProject = {
         name: document.getElementById('projName').value,
@@ -121,9 +146,7 @@ async function submitNewProject(event) {
     try {
         const response = await fetch('/api/projects/add', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newProject)
         });
 
@@ -131,7 +154,7 @@ async function submitNewProject(event) {
 
         if (response.ok) {
             closeModal();
-            loadProjects(); // Tabloyu yeni proje ile baştan çiz
+            loadProjects();
         } else {
             alert('Hata: ' + result.error);
         }
