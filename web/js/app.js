@@ -1,6 +1,6 @@
 let projectToDelete = null;
 let currentTagFilter = null;
-let draggedRow = null; // Sürüklenen elementi tutar
+let draggedRow = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
@@ -33,11 +33,9 @@ async function loadProjects() {
             const tr = document.createElement('tr');
             tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group bg-gray-800/20';
             
-            // YENİ: Sürükle-Bırak için gerekli özellikler
             tr.setAttribute('draggable', 'true');
             tr.dataset.id = p.id;
             
-            // Drag olaylarını dinle
             tr.addEventListener('dragstart', handleDragStart);
             tr.addEventListener('dragover', handleDragOver);
             tr.addEventListener('dragenter', handleDragEnter);
@@ -88,19 +86,18 @@ async function loadProjects() {
 }
 
 /* =========================================
-   YENİ: DRAG & DROP FONKSİYONLARI
+   DRAG & DROP FONKSİYONLARI
 ========================================= */
 
 function handleDragStart(e) {
     draggedRow = this;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.innerHTML);
-    // Sürüklenen satırı hafif saydam yap
     setTimeout(() => this.classList.add('opacity-50'), 0);
 }
 
 function handleDragOver(e) {
-    e.preventDefault(); // Drop işlemine izin ver
+    e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     return false;
 }
@@ -108,7 +105,7 @@ function handleDragOver(e) {
 function handleDragEnter(e) {
     e.preventDefault();
     if (this !== draggedRow) {
-        this.classList.add('border-t-2', 'border-indigo-500'); // Hedefi vurgula
+        this.classList.add('border-t-2', 'border-indigo-500');
     }
 }
 
@@ -121,7 +118,6 @@ function handleDrop(e) {
     this.classList.remove('border-t-2', 'border-indigo-500');
 
     if (draggedRow !== this) {
-        // Satırların yerlerini değiştir (DOM manipülasyonu)
         const tbody = document.getElementById('project-list');
         const rows = Array.from(tbody.children);
         const draggedIndex = rows.indexOf(draggedRow);
@@ -133,7 +129,6 @@ function handleDrop(e) {
             this.parentNode.insertBefore(draggedRow, this);
         }
 
-        // Yeni sırayı çıkar ve backend'e kaydet
         saveNewOrder();
     }
     return false;
@@ -159,7 +154,7 @@ async function saveNewOrder() {
 
         if (!response.ok) {
             console.error("Sıralama kaydedilemedi.");
-            loadProjects(); // Hata varsa tabloyu eski haline çevir
+            loadProjects();
         }
     } catch (error) {
         console.error("Reorder request failed:", error);
@@ -205,29 +200,38 @@ function setFilter(tag) {
 }
 
 function renderSidebarTags(projects) {
-    // Projeleri kendi içinde barındırdığı Order sırasına göre diz
     projects.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     const tags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
+    
     const tagList = document.getElementById('tag-list');
-    if (!tagList) return;
-
-    tagList.innerHTML = `
-        <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
-            All Projects
-        </button>
-    `;
-
-    tags.forEach(tag => {
-        tagList.innerHTML += `
-            <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
-                # ${tag}
+    if (tagList) {
+        tagList.innerHTML = `
+            <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+                All Projects
             </button>
         `;
-    });
 
-    if (currentTagFilter && !tags.includes(currentTagFilter)) {
-        setFilter(null);
+        tags.forEach(tag => {
+            tagList.innerHTML += `
+                <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
+                    # ${tag}
+                </button>
+            `;
+        });
+
+        if (currentTagFilter && !tags.includes(currentTagFilter)) {
+            setFilter(null);
+        }
+    }
+
+    // YENİ: Formdaki Datalist'i mevcut tag'lerle doldur
+    const datalist = document.getElementById('existingTags');
+    if (datalist) {
+        datalist.innerHTML = '';
+        tags.forEach(tag => {
+            datalist.innerHTML += `<option value="${tag}"></option>`;
+        });
     }
 }
 
