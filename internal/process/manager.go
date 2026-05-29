@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
+
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // Process represents a single background application managed by DionyHub.
@@ -138,4 +140,32 @@ func (m *Manager) IsRunning(id string) bool {
 
 	p, exists := m.processes[id]
 	return exists && p.Running
+}
+
+func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
+	m.mu.RLock()
+	p, exists := m.processes[id]
+	m.mu.RUnlock()
+
+	// Eğer süreç yoksa, çalışmıyorsa veya PID atanmamışsa 0 dön
+	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {
+		return 0, 0
+	}
+
+	// PID (Process ID) üzerinden işletim sisteminden süreci yakala
+	proc, err := process.NewProcess(int32(p.Cmd.Process.Pid))
+	if err != nil {
+		return 0, 0
+	}
+
+	// CPU ve RAM tüketimini çek
+	cpuPercent, _ := proc.CPUPercent()
+	memInfo, _ := proc.MemoryInfo()
+
+	if memInfo != nil {
+		// RAM değerini Byte'dan Megabyte'a (MB) çevir
+		ram = float64(memInfo.RSS) / (1024 * 1024)
+	}
+
+	return cpuPercent, ram
 }
