@@ -1,5 +1,5 @@
 let projectToDelete = null;
-let currentTagFilter = null; // YENİ: Hangi etikette olduğumuzu tutar
+let currentTagFilter = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
@@ -14,19 +14,17 @@ async function loadProjects() {
         
         const projects = await response.json();
         
-        // YENİ: Sol menüyü dinamik etiketlerle güncelle
         renderSidebarTags(projects);
 
         const tbody = document.getElementById('project-list');
         tbody.innerHTML = '';
 
-        // YENİ: Projeleri seçili etikete göre filtrele
         const filteredProjects = currentTagFilter 
             ? projects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase())
             : projects;
 
         if (filteredProjects.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">No projects found in this view.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">No projects found.</td></tr>`;
             return;
         }
 
@@ -34,7 +32,6 @@ async function loadProjects() {
             const tr = document.createElement('tr');
             tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group';
             
-            // Eğer etiketi varsa isminin yanında küçük bir badge (rozet) olarak gösterelim
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
 
             tr.innerHTML = `
@@ -74,8 +71,70 @@ async function loadProjects() {
     }
 }
 
+async function updateStatuses() {
+    try {
+        const response = await fetch('/api/projects');
+        if (!response.ok) return;
+        const projects = await response.json();
+
+        projects.forEach(p => {
+            const badge = document.getElementById('status-' + p.id);
+            const stats = document.getElementById('stats-' + p.id);
+            if (!badge) return;
+
+            if (p.status === 'running') {
+                badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-medium shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+                badge.innerText = 'Running';
+                
+                if (stats && p.cpu !== undefined && p.ram !== undefined) {
+                    stats.innerHTML = `
+                        <span class="text-indigo-400">CPU: ${p.cpu.toFixed(1)}%</span>
+                        <span class="text-emerald-400">RAM: ${p.ram.toFixed(1)} MB</span>
+                    `;
+                }
+            } else {
+                badge.className = 'px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium';
+                badge.innerText = 'Stopped';
+                
+                if (stats) {
+                    stats.innerHTML = `
+                        <span class="text-gray-600">CPU: --</span>
+                        <span class="text-gray-600">RAM: --</span>
+                    `;
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Status update error:", error);
+    }
+}
+
+async function startProject(id) {
+    try {
+        const response = await fetch('/api/projects/start?id=' + id, { method: 'POST' });
+        const result = await response.json();
+        if (!response.ok) alert('Hata: ' + result.error);
+        updateStatuses();
+    } catch (error) {
+        console.error('Start error:', error);
+    }
+}
+
+async function stopProject(id) {
+    try {
+        const response = await fetch('/api/projects/stop?id=' + id, { method: 'POST' });
+        const result = await response.json();
+        if (!response.ok && !result.error.includes("not currently running")) {
+            alert('Hata: ' + result.error);
+        }
+        updateStatuses();
+    } catch (error) {
+        console.error('Stop error:', error);
+    }
+}
+
 /* =========================================
-   YENİ: SIDEBAR VE TAG KONTROLLERİ
+   SIDEBAR VE TAG KONTROLLERİ
 ========================================= */
 
 function toggleBoard() {
@@ -93,9 +152,8 @@ function toggleBoard() {
 
 function setFilter(tag) {
     currentTagFilter = tag;
-    loadProjects(); // Tabloyu yeni filtreyle tekrar çiz
+    loadProjects();
     
-    // Sol menüdeki aktif sekmeyi renklendir
     document.querySelectorAll('.tag-filter-btn').forEach(btn => {
         btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
         btn.classList.add('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
@@ -114,10 +172,10 @@ function setFilter(tag) {
 }
 
 function renderSidebarTags(projects) {
-    // Projelerdeki benzersiz ve boş olmayan etiketleri çıkar
     const tags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
-    
     const tagList = document.getElementById('tag-list');
+    if (!tagList) return;
+
     tagList.innerHTML = `
         <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
             All Projects
@@ -125,7 +183,6 @@ function renderSidebarTags(projects) {
     `;
 
     tags.forEach(tag => {
-        // Tag butonlarını oluştur
         tagList.innerHTML += `
             <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
                 # ${tag}
@@ -133,16 +190,31 @@ function renderSidebarTags(projects) {
         `;
     });
 
-    // Eğer silinen bir tag filtresinde kalmışsak All Projects'e dön
     if (currentTagFilter && !tags.includes(currentTagFilter)) {
         setFilter(null);
     }
 }
 
 /* =========================================
-   GÜNCELLENMİŞ ADD MODAL KONTROLÜ
+   MODAL KONTROLLERİ (ADD / DELETE)
 ========================================= */
-// Diğer modal ve API fonksiyonları aynı... (updateStatuses, startProject, vb. değişmedi)
+
+function openModal() {
+    const modal = document.getElementById('addModal');
+    if(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('addModal');
+    if(modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('addForm').reset();
+    }
+}
 
 async function submitNewProject(event) {
     event.preventDefault();
@@ -151,7 +223,7 @@ async function submitNewProject(event) {
         name: document.getElementById('projName').value,
         path: document.getElementById('projPath').value,
         command: document.getElementById('projCmd').value,
-        tag: document.getElementById('projTag').value, // YENİ: Etiketi de yolla
+        tag: document.getElementById('projTag').value,
         interactive: document.getElementById('projInteractive').checked
     };
 
@@ -173,6 +245,46 @@ async function submitNewProject(event) {
     } catch (error) {
         console.error('Save error:', error);
         alert('Projeyi kaydederken sunucuya ulaşılamadı.');
+    }
+}
+
+function openDeleteModal(id) {
+    projectToDelete = id;
+    const modal = document.getElementById('deleteModal');
+    if(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('confirmDeleteBtn').onclick = executeDelete;
+    }
+}
+
+function closeDeleteModal() {
+    projectToDelete = null;
+    const modal = document.getElementById('deleteModal');
+    if(modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+async function executeDelete() {
+    if (!projectToDelete) return;
+
+    try {
+        const response = await fetch('/api/projects/delete?id=' + projectToDelete, { method: 'DELETE' });
+        const result = await response.json();
+        
+        if (response.ok) {
+            closeDeleteModal();
+            loadProjects();
+        } else {
+            alert('Hata: ' + result.error);
+            closeDeleteModal();
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('Projeyi silerken sunucuya ulaşılamadı.');
+        closeDeleteModal();
     }
 }
 
