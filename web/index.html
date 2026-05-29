@@ -95,6 +95,23 @@
             </form>
         </div>
     </div>
+    
+    <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden transform transition-all">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                    <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-200 mb-2">Delete Project?</h3>
+                <p class="text-sm text-gray-400 mb-6">Are you sure you want to permanently remove this project? If it is currently running, it will be forcefully stopped.</p>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
+                    <button id="confirmDeleteBtn" class="flex-1 btn-action bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-red-500/50 shadow-lg shadow-red-900/20">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>

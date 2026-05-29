@@ -1,3 +1,6 @@
+// Silinecek projenin ID'sini hafızada tutmak için global değişken
+let projectToDelete = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     setInterval(updateStatuses, 2000);
@@ -38,7 +41,7 @@ async function loadProjects() {
                     <button onclick="startProject('${p.id}')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-4 py-2 rounded shadow-lg shadow-emerald-900/20 text-sm font-medium">Start</button>
                     <button onclick="stopProject('${p.id}')" class="btn-action bg-rose-600/90 hover:bg-rose-500 text-white px-4 py-2 rounded shadow-lg shadow-rose-900/20 text-sm font-medium">Stop</button>
                     
-                    <button onclick="deleteProject('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-2 rounded shadow-lg text-sm font-medium transition-colors" title="Delete Project">
+                    <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-2 rounded shadow-lg text-sm font-medium transition-colors" title="Delete Project">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
@@ -98,27 +101,51 @@ async function stopProject(id) {
     }
 }
 
-// YENİ: Projeyi Silme Fonksiyonu
-async function deleteProject(id) {
-    // Kazara silmelere karşı basit bir onay penceresi
-    if (!confirm("Are you sure you want to permanently remove this project from DionyHub?")) {
-        return;
-    }
+/* =========================================
+   YENİ: DELETE MODAL KONTROLLERİ
+========================================= */
+
+function openDeleteModal(id) {
+    projectToDelete = id; // Hangi projenin silineceğini hafızaya al
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Onay butonuna tıklama olayını bağla
+    document.getElementById('confirmDeleteBtn').onclick = executeDelete;
+}
+
+function closeDeleteModal() {
+    projectToDelete = null; // Hafızayı temizle
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function executeDelete() {
+    if (!projectToDelete) return;
 
     try {
-        const response = await fetch('/api/projects/delete?id=' + id, { method: 'DELETE' });
+        const response = await fetch('/api/projects/delete?id=' + projectToDelete, { method: 'DELETE' });
         const result = await response.json();
         
         if (response.ok) {
-            loadProjects(); // Tabloyu anında yenile
+            closeDeleteModal(); // Başarılıysa modalı kapat
+            loadProjects();     // Tabloyu yenile
         } else {
             alert('Hata: ' + result.error);
+            closeDeleteModal();
         }
     } catch (error) {
         console.error('Delete error:', error);
         alert('Projeyi silerken sunucuya ulaşılamadı.');
+        closeDeleteModal();
     }
 }
+
+/* =========================================
+   ADD MODAL KONTROLLERİ
+========================================= */
 
 function openModal() {
     const modal = document.getElementById('addModal');
