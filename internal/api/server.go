@@ -75,6 +75,13 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// YENİ: Windows'un sinsi "Güvenlik Sekmesi" kopyalama tuzağını (U+202A) temizle
+	cleanPath := strings.TrimSpace(newProj.Path)
+	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "") // Görünmez LRE karakterini sil
+	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "") // PDF karakterini sil
+	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")    // Ters slash'ları düz slash yap
+	newProj.Path = cleanPath
+
 	// Basit güvenlik/doğrulama kontrolü
 	if newProj.Name == "" || newProj.Path == "" || newProj.Command == "" {
 		http.Error(w, `{"error": "Name, Path, and Command are required fields"}`, http.StatusBadRequest)
