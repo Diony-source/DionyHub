@@ -41,7 +41,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS) // YENİ: Canlı WebSocket rotası
 }
 
-// handleGetProjects returns the list of projects combined with their LIVE running status.
+// handleGetProjects returns the list of projects combined with their LIVE running status and stats.
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -57,6 +57,10 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 
 		if s.manager.IsRunning(p.ID) {
 			liveProjects[i].Status = "running"
+			// YENİ: Süreç çalışıyorsa anlık değerlerini çek
+			cpu, ram := s.manager.GetStats(p.ID)
+			liveProjects[i].CPU = cpu
+			liveProjects[i].RAM = ram
 		} else {
 			liveProjects[i].Status = "stopped"
 		}
@@ -85,6 +89,9 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 	newProj.Path = cleanPath
 
+	newProj.Tag = strings.TrimSpace(newProj.Tag) // YENİ: Etiketi temizle
+
+	// Basit güvenlik/doğrulama kontrolü
 	if newProj.Name == "" || newProj.Path == "" || newProj.Command == "" {
 		http.Error(w, `{"error": "Name, Path, and Command are required fields"}`, http.StatusBadRequest)
 		return

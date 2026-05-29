@@ -7,13 +7,19 @@ import (
 )
 
 // Project represents the configuration for a single manageable application.
+// Project represents the configuration for a single manageable application.
+// Project represents the configuration for a single manageable application.
 type Project struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Command     string `json:"command"`
-	Interactive bool   `json:"interactive"`
-	Status      string `json:"status"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Path        string  `json:"path"`
+	Command     string  `json:"command"`
+	Interactive bool    `json:"interactive"`
+	Status      string  `json:"status"`
+	CPU         float64 `json:"cpu,omitempty"`
+	RAM         float64 `json:"ram,omitempty"`
+	Tag         string  `json:"tag,omitempty"`   // YENİ: Kategorizasyon için
+	Order       int     `json:"order,omitempty"` // YENİ: Sürükle-bırak sıralaması için
 }
 
 // projectConfig is a wrapper to match the JSON structure.
