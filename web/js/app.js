@@ -1,11 +1,13 @@
 let projectToDelete = null;
 let currentTagFilter = null;
 let draggedRow = null;
+let availableTags = []; // YENİ: Etiketleri hafızada tutacak dizi
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     setInterval(updateStatuses, 2000);
     connectWebSocket();
+    initTagAutocomplete(); // YENİ: Şık dropdown'ı başlat
 });
 
 async function loadProjects() {
@@ -202,7 +204,8 @@ function setFilter(tag) {
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const tags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
+    // YENİ: Etiket listesini global değişkene ata
+    availableTags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
     
     const tagList = document.getElementById('tag-list');
     if (tagList) {
@@ -212,7 +215,7 @@ function renderSidebarTags(projects) {
             </button>
         `;
 
-        tags.forEach(tag => {
+        availableTags.forEach(tag => {
             tagList.innerHTML += `
                 <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
                     # ${tag}
@@ -220,18 +223,56 @@ function renderSidebarTags(projects) {
             `;
         });
 
-        if (currentTagFilter && !tags.includes(currentTagFilter)) {
+        if (currentTagFilter && !availableTags.includes(currentTagFilter)) {
             setFilter(null);
         }
     }
+    // Datalist render etme kısmı tamamen silindi.
+}
 
-    // YENİ: Formdaki Datalist'i mevcut tag'lerle doldur
-    const datalist = document.getElementById('existingTags');
-    if (datalist) {
-        datalist.innerHTML = '';
-        tags.forEach(tag => {
-            datalist.innerHTML += `<option value="${tag}"></option>`;
+/* =========================================
+   YENİ: PREMIUM AUTOCOMPLETE LOGIC
+========================================= */
+
+function initTagAutocomplete() {
+    const tagInput = document.getElementById('projTag');
+    const tagDropdown = document.getElementById('tagDropdown');
+
+    if (!tagInput || !tagDropdown) return;
+
+    // Tıklandığında veya yazı yazıldığında menüyü güncelle ve göster
+    tagInput.addEventListener('focus', () => updateDropdown(tagInput.value));
+    tagInput.addEventListener('input', (e) => updateDropdown(e.target.value));
+    
+    // İnputtan çıkıldığında menüyü kapat
+    tagInput.addEventListener('blur', () => {
+        // Blur anında dropdown'ın hemen kapanmasını önlemek için minik bir gecikme
+        setTimeout(() => tagDropdown.classList.add('hidden'), 150);
+    });
+
+    function updateDropdown(filterText) {
+        const filteredTags = availableTags.filter(tag => tag.toLowerCase().includes(filterText.toLowerCase()));
+
+        if (filteredTags.length === 0) {
+            tagDropdown.classList.add('hidden');
+            return;
+        }
+
+        tagDropdown.innerHTML = '';
+        filteredTags.forEach(tag => {
+            const item = document.createElement('div');
+            item.className = 'px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white cursor-pointer transition-colors';
+            item.textContent = tag;
+            
+            // Satıra tıklandığında inputa değeri yaz ve menüyü gizle
+            item.onmousedown = (e) => {
+                e.preventDefault(); // Blur olayının tetiklenmesini durdurur
+                tagInput.value = tag;
+                tagDropdown.classList.add('hidden');
+            };
+            tagDropdown.appendChild(item);
         });
+        tagDropdown.classList.remove('hidden');
     }
 }
 
