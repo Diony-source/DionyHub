@@ -1,4 +1,3 @@
-// Sayfa yüklendiğinde projeleri çek ve her 2 saniyede bir durumu güncelle (Polling)
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     setInterval(updateStatuses, 2000);
@@ -12,6 +11,11 @@ async function loadProjects() {
         const projects = await response.json();
         const tbody = document.getElementById('project-list');
         tbody.innerHTML = '';
+
+        if (projects.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">No projects found. Click 'Add Project' to start.</td></tr>`;
+            return;
+        }
 
         projects.forEach(p => {
             const tr = document.createElement('tr');
@@ -40,7 +44,6 @@ async function loadProjects() {
         updateStatuses();
     } catch (error) {
         console.error("Load error:", error);
-        document.getElementById('project-list').innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Veriler yüklenirken hata oluştu.</td></tr>`;
     }
 }
 
@@ -88,5 +91,52 @@ async function stopProject(id) {
         updateStatuses();
     } catch (error) {
         console.error('Stop error:', error);
+    }
+}
+
+// YENİ: Modal ve Form Kontrol Fonksiyonları
+function openModal() {
+    const modal = document.getElementById('addModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeModal() {
+    const modal = document.getElementById('addModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.getElementById('addForm').reset(); // Formu temizle
+}
+
+async function submitNewProject(event) {
+    event.preventDefault(); // Sayfanın yenilenmesini engelle
+
+    const newProject = {
+        name: document.getElementById('projName').value,
+        path: document.getElementById('projPath').value,
+        command: document.getElementById('projCmd').value,
+        interactive: document.getElementById('projInteractive').checked
+    };
+
+    try {
+        const response = await fetch('/api/projects/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newProject)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            closeModal();
+            loadProjects(); // Tabloyu yeni proje ile baştan çiz
+        } else {
+            alert('Hata: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('Projeyi kaydederken sunucuya ulaşılamadı.');
     }
 }

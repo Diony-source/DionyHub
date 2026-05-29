@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DionyHub | Command Center</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden">
+<body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden relative">
 
-    <!-- Sol Menü (Sidebar) -->
     <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
             <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md">DionyHub</span>
@@ -22,22 +19,27 @@
         </nav>
     </aside>
 
-    <!-- Ana Ekran -->
     <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
-        <!-- Üst Bar -->
         <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm">
             <h2 class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
-            <div class="text-sm text-gray-400 flex items-center gap-2">
-                System Status: 
-                <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-                <span class="text-green-400 font-bold ml-1">Online</span>
+            
+            <div class="flex items-center gap-6">
+                <button onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Project
+                </button>
+
+                <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6">
+                    System Status: 
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-green-400 font-bold ml-1">Online</span>
+                </div>
             </div>
         </header>
 
-        <!-- Proje Kartları Alanı -->
         <div class="p-8">
             <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -50,21 +52,49 @@
                         </tr>
                     </thead>
                     <tbody id="project-list">
-                        <!-- Projeler JavaScript ile buraya eklenecek -->
-                        <tr>
-                            <td colspan="4" class="p-8 text-center text-gray-500">
-                                <svg class="animate-spin h-6 w-6 text-indigo-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Loading projects...
-                            </td>
-                        </tr>
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </main>
+
+    <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-200">Register New Project</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form id="addForm" class="p-6 space-y-4" onsubmit="submitNewProject(event)">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
+                    <input type="text" id="projName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
+                    <input type="text" id="projPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="C:/Users/Diony/Desktop/bot">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
+                    <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <input type="checkbox" id="projInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
+                    <label for="projInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
+                </div>
+
+                <div class="pt-6 flex gap-3">
+                    <button type="button" onclick="closeModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
+                    <button type="submit" class="flex-1 btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-indigo-500/50 shadow-lg shadow-indigo-900/20">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>
