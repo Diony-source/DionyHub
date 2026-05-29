@@ -3,6 +3,7 @@ package process
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -19,14 +20,16 @@ type Process struct {
 
 // Manager holds the state of all running processes.
 type Manager struct {
-	mu        sync.RWMutex
-	processes map[string]*Process
+	mu           sync.RWMutex
+	processes    map[string]*Process
+	GlobalOutput io.Writer // YENİ: Tüm logların akacağı ana kanal
 }
 
 // NewManager initializes and returns a new thread-safe process manager.
-func NewManager() *Manager {
+func NewManager(out io.Writer) *Manager {
 	return &Manager{
-		processes: make(map[string]*Process),
+		processes:    make(map[string]*Process),
+		GlobalOutput: out, // YENİ
 	}
 }
 
@@ -42,17 +45,20 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 	var cmd *exec.Cmd
 
 	if interactive && runtime.GOOS == "windows" {
-		// KRİTİK ÇÖZÜM:
-		// /WAIT : cmd.exe'nin arka planda kapanmasını engeller, böylece PID'yi takip edebiliriz.
-		// ""    : Boş başlık, Windows'un tırnak işareti (quote parsing) krizini çözer.
 		fullArgs := []string{"/C", "start", "/WAIT", "", commandName}
 		fullArgs = append(fullArgs, args...)
-
 		cmd = exec.Command("cmd", fullArgs...)
 	} else {
 		cmd = exec.Command(commandName, args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+
+		// YENİ: Çıktıları hem terminale hem de arayüze (WebSocket) yolluyoruz
+		if m.GlobalOutput != nil {
+			cmd.Stdout = m.GlobalOutput
+			cmd.Stderr = m.GlobalOutput
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 	}
 
 	cmd.Dir = workDir

@@ -1,10 +1,11 @@
-// Package main is the entry point for the DionyHub server.
 package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Diony-source/DionyHub/internal/api"
 	"github.com/Diony-source/DionyHub/internal/config"
@@ -22,13 +23,18 @@ func main() {
 		log.Fatalf("Failed to load projects: %v", err)
 	}
 
-	manager := process.NewManager()
+	// 1. WebSocket Yayıncısını oluştur
+	broadcaster := api.NewBroadcaster()
 
-	apiServer := api.NewServer(manager, projects)
+	// 2. Çıktıları çokla (Hem terminale hem tarayıcıya)
+	multiOutput := io.MultiWriter(os.Stdout, broadcaster)
+
+	// 3. Yöneticilere dağıt
+	manager := process.NewManager(multiOutput)
+	apiServer := api.NewServer(manager, projects, broadcaster)
+
 	mux := http.NewServeMux()
 	apiServer.RegisterRoutes(mux)
-
-	// YENİ: web klasöründeki HTML dosyasını sunmak için statik dosya sunucusu eklendi
 	mux.Handle("/", http.FileServer(http.Dir("web")))
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

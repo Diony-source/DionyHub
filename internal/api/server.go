@@ -16,16 +16,18 @@ import (
 
 // Server holds dependencies required by the HTTP handlers.
 type Server struct {
-	manager  *process.Manager
-	mu       sync.RWMutex
-	projects []config.Project
+	manager     *process.Manager
+	mu          sync.RWMutex
+	projects    []config.Project
+	broadcaster *Broadcaster // YENİ: Log yayıncısı
 }
 
 // NewServer creates a new API Server instance.
-func NewServer(m *process.Manager, p []config.Project) *Server {
+func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	return &Server{
-		manager:  m,
-		projects: p,
+		manager:     m,
+		projects:    p,
+		broadcaster: b, // YENİ
 	}
 }
 
@@ -35,7 +37,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
-	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject) // YENİ: Silme Rotası
+	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
+	mux.HandleFunc("/ws", s.broadcaster.HandleWS) // YENİ: Canlı WebSocket rotası
 }
 
 // handleGetProjects returns the list of projects combined with their LIVE running status.
