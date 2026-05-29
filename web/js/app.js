@@ -4,6 +4,7 @@ let projectToDelete = null;
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     setInterval(updateStatuses, 2000);
+    connectWebSocket(); // YENİ: Tüneli aç
 });
 
 async function loadProjects() {
@@ -188,5 +189,58 @@ async function submitNewProject(event) {
     } catch (error) {
         console.error('Save error:', error);
         alert('Projeyi kaydederken sunucuya ulaşılamadı.');
+    }
+}
+
+/* =========================================
+   YENİ: WEBSOCKET & TERMINAL KONTROLLERİ
+========================================= */
+
+const terminalOutput = document.getElementById('terminal-output');
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+        appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
+    };
+
+    socket.onmessage = (event) => {
+        appendLog(event.data);
+    };
+
+    socket.onclose = () => {
+        appendLog("=== Connection lost. Reconnecting in 3 seconds... ===", "text-rose-400");
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    socket.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+    };
+}
+
+function appendLog(message, colorClass = "text-green-400") {
+    if (!terminalOutput) return;
+    
+    // Satır satır böl ve ekle ki çok uzun çıktılarda performans düşmesin
+    const lines = message.split('\n');
+    lines.forEach(lineText => {
+        if (lineText.trim() === '') return; // Boş satırları atla
+        const line = document.createElement('div');
+        line.className = colorClass;
+        line.textContent = lineText;
+        terminalOutput.appendChild(line);
+    });
+    
+    // Yeni mesaj geldiğinde scroll'u en alta çek (Otomatik kaydırma)
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+function clearTerminal() {
+    if (terminalOutput) {
+        terminalOutput.innerHTML = '';
+        appendLog("=== Terminal Cleared ===", "text-gray-500");
     }
 }
