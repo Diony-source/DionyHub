@@ -19,7 +19,7 @@ type Server struct {
 	manager     *process.Manager
 	mu          sync.RWMutex
 	projects    []config.Project
-	broadcaster *Broadcaster // YENİ: Log yayıncısı
+	broadcaster *Broadcaster
 }
 
 // NewServer creates a new API Server instance.
@@ -27,7 +27,7 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	return &Server{
 		manager:     m,
 		projects:    p,
-		broadcaster: b, // YENİ
+		broadcaster: b,
 	}
 }
 
@@ -38,10 +38,11 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
-	mux.HandleFunc("/ws", s.broadcaster.HandleWS) // YENİ: Canlı WebSocket rotası
+	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects) // YENİ: Sürükle-Bırak sıralama rotası
+	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
-// handleGetProjects returns the list of projects combined with their LIVE running status and stats.
+// handleGetProjects returns the list of projects combined with their LIVE running status.
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -57,7 +58,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 
 		if s.manager.IsRunning(p.ID) {
 			liveProjects[i].Status = "running"
-			// YENİ: Süreç çalışıyorsa anlık değerlerini çek
 			cpu, ram := s.manager.GetStats(p.ID)
 			liveProjects[i].CPU = cpu
 			liveProjects[i].RAM = ram
@@ -89,9 +89,8 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 	newProj.Path = cleanPath
 
-	newProj.Tag = strings.TrimSpace(newProj.Tag) // YENİ: Etiketi temizle
+	newProj.Tag = strings.TrimSpace(newProj.Tag)
 
-	// Basit güvenlik/doğrulama kontrolü
 	if newProj.Name == "" || newProj.Path == "" || newProj.Command == "" {
 		http.Error(w, `{"error": "Name, Path, and Command are required fields"}`, http.StatusBadRequest)
 		return
@@ -101,6 +100,8 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	newProj.Status = "stopped"
 
 	s.mu.Lock()
+	// Yeni eklenen proje otomatik olarak en sona eklenir
+	newProj.Order = len(s.projects)
 	s.projects = append(s.projects, newProj)
 	err := config.SaveProjects("config.json", s.projects)
 	s.mu.Unlock()
@@ -131,16 +132,14 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Güvenlik: Eğer uygulama arka planda çalışıyorsa önce zorla durdur (Zombi önlemi)
 	if s.manager.IsRunning(id) {
 		log.Printf("[API] Force stopping running project before deletion (ID: %s)", id)
-		_ = s.manager.Stop(id) // Hata fırlatsa bile silme işlemine devam et
+		_ = s.manager.Stop(id)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// 2. Projeyi listeden bul ve çıkar
 	found := false
 	var updatedProjects []config.Project
 	for _, p := range s.projects {
@@ -157,7 +156,11 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Yeni listeyi diske kaydet
+	// Sıralamayı (Order) yeniden düzelt
+	for i := range updatedProjects {
+		updatedProjects[i].Order = i
+	}
+
 	s.projects = updatedProjects
 	err := config.SaveProjects("config.json", s.projects)
 	if err != nil {
@@ -169,6 +172,60 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Project deleted successfully"}`))
+}
+
+// handleReorderProjects accepts a new sequence of project IDs and updates the configuration.
+func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var newOrderIDs []string
+	if err := json.NewDecoder(r.Body).Decode(&newOrderIDs); err != nil {
+		http.Error(w, `{"error": "Invalid JSON array for ordering"}`, http.StatusBadRequest)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Projeleri hızlıca bulmak için bir harita oluştur
+	projectMap := make(map[string]config.Project)
+	for _, p := range s.projects {
+		projectMap[p.ID] = p
+	}
+
+	var reorderedProjects []config.Project
+
+	// Arayüzden gelen yeni ID sırasına göre projeleri diz
+	for index, id := range newOrderIDs {
+		if p, exists := projectMap[id]; exists {
+			p.Order = index
+			reorderedProjects = append(reorderedProjects, p)
+			delete(projectMap, id) // İşlenenleri listeden çıkar
+		}
+	}
+
+	// Arayüzün yollamadığı (filtreli ekranda gizli kalan) projeleri listenin sonuna ekle
+	for _, p := range projectMap {
+		p.Order = len(reorderedProjects)
+		reorderedProjects = append(reorderedProjects, p)
+	}
+
+	s.projects = reorderedProjects
+	err := config.SaveProjects("config.json", s.projects)
+	if err != nil {
+		log.Printf("[API] Error saving reordered configuration: %v", err)
+		http.Error(w, `{"error": "Failed to save reordered configuration"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[API] Projects reordered successfully")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Projects reordered successfully"}`))
 }
 
 // handleStartProject starts a specific background process based on its ID.
@@ -205,8 +262,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[API] START request received for project: %s (Interactive: %t)", target.Name, target.Interactive)
-
 	err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, parts[0], parts[1:]...)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
@@ -231,7 +286,6 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[API] STOP request received for project ID: %s", id)
 	err := s.manager.Stop(id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)

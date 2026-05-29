@@ -1,5 +1,6 @@
 let projectToDelete = null;
 let currentTagFilter = null;
+let draggedRow = null; // Sürüklenen elementi tutar
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
@@ -30,12 +31,27 @@ async function loadProjects() {
 
         filteredProjects.forEach(p => {
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group';
+            tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group bg-gray-800/20';
+            
+            // YENİ: Sürükle-Bırak için gerekli özellikler
+            tr.setAttribute('draggable', 'true');
+            tr.dataset.id = p.id;
+            
+            // Drag olaylarını dinle
+            tr.addEventListener('dragstart', handleDragStart);
+            tr.addEventListener('dragover', handleDragOver);
+            tr.addEventListener('dragenter', handleDragEnter);
+            tr.addEventListener('dragleave', handleDragLeave);
+            tr.addEventListener('drop', handleDrop);
+            tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
 
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
+                    <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                    </div>
                     <div class="h-8 w-8 rounded bg-gray-700 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors">
                         ${p.name.charAt(0).toUpperCase()}
                     </div>
@@ -70,6 +86,154 @@ async function loadProjects() {
         console.error("Load error:", error);
     }
 }
+
+/* =========================================
+   YENİ: DRAG & DROP FONKSİYONLARI
+========================================= */
+
+function handleDragStart(e) {
+    draggedRow = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+    // Sürüklenen satırı hafif saydam yap
+    setTimeout(() => this.classList.add('opacity-50'), 0);
+}
+
+function handleDragOver(e) {
+    e.preventDefault(); // Drop işlemine izin ver
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    if (this !== draggedRow) {
+        this.classList.add('border-t-2', 'border-indigo-500'); // Hedefi vurgula
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('border-t-2', 'border-indigo-500');
+}
+
+function handleDrop(e) {
+    e.stopPropagation();
+    this.classList.remove('border-t-2', 'border-indigo-500');
+
+    if (draggedRow !== this) {
+        // Satırların yerlerini değiştir (DOM manipülasyonu)
+        const tbody = document.getElementById('project-list');
+        const rows = Array.from(tbody.children);
+        const draggedIndex = rows.indexOf(draggedRow);
+        const droppedIndex = rows.indexOf(this);
+
+        if (draggedIndex < droppedIndex) {
+            this.parentNode.insertBefore(draggedRow, this.nextSibling);
+        } else {
+            this.parentNode.insertBefore(draggedRow, this);
+        }
+
+        // Yeni sırayı çıkar ve backend'e kaydet
+        saveNewOrder();
+    }
+    return false;
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('opacity-50');
+    document.querySelectorAll('#project-list tr').forEach(row => {
+        row.classList.remove('border-t-2', 'border-indigo-500');
+    });
+}
+
+async function saveNewOrder() {
+    const tbody = document.getElementById('project-list');
+    const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
+
+    try {
+        const response = await fetch('/api/projects/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newOrderIDs)
+        });
+
+        if (!response.ok) {
+            console.error("Sıralama kaydedilemedi.");
+            loadProjects(); // Hata varsa tabloyu eski haline çevir
+        }
+    } catch (error) {
+        console.error("Reorder request failed:", error);
+    }
+}
+
+/* =========================================
+   SIDEBAR VE TAG KONTROLLERİ
+========================================= */
+
+function toggleBoard() {
+    const list = document.getElementById('tag-list');
+    const chevron = document.getElementById('board-chevron');
+    
+    if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        chevron.classList.add('rotate-180');
+    } else {
+        list.classList.add('hidden');
+        chevron.classList.remove('rotate-180');
+    }
+}
+
+function setFilter(tag) {
+    currentTagFilter = tag;
+    loadProjects();
+    
+    document.querySelectorAll('.tag-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
+        btn.classList.add('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
+    });
+
+    if (tag === null) {
+        document.getElementById('btn-filter-all').classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
+        document.getElementById('btn-filter-all').classList.remove('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
+    } else {
+        const activeBtn = document.getElementById(`btn-filter-${tag}`);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
+            activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
+        }
+    }
+}
+
+function renderSidebarTags(projects) {
+    // Projeleri kendi içinde barındırdığı Order sırasına göre diz
+    projects.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    const tags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
+    const tagList = document.getElementById('tag-list');
+    if (!tagList) return;
+
+    tagList.innerHTML = `
+        <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+            All Projects
+        </button>
+    `;
+
+    tags.forEach(tag => {
+        tagList.innerHTML += `
+            <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
+                # ${tag}
+            </button>
+        `;
+    });
+
+    if (currentTagFilter && !tags.includes(currentTagFilter)) {
+        setFilter(null);
+    }
+}
+
+/* =========================================
+   DİĞER FONKSİYONLAR (API, MODAL, WEBSOCKET)
+========================================= */
 
 async function updateStatuses() {
     try {
@@ -132,72 +296,6 @@ async function stopProject(id) {
         console.error('Stop error:', error);
     }
 }
-
-/* =========================================
-   SIDEBAR VE TAG KONTROLLERİ
-========================================= */
-
-function toggleBoard() {
-    const list = document.getElementById('tag-list');
-    const chevron = document.getElementById('board-chevron');
-    
-    if (list.classList.contains('hidden')) {
-        list.classList.remove('hidden');
-        chevron.classList.add('rotate-180');
-    } else {
-        list.classList.add('hidden');
-        chevron.classList.remove('rotate-180');
-    }
-}
-
-function setFilter(tag) {
-    currentTagFilter = tag;
-    loadProjects();
-    
-    document.querySelectorAll('.tag-filter-btn').forEach(btn => {
-        btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
-        btn.classList.add('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
-    });
-
-    if (tag === null) {
-        document.getElementById('btn-filter-all').classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
-        document.getElementById('btn-filter-all').classList.remove('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
-    } else {
-        const activeBtn = document.getElementById(`btn-filter-${tag}`);
-        if (activeBtn) {
-            activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30');
-            activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-700/30', 'border-transparent');
-        }
-    }
-}
-
-function renderSidebarTags(projects) {
-    const tags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
-    const tagList = document.getElementById('tag-list');
-    if (!tagList) return;
-
-    tagList.innerHTML = `
-        <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
-            All Projects
-        </button>
-    `;
-
-    tags.forEach(tag => {
-        tagList.innerHTML += `
-            <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200">
-                # ${tag}
-            </button>
-        `;
-    });
-
-    if (currentTagFilter && !tags.includes(currentTagFilter)) {
-        setFilter(null);
-    }
-}
-
-/* =========================================
-   MODAL KONTROLLERİ (ADD / DELETE)
-========================================= */
 
 function openModal() {
     const modal = document.getElementById('addModal');
@@ -287,10 +385,6 @@ async function executeDelete() {
         closeDeleteModal();
     }
 }
-
-/* =========================================
-   WEBSOCKET & TERMINAL KONTROLLERİ
-========================================= */
 
 const terminalOutput = document.getElementById('terminal-output');
 
