@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Diony-source/DionyHub/internal/config"
 	"github.com/Diony-source/DionyHub/internal/process"
@@ -15,6 +17,7 @@ import (
 // Server holds dependencies required by the HTTP handlers.
 type Server struct {
 	manager  *process.Manager
+	mu       sync.RWMutex // Eşzamanlı API isteklerinde s.projects listesini korur
 	projects []config.Project
 }
 
@@ -29,6 +32,7 @@ func NewServer(m *process.Manager, p []config.Project) *Server {
 // RegisterRoutes maps URL paths to their respective handler functions.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
+	mux.HandleFunc("/api/projects/add", s.handleAddProject) // YENİ: Proje ekleme rotası
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 }
@@ -40,12 +44,13 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Projelerin canlı kopyasını oluştur
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	liveProjects := make([]config.Project, len(s.projects))
 	for i, p := range s.projects {
 		liveProjects[i] = p
 
-		// Eğer process yöneticisi bu projenin çalıştığını söylüyorsa, statüyü ez.
 		if s.manager.IsRunning(p.ID) {
 			liveProjects[i].Status = "running"
 		} else {
@@ -55,6 +60,48 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(liveProjects)
+}
+
+// handleAddProject dynamically adds a new project to the system and saves it to the config.
+func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var newProj config.Project
+	if err := json.NewDecoder(r.Body).Decode(&newProj); err != nil {
+		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Basit güvenlik/doğrulama kontrolü
+	if newProj.Name == "" || newProj.Path == "" || newProj.Command == "" {
+		http.Error(w, `{"error": "Name, Path, and Command are required fields"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Benzersiz ID oluştur (Milisaniye cinsinden zaman damgası)
+	newProj.ID = fmt.Sprintf("%d", time.Now().UnixMilli())
+	newProj.Status = "stopped"
+
+	// Listeye ekle ve diske kaydet
+	s.mu.Lock()
+	s.projects = append(s.projects, newProj)
+	err := config.SaveProjects("config.json", s.projects)
+	s.mu.Unlock()
+
+	if err != nil {
+		log.Printf("[API] Error saving new project: %v", err)
+		http.Error(w, `{"error": "Failed to save project configuration"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[API] New project registered: %s (ID: %s)", newProj.Name, newProj.ID)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(newProj)
 }
 
 // handleStartProject starts a specific background process based on its ID.
@@ -70,7 +117,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find project configuration
+	s.mu.RLock()
 	var target *config.Project
 	for _, p := range s.projects {
 		if p.ID == id {
@@ -78,13 +125,13 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	s.mu.RUnlock()
 
 	if target == nil {
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
 
-	// Simple command parser (e.g., "go run main.go" -> "go", ["run", "main.go"])
 	parts := strings.Fields(target.Command)
 	if len(parts) == 0 {
 		http.Error(w, `{"error": "Invalid command configuration"}`, http.StatusInternalServerError)
@@ -93,7 +140,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[API] START request received for project: %s (Interactive: %t)", target.Name, target.Interactive)
 
-	// YENİ: target.Interactive parametresini gönderiyoruz
 	err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, parts[0], parts[1:]...)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)

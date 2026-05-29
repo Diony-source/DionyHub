@@ -13,7 +13,7 @@ type Project struct {
 	Path        string `json:"path"`
 	Command     string `json:"command"`
 	Interactive bool   `json:"interactive"`
-	Status      string `json:"status"` // YENİ EKLENDİ: Arayüze canlı durum yollamak için gerekli
+	Status      string `json:"status"`
 }
 
 // projectConfig is a wrapper to match the JSON structure.
@@ -34,4 +34,23 @@ func LoadProjects(filePath string) ([]Project, error) {
 	}
 
 	return cfg.Projects, nil
+}
+
+// SaveProjects safely writes the current project list back to the JSON configuration file.
+func SaveProjects(filePath string, projects []Project) error {
+	cfg := projectConfig{Projects: projects}
+
+	// JSON'u okunabilir (girintili) formatta marshal et
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal projects to JSON: %w", err)
+	}
+
+	// Dosyayı standart izinlerle yaz (0644)
+	err = os.WriteFile(filePath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write projects file '%s': %w", filePath, err)
+	}
+
+	return nil
 }
