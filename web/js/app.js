@@ -6,15 +6,16 @@ let cachedProjects = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
+    loadSettings(); // YENİ: Başlangıçta ayarları sunucudan çek
     setInterval(updateStatuses, 2000);
     connectWebSocket();
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
-    switchView('dashboard'); // Varsayılan görünüm
+    switchView('dashboard');
 });
 
 /* =========================================
-   YENİ: SPA VIEW ROUTER (Görünüm Yöneticisi)
+   SPA VIEW ROUTER & AKILLI AKORDEON
 ========================================= */
 function switchView(viewName) {
     const dashboardView = document.getElementById('dashboard-view');
@@ -26,25 +27,75 @@ function switchView(viewName) {
     const navSettings = document.getElementById('nav-settings');
 
     if (viewName === 'dashboard') {
-        // Görünümleri Takas Et
+        // HATA ÇÖZÜMÜ: Eğer zaten dashboard görünümündeysek, Board butonuna 
+        // tıklanması akordeonun (taglerin) açılıp kapanmasını sağlamalıdır.
+        if (!dashboardView.classList.contains('hidden')) {
+            toggleBoard();
+        }
+
         dashboardView.classList.remove('hidden');
         settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library";
-        addBtn.classList.remove('hidden'); // Ekle butonunu göster
+        addBtn.classList.remove('hidden');
 
-        // Navigasyon Stillerini Güncelle (Aktif)
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left";
     } else if (viewName === 'settings') {
-        // Görünümleri Takas Et
         dashboardView.classList.add('hidden');
         settingsView.classList.remove('hidden');
         viewTitle.innerText = "System Settings";
-        addBtn.classList.add('hidden'); // Ayarlarda ekle butonunu gizle
+        addBtn.classList.add('hidden');
 
-        // Navigasyon Stillerini Güncelle (Aktif)
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-gray-700/50 border border-gray-600 text-white rounded-md transition-colors font-medium text-left shadow-inner";
+    }
+}
+
+/* =========================================
+   YENİ: SETTINGS API BAĞLANTILARI
+========================================= */
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            document.getElementById('setting-workspace').value = settings.workspace || 'C:/DionyHub/apps';
+            // İleride logBuffer checkbox'ını da buraya bağlayacağız
+        }
+    } catch (e) {
+        console.error("Failed to load settings:", e);
+    }
+}
+
+async function saveSettings() {
+    const btn = document.getElementById('save-settings-btn');
+    const originalText = btn.innerText;
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    const newSettings = {
+        workspace: document.getElementById('setting-workspace').value,
+        log_buffer: true // Şimdilik varsayılan true
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+
+        if (response.ok) {
+            showToast("System settings applied successfully.", "success");
+        } else {
+            const err = await response.json();
+            showToast(err.error, "error");
+        }
+    } catch (e) {
+        showToast("Server error during save.", "error");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
     }
 }
 
@@ -251,7 +302,6 @@ function openEditModal(id) {
     modal.classList.add('flex');
 }
 
-// Görünüm takas fonksiyonuna uyması için küçük bir fix
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
 async function submitEditProject(event) {
@@ -360,7 +410,6 @@ async function stopProject(id) {
 }
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
-// Görünüm takası için fix
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
 async function submitNewProject(e) {

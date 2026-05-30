@@ -35,15 +35,50 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
-	mux.HandleFunc("/api/projects/update", s.handleUpdateProject) // YENİ: Güncelleme Rotası
+	mux.HandleFunc("/api/projects/update", s.handleUpdateProject)
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
+	mux.HandleFunc("/api/settings", s.handleSettings) // YENİ: Ayarlar API Rotası
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
-// handleGetProjects returns the list of projects combined with their LIVE running status.
+// handleSettings manages both GET (reading) and POST (saving) for global application settings.
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		settings, _ := config.LoadSettings("app_config.json")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(settings)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		var newSettings config.AppSettings
+		if err := json.NewDecoder(r.Body).Decode(&newSettings); err != nil {
+			http.Error(w, `{"error": "Invalid JSON configuration"}`, http.StatusBadRequest)
+			return
+		}
+
+		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
+
+		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
+			log.Printf("[API] Failed to save settings: %v", err)
+			http.Error(w, `{"error": "Failed to save configuration to disk"}`, http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("[API] Global settings updated")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message": "Settings saved successfully"}`))
+		return
+	}
+
+	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+}
+
+// --- Aşağıdaki mevcut fonksiyonlar değişmedi ---
+
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -71,7 +106,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(liveProjects)
 }
 
-// handleUpdateProject modifies an existing project's metadata and persists changes to disk.
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -84,7 +118,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Windows hayalet karakter ve dizin temizliği (Add ile aynı logic)
 	cleanPath := strings.TrimSpace(updatedData.Path)
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
@@ -103,7 +136,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	found := false
 	for i, p := range s.projects {
 		if p.ID == updatedData.ID {
-			// Sadece belirli alanları güncelle, Order ve ID'ye dokunma
 			s.projects[i].Name = updatedData.Name
 			s.projects[i].Path = updatedData.Path
 			s.projects[i].Command = updatedData.Command
@@ -130,7 +162,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleAddProject dynamically adds a new project to the system...
 func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -176,7 +207,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newProj)
 }
 
-// handleDeleteProject gracefully stops and removes a project...
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -229,7 +259,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleReorderProjects accepts a new sequence of project IDs...
 func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -275,7 +304,6 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleStartProject starts a specific background process...
 func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -318,7 +346,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleStopProject stops a specific background process...
 func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
