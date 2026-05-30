@@ -11,28 +11,35 @@
 
     <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
-            <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md">DionyHub</span>
+            <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md cursor-pointer" onclick="switchView('dashboard')">DionyHub</span>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2">
             <div class="px-2">
-                <button onclick="toggleBoard()" class="w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors hover:bg-gray-700/80 group">
+                <button id="nav-dashboard" onclick="switchView('dashboard')" class="w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors hover:bg-gray-700/80 group">
                     <span class="flex items-center gap-2">📋 Board</span>
                     <svg id="board-chevron" class="w-4 h-4 transform transition-transform duration-200 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div id="tag-list" class="mt-2 space-y-1 pl-4 hidden overflow-hidden transition-all duration-300"></div>
             </div>
-            <a href="#" class="block px-6 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors mt-4">⚙️ Settings</a>
+            
+            <div class="px-2">
+                <button id="nav-settings" onclick="switchView('settings')" class="w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left">
+                    <span>⚙️ Settings</span>
+                </button>
+            </div>
         </nav>
     </aside>
 
     <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
-        <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm">
-            <h2 class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
+        <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm shrink-0">
+            <h2 id="view-title" class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
+            
             <div class="flex items-center gap-6">
-                <button onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
+                <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Project
                 </button>
+
                 <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6">
                     System Status: 
                     <span class="relative flex h-3 w-3">
@@ -44,33 +51,66 @@
             </div>
         </header>
 
-        <div class="p-8 pb-4">
-            <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-900/80 text-gray-400 text-sm border-b border-gray-700 uppercase tracking-wider">
-                            <th class="p-5 font-medium w-1/4">Project Name</th>
-                            <th class="p-5 font-medium w-1/4">Path</th>
-                            <th class="p-5 font-medium w-1/6">Status</th>
-                            <th class="p-5 font-medium w-1/6">Usage</th>
-                            <th class="p-5 font-medium text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="project-list"></tbody>
-                </table>
+        <div id="dashboard-view" class="flex flex-col flex-1 min-h-0">
+            <div class="p-8 pb-4">
+                <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-900/80 text-gray-400 text-sm border-b border-gray-700 uppercase tracking-wider">
+                                <th class="p-5 font-medium w-1/4">Project Name</th>
+                                <th class="p-5 font-medium w-1/4">Path</th>
+                                <th class="p-5 font-medium w-1/6">Status</th>
+                                <th class="p-5 font-medium w-1/6">Usage</th>
+                                <th class="p-5 font-medium text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="project-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-8 pt-0 flex-1 flex flex-col min-h-[250px]">
+                <div class="bg-[#0a0a0c] rounded-xl border border-gray-700 shadow-xl flex-1 flex flex-col overflow-hidden">
+                    <header class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
+                        <span class="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 18h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            Live Terminal
+                        </span>
+                        <button onclick="clearTerminal()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Clear</button>
+                    </header>
+                    <div id="terminal-output" class="p-4 overflow-y-auto flex-1 font-mono text-sm text-green-400 whitespace-pre-wrap"></div>
+                </div>
             </div>
         </div>
 
-        <div class="p-8 pt-0 flex-1 flex flex-col min-h-[300px]">
-            <div class="bg-[#0a0a0c] rounded-xl border border-gray-700 shadow-xl flex-1 flex flex-col overflow-hidden">
-                <header class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
-                    <span class="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 18h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                        Live Terminal
-                    </span>
-                    <button onclick="clearTerminal()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Clear</button>
-                </header>
-                <div id="terminal-output" class="p-4 overflow-y-auto flex-1 font-mono text-sm text-green-400 whitespace-pre-wrap"></div>
+        <div id="settings-view" class="hidden p-8 max-w-2xl w-full mx-auto space-y-6">
+            <div class="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl shadow-xl p-6 space-y-6">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-200 mb-1">Global Core Settings</h3>
+                    <p class="text-xs text-gray-400">Configure DionyHub's internal software behavior and global path scopes.</p>
+                </div>
+                
+                <div class="space-y-4 divide-y divide-gray-700/50">
+                    <div class="pt-2">
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Global App Workspace (Steam Common style)</label>
+                        <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. C:/DionyHub/apps" value="C:/DionyHub/apps">
+                        <p class="text-[11px] text-gray-500 mt-1">Future applications cloned from GitHub or created internally will be structured inside this primary directory isolate.</p>
+                    </div>
+
+                    <div class="pt-4 flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300">Detailed Telemetry Buffering</label>
+                            <p class="text-xs text-gray-500">Keep up to 5000 lines of historical log buffer memory per active process execution.</p>
+                        </div>
+                        <input type="checkbox" checked class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-700 flex justify-end">
+                    <button onclick="showToast('Settings saved successfully (Local Sandbox)', 'success')" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-md text-sm font-medium shadow-lg shadow-indigo-900/20 border border-indigo-500/50">
+                        Save Configurations
+                    </button>
+                </div>
             </div>
         </div>
     </main>

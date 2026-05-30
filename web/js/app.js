@@ -10,7 +10,43 @@ document.addEventListener("DOMContentLoaded", () => {
     connectWebSocket();
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
+    switchView('dashboard'); // Varsayılan görünüm
 });
+
+/* =========================================
+   YENİ: SPA VIEW ROUTER (Görünüm Yöneticisi)
+========================================= */
+function switchView(viewName) {
+    const dashboardView = document.getElementById('dashboard-view');
+    const settingsView = document.getElementById('settings-view');
+    const viewTitle = document.getElementById('view-title');
+    const addBtn = document.getElementById('header-add-btn');
+
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navSettings = document.getElementById('nav-settings');
+
+    if (viewName === 'dashboard') {
+        // Görünümleri Takas Et
+        dashboardView.classList.remove('hidden');
+        settingsView.classList.add('hidden');
+        viewTitle.innerText = "Active Library";
+        addBtn.classList.remove('hidden'); // Ekle butonunu göster
+
+        // Navigasyon Stillerini Güncelle (Aktif)
+        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors";
+        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left";
+    } else if (viewName === 'settings') {
+        // Görünümleri Takas Et
+        dashboardView.classList.add('hidden');
+        settingsView.classList.remove('hidden');
+        viewTitle.innerText = "System Settings";
+        addBtn.classList.add('hidden'); // Ayarlarda ekle butonunu gizle
+
+        // Navigasyon Stillerini Güncelle (Aktif)
+        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium";
+        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-gray-700/50 border border-gray-600 text-white rounded-md transition-colors font-medium text-left shadow-inner";
+    }
+}
 
 /* =========================================
    TOAST NOTIFICATION SYSTEM
@@ -51,6 +87,7 @@ async function loadProjects() {
         renderSidebarTags(projects);
 
         const tbody = document.getElementById('project-list');
+        if (!tbody) return;
         tbody.innerHTML = '';
 
         const filteredProjects = currentTagFilter 
@@ -164,8 +201,8 @@ async function saveNewOrder() {
 function toggleBoard() {
     const list = document.getElementById('tag-list');
     const chevron = document.getElementById('board-chevron');
-    list.classList.toggle('hidden');
-    chevron.classList.toggle('rotate-180');
+    if(list) list.classList.toggle('hidden');
+    if(chevron) chevron.classList.toggle('rotate-180');
 }
 
 function setFilter(tag) {
@@ -214,7 +251,8 @@ function openEditModal(id) {
     modal.classList.add('flex');
 }
 
-function closeEditModal() { document.getElementById('editModal').classList.replace('flex', 'hidden'); }
+// Görünüm takas fonksiyonuna uyması için küçük bir fix
+function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
 async function submitEditProject(event) {
     event.preventDefault();
@@ -322,7 +360,8 @@ async function stopProject(id) {
 }
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
-function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); document.getElementById('addForm').reset(); }
+// Görünüm takası için fix
+function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
 async function submitNewProject(e) {
     e.preventDefault();
@@ -362,30 +401,21 @@ async function executeDelete() {
 }
 
 /* =========================================
-   YENİ: ENHANCED TERMINAL & WEBSOCKET
+   ENHANCED TERMINAL & WEBSOCKET
 ========================================= */
 const terminalOutput = document.getElementById('terminal-output');
 
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    
-    socket.onopen = () => {
-        appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
-    };
-
+    socket.onopen = () => appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
     socket.onmessage = (e) => appendLog(e.data);
-    
-    socket.onclose = () => {
-        appendLog("=== Connection lost. Reconnecting in 3 seconds... ===", "text-rose-400");
-        setTimeout(connectWebSocket, 3000);
-    };
+    socket.onclose = () => setTimeout(connectWebSocket, 3000);
 }
 
 function appendLog(msg, forceColorClass = null) {
     if (!terminalOutput) return;
 
     const lines = msg.split('\n');
-    // Yerel saati al (Örn: 14:05:32)
     const now = new Date();
     const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
 
@@ -395,9 +425,8 @@ function appendLog(msg, forceColorClass = null) {
         const lineDiv = document.createElement('div');
         lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
         
-        let textColor = forceColorClass || 'text-gray-300'; // Standart log rengi açık gri
+        let textColor = forceColorClass || 'text-gray-300';
         
-        // Eğer özel bir renk zorlanmamışsa, kelime analizi yap
         if (!forceColorClass) {
             const lowerLine = l.toLowerCase();
             if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
@@ -409,7 +438,6 @@ function appendLog(msg, forceColorClass = null) {
             }
         }
 
-        // HTML'i zaman damgası + mesaj olarak birleştir (shrink-0 ile damganın ezilmesini önlüyoruz)
         lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
         terminalOutput.appendChild(lineDiv);
     });
@@ -418,6 +446,6 @@ function appendLog(msg, forceColorClass = null) {
 }
 
 function clearTerminal() { 
-    terminalOutput.innerHTML = ''; 
+    if(terminalOutput) terminalOutput.innerHTML = ''; 
     appendLog("=== Terminal Cleared ===", "text-gray-500");
 }
