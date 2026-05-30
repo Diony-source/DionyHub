@@ -40,8 +40,12 @@ func NewManager(output io.Writer) *Manager {
 func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		// YENİ: Her log satırının başına [Proje Adı] etiketini ekliyoruz.
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
+	}
+
+	// YENİ: Linter uyarısını çözen ve okuma sırasında oluşan olası hataları yakalayan güvenlik kontrolü
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
 	}
 }
 
@@ -56,7 +60,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 
 	var cmd *exec.Cmd
 	if interactive {
-		// Windows specific interactive mode (opens a new terminal outside DionyHub)
 		cmdArgs := append([]string{"/c", "start", nameCmd}, args...)
 		cmd = exec.Command("cmd", cmdArgs...)
 		cmd.Dir = path
@@ -64,7 +67,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 		cmd = exec.Command(nameCmd, args...)
 		cmd.Dir = path
 
-		// YENİ: Çıktıları doğrudan bağlamak yerine Scanner'a yönlendir
 		stdout, err := cmd.StdoutPipe()
 		if err == nil {
 			go m.prefixLogger(name, stdout)
@@ -76,7 +78,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 		}
 	}
 
-	// YENİ: Windows'ta arka plan süreçlerinin komut istemi pencerelerini (CMD) gizle
 	if !interactive {
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
@@ -92,7 +93,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 		Running: true,
 	}
 
-	// Background routine to wait for the process to finish and update its status
 	go func() {
 		cmd.Wait()
 		m.mu.Lock()
