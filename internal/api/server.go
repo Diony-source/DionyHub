@@ -35,10 +35,11 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
+	mux.HandleFunc("/api/projects/update", s.handleUpdateProject) // YENİ: Güncelleme Rotası
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
-	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects) // YENİ: Sürükle-Bırak sıralama rotası
+	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
@@ -70,7 +71,65 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(liveProjects)
 }
 
-// handleAddProject dynamically adds a new project to the system and saves it to the config.
+// handleUpdateProject modifies an existing project's metadata and persists changes to disk.
+func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var updatedData config.Project
+	if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {
+		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Windows hayalet karakter ve dizin temizliği (Add ile aynı logic)
+	cleanPath := strings.TrimSpace(updatedData.Path)
+	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
+	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
+	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
+	updatedData.Path = cleanPath
+	updatedData.Tag = strings.TrimSpace(updatedData.Tag)
+
+	if updatedData.ID == "" || updatedData.Name == "" || updatedData.Path == "" {
+		http.Error(w, `{"error": "ID, Name, and Path are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	found := false
+	for i, p := range s.projects {
+		if p.ID == updatedData.ID {
+			// Sadece belirli alanları güncelle, Order ve ID'ye dokunma
+			s.projects[i].Name = updatedData.Name
+			s.projects[i].Path = updatedData.Path
+			s.projects[i].Command = updatedData.Command
+			s.projects[i].Interactive = updatedData.Interactive
+			s.projects[i].Tag = updatedData.Tag
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+		return
+	}
+
+	if err := config.SaveProjects("config.json", s.projects); err != nil {
+		log.Printf("[API] Update save error: %v", err)
+		http.Error(w, `{"error": "Failed to save configuration"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[API] Project updated: %s (ID: %s)", updatedData.Name, updatedData.ID)
+	w.WriteHeader(http.StatusOK)
+}
+
+// handleAddProject dynamically adds a new project to the system...
 func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -88,7 +147,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 	newProj.Path = cleanPath
-
 	newProj.Tag = strings.TrimSpace(newProj.Tag)
 
 	if newProj.Name == "" || newProj.Path == "" || newProj.Command == "" {
@@ -100,7 +158,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	newProj.Status = "stopped"
 
 	s.mu.Lock()
-	// Yeni eklenen proje otomatik olarak en sona eklenir
 	newProj.Order = len(s.projects)
 	s.projects = append(s.projects, newProj)
 	err := config.SaveProjects("config.json", s.projects)
@@ -113,13 +170,12 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[API] New project registered: %s (ID: %s)", newProj.Name, newProj.ID)
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newProj)
 }
 
-// handleDeleteProject gracefully stops (if running) and removes a project from the system.
+// handleDeleteProject gracefully stops and removes a project...
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -156,7 +212,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sıralamayı (Order) yeniden düzelt
 	for i := range updatedProjects {
 		updatedProjects[i].Order = i
 	}
@@ -171,10 +226,9 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Project deleted successfully"}`))
 }
 
-// handleReorderProjects accepts a new sequence of project IDs and updates the configuration.
+// handleReorderProjects accepts a new sequence of project IDs...
 func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -190,24 +244,20 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Projeleri hızlıca bulmak için bir harita oluştur
 	projectMap := make(map[string]config.Project)
 	for _, p := range s.projects {
 		projectMap[p.ID] = p
 	}
 
 	var reorderedProjects []config.Project
-
-	// Arayüzden gelen yeni ID sırasına göre projeleri diz
 	for index, id := range newOrderIDs {
 		if p, exists := projectMap[id]; exists {
 			p.Order = index
 			reorderedProjects = append(reorderedProjects, p)
-			delete(projectMap, id) // İşlenenleri listeden çıkar
+			delete(projectMap, id)
 		}
 	}
 
-	// Arayüzün yollamadığı (filtreli ekranda gizli kalan) projeleri listenin sonuna ekle
 	for _, p := range projectMap {
 		p.Order = len(reorderedProjects)
 		reorderedProjects = append(reorderedProjects, p)
@@ -221,14 +271,10 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[API] Projects reordered successfully")
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Projects reordered successfully"}`))
 }
 
-// handleStartProject starts a specific background process based on its ID.
+// handleStartProject starts a specific background process...
 func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -268,12 +314,10 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Project started successfully"}`))
 }
 
-// handleStopProject stops a specific background process based on its ID.
+// handleStopProject stops a specific background process...
 func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -292,7 +336,5 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Project stopped successfully"}`))
 }
