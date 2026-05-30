@@ -2,14 +2,14 @@ let projectToDelete = null;
 let currentTagFilter = null;
 let draggedRow = null;
 let availableTags = [];
-let cachedProjects = []; // Projeleri anlık düzenleme için bellekte tutuyoruz
+let cachedProjects = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     setInterval(updateStatuses, 2000);
     connectWebSocket();
-    initTagAutocomplete('projTag', 'tagDropdown'); // Add modal için
-    initTagAutocomplete('editProjTag', 'editTagDropdown'); // Edit modal için
+    initTagAutocomplete('projTag', 'tagDropdown'); 
+    initTagAutocomplete('editProjTag', 'editTagDropdown'); 
 });
 
 async function loadProjects() {
@@ -18,7 +18,7 @@ async function loadProjects() {
         if (!response.ok) throw new Error("API error");
         
         const projects = await response.json();
-        cachedProjects = projects; // Belleğe al
+        cachedProjects = projects;
         
         renderSidebarTags(projects);
 
@@ -48,8 +48,9 @@ async function loadProjects() {
             tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
-            const autoBadge = p.autoStart ? `<span class="ml-2 text-emerald-400" title="Auto-start Enabled">⚡</span>` : '';
-            
+            // YENİ: Auto-start aktifse ismin yanına şimşek emojisi koy
+            const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
+
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -59,7 +60,7 @@ async function loadProjects() {
                         ${p.name.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex flex-col">
-                        <div class="flex items-center">${p.name} ${tagBadge}</div>
+                        <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge}</div>
                     </div>
                 </td>
                 <td class="p-5 text-sm text-gray-400 font-mono text-xs truncate max-w-xs" title="${p.path}">
@@ -105,18 +106,9 @@ function handleDragStart(e) {
     setTimeout(() => this.classList.add('opacity-50'), 0);
 }
 
-function handleDragOver(e) {
-    e.preventDefault();
-    return false;
-}
-
-function handleDragEnter(e) {
-    if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500');
-}
-
-function handleDragLeave() {
-    this.classList.remove('border-t-2', 'border-indigo-500');
-}
+function handleDragOver(e) { e.preventDefault(); return false; }
+function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
+function handleDragLeave() { this.classList.remove('border-t-2', 'border-indigo-500'); }
 
 function handleDrop(e) {
     e.stopPropagation();
@@ -187,7 +179,7 @@ function renderSidebarTags(projects) {
 }
 
 /* =========================================
-   YENİ: EDIT PROJECT LOGIC
+   EDIT PROJECT LOGIC
 ========================================= */
 
 function openEditModal(id) {
@@ -200,7 +192,8 @@ function openEditModal(id) {
     document.getElementById('editProjCmd').value = project.command || '';
     document.getElementById('editProjTag').value = project.tag || '';
     document.getElementById('editProjInteractive').checked = project.interactive;
-    document.getElementById('editProjAutoStart').checked = project.autoStart || false;
+    // YENİ: Edit formunu açarken veritabanındaki durumu checkbox'a yansıt
+    document.getElementById('editProjAutoStart').checked = project.auto_start || false;
 
     const modal = document.getElementById('editModal');
     modal.classList.remove('hidden');
@@ -208,9 +201,7 @@ function openEditModal(id) {
 }
 
 function closeEditModal() {
-    const modal = document.getElementById('editModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    document.getElementById('editModal').classList.replace('flex', 'hidden');
 }
 
 async function submitEditProject(event) {
@@ -221,8 +212,8 @@ async function submitEditProject(event) {
         path: document.getElementById('editProjPath').value,
         command: document.getElementById('editProjCmd').value,
         tag: document.getElementById('editProjTag').value,
-        interactive: document.getElementById('editProjInteractive').checked
-        autoStart: document.getElementById('editProjAutoStart').checked
+        interactive: document.getElementById('editProjInteractive').checked,
+        auto_start: document.getElementById('editProjAutoStart').checked // YENİ: Güncel ayarı yakala
     };
 
     try {
@@ -234,7 +225,7 @@ async function submitEditProject(event) {
 
         if (response.ok) {
             closeEditModal();
-            loadProjects(); // Tabloyu ve Tagleri yenile
+            loadProjects(); 
         } else {
             const err = await response.json();
             alert("Update failed: " + err.error);
@@ -281,7 +272,7 @@ async function updateStatuses() {
         const response = await fetch('/api/projects');
         if (!response.ok) return;
         const projects = await response.json();
-        cachedProjects = projects; // Cache'i her saniye güncelle
+        cachedProjects = projects; 
 
         projects.forEach(p => {
             const badge = document.getElementById('status-' + p.id);
@@ -316,8 +307,8 @@ async function submitNewProject(e) {
         path: document.getElementById('projPath').value,
         command: document.getElementById('projCmd').value,
         tag: document.getElementById('projTag').value,
-        interactive: document.getElementById('projInteractive').checked
-        autoStart: document.getElementById('projAutoStart').checked
+        interactive: document.getElementById('projInteractive').checked,
+        auto_start: document.getElementById('projAutoStart').checked // YENİ
     };
     const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
     if (res.ok) { closeModal(); loadProjects(); }

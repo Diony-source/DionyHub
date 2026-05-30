@@ -19,10 +19,8 @@
                     <span class="flex items-center gap-2">📋 Board</span>
                     <svg id="board-chevron" class="w-4 h-4 transform transition-transform duration-200 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
-                <div id="tag-list" class="mt-2 space-y-1 pl-4 hidden overflow-hidden transition-all duration-300">
-                    </div>
+                <div id="tag-list" class="mt-2 space-y-1 pl-4 hidden overflow-hidden transition-all duration-300"></div>
             </div>
-            
             <a href="#" class="block px-6 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors mt-4">⚙️ Settings</a>
         </nav>
     </aside>
@@ -30,13 +28,11 @@
     <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
         <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm">
             <h2 class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
-            
             <div class="flex items-center gap-6">
                 <button onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Project
                 </button>
-
                 <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6">
                     System Status: 
                     <span class="relative flex h-3 w-3">
@@ -60,8 +56,7 @@
                             <th class="p-5 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="project-list">
-                        </tbody>
+                    <tbody id="project-list"></tbody>
                 </table>
             </div>
         </div>
@@ -115,6 +110,10 @@
                     <input type="checkbox" id="projInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
                     <label for="projInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
                 </div>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="projAutoStart" class="w-4 h-4 text-emerald-500 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2">
+                    <label for="projAutoStart" class="text-sm text-emerald-400/80">Auto-start project when DionyHub boots</label>
+                </div>
 
                 <div class="pt-6 flex gap-3">
                     <button type="button" onclick="closeModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
@@ -160,10 +159,9 @@
                     <input type="checkbox" id="editProjInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
                     <label for="editProjInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
                 </div>
-
-                <div class="flex items-center gap-3 pt-2">
-                    <input type="checkbox" id="projAutoStart" class="w-4 h-4 text-emerald-500 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2">
-                    <label for="projAutoStart" class="text-sm text-emerald-400/80">Auto-start project when DionyHub boots</label>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="editProjAutoStart" class="w-4 h-4 text-emerald-500 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2">
+                    <label for="editProjAutoStart" class="text-sm text-emerald-400/80">Auto-start project when DionyHub boots</label>
                 </div>
 
                 <div class="pt-6 flex gap-3">
@@ -182,7 +180,6 @@
                 </div>
                 <h3 class="text-xl font-bold text-gray-200 mb-2">Delete Project?</h3>
                 <p class="text-sm text-gray-400 mb-6">Are you sure you want to permanently remove this project? If it is currently running, it will be forcefully stopped.</p>
-                
                 <div class="flex gap-3">
                     <button onclick="closeDeleteModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
                     <button id="confirmDeleteBtn" class="flex-1 btn-action bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-red-500/50 shadow-lg shadow-red-900/20">Yes, Delete</button>
