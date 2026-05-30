@@ -13,39 +13,33 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================
-   YENİ: TOAST NOTIFICATION SYSTEM
+   TOAST NOTIFICATION SYSTEM
 ========================================= */
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     const toast = document.createElement('div');
-    
-    // Tema belirleme (Hata ise Kırmızı, Başarılı ise Yeşil)
     const bgColor = type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400';
     const icon = type === 'error'
         ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
         : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
 
-    // Glassmorphism ve kayma animasyonu (Tailwind)
     toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-md shadow-2xl transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto ${bgColor}`;
     toast.innerHTML = `${icon} <span class="text-sm font-medium drop-shadow-md">${message}</span>`;
 
     container.appendChild(toast);
 
-    // Animasyonu tetikle (Kayarak giriş)
-    setTimeout(() => {
-        toast.classList.remove('translate-x-full', 'opacity-0');
-    }, 10);
-
-    // 3 saniye sonra kayarak çıkış
+    setTimeout(() => toast.classList.remove('translate-x-full', 'opacity-0'), 10);
     setTimeout(() => {
         toast.classList.add('translate-x-full', 'opacity-0');
-        setTimeout(() => toast.remove(), 300); // DOM'dan sil
+        setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
-/* ========================================= */
 
+/* =========================================
+   PROJECT LOADING & RENDERING
+========================================= */
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
@@ -133,7 +127,6 @@ async function loadProjects() {
 /* =========================================
    DRAG & DROP LOGIC
 ========================================= */
-
 function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
 function handleDragOver(e) { e.preventDefault(); return false; }
 function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
@@ -205,7 +198,6 @@ function renderSidebarTags(projects) {
 /* =========================================
    EDIT PROJECT LOGIC
 ========================================= */
-
 function openEditModal(id) {
     const project = cachedProjects.find(p => p.id === id);
     if (!project) return;
@@ -286,7 +278,6 @@ function initTagAutocomplete(inputId, dropdownId) {
 /* =========================================
    CORE API & STATUS
 ========================================= */
-
 async function updateStatuses() {
     try {
         const response = await fetch('/api/projects');
@@ -370,19 +361,63 @@ async function executeDelete() {
     }
 }
 
+/* =========================================
+   YENİ: ENHANCED TERMINAL & WEBSOCKET
+========================================= */
 const terminalOutput = document.getElementById('terminal-output');
+
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
+    
+    socket.onopen = () => {
+        appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
+    };
+
     socket.onmessage = (e) => appendLog(e.data);
-    socket.onclose = () => setTimeout(connectWebSocket, 3000);
+    
+    socket.onclose = () => {
+        appendLog("=== Connection lost. Reconnecting in 3 seconds... ===", "text-rose-400");
+        setTimeout(connectWebSocket, 3000);
+    };
 }
-function appendLog(msg) {
+
+function appendLog(msg, forceColorClass = null) {
+    if (!terminalOutput) return;
+
     const lines = msg.split('\n');
+    // Yerel saati al (Örn: 14:05:32)
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
+
     lines.forEach(l => {
         if (!l.trim()) return;
-        const d = document.createElement('div'); d.className = 'text-green-400'; d.textContent = l;
-        terminalOutput.appendChild(d);
+        
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
+        
+        let textColor = forceColorClass || 'text-gray-300'; // Standart log rengi açık gri
+        
+        // Eğer özel bir renk zorlanmamışsa, kelime analizi yap
+        if (!forceColorClass) {
+            const lowerLine = l.toLowerCase();
+            if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
+                textColor = 'text-red-400';
+            } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
+                textColor = 'text-yellow-400';
+            } else if (lowerLine.includes('starting') || lowerLine.includes('listening') || lowerLine.includes('success')) {
+                textColor = 'text-emerald-400';
+            }
+        }
+
+        // HTML'i zaman damgası + mesaj olarak birleştir (shrink-0 ile damganın ezilmesini önlüyoruz)
+        lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
+        terminalOutput.appendChild(lineDiv);
     });
+    
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
-function clearTerminal() { terminalOutput.innerHTML = ''; }
+
+function clearTerminal() { 
+    terminalOutput.innerHTML = ''; 
+    appendLog("=== Terminal Cleared ===", "text-gray-500");
+}
