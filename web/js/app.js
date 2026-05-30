@@ -4,6 +4,9 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 
+// YENİ: Maksimum log limiti (Performans için)
+const MAX_LOG_LINES = 1000;
+
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     loadSettings();
@@ -410,7 +413,6 @@ async function updateStatuses() {
     } catch (e) {}
 }
 
-/* JSON OKUMA HATASI DÜZELTİLDİ: Sadece hata varsa json parse edilir */
 async function startProject(id, btn) { 
     const originalHTML = toggleButtonLoading(btn, true);
     try {
@@ -512,7 +514,7 @@ async function executeDelete() {
 }
 
 /* =========================================
-   ENHANCED TERMINAL & WEBSOCKET
+   ENHANCED TERMINAL & WEBSOCKET (OPTIMİZE EDİLDİ)
 ========================================= */
 const terminalOutput = document.getElementById('terminal-output');
 
@@ -529,6 +531,9 @@ function appendLog(msg, forceColorClass = null) {
     const lines = msg.split('\n');
     const now = new Date();
     const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
+
+    // YENİ: Toplu ekleme için Fragment kullanıyoruz
+    const fragment = document.createDocumentFragment();
 
     lines.forEach(l => {
         if (!l.trim()) return;
@@ -550,8 +555,16 @@ function appendLog(msg, forceColorClass = null) {
         }
 
         lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
-        terminalOutput.appendChild(lineDiv);
+        fragment.appendChild(lineDiv);
     });
+    
+    // Tek seferde DOM'a yaz (Performans)
+    terminalOutput.appendChild(fragment);
+
+    // YENİ: Maksimum log satırını sınırla (DOM Şişmesini/Kilitlenmesini Engelle)
+    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
+        terminalOutput.removeChild(terminalOutput.firstElementChild);
+    }
     
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
