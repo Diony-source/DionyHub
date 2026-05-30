@@ -33,8 +33,7 @@
             
             <div class="flex items-center gap-6">
                 <button onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Project
                 </button>
 
@@ -49,25 +48,22 @@
             </div>
         </header>
 
-        <div class="p-8">
+        <div class="p-8 pb-4">
             <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
-                   <thead>
+                    <thead>
                         <tr class="bg-gray-900/80 text-gray-400 text-sm border-b border-gray-700 uppercase tracking-wider">
                             <th class="p-5 font-medium w-1/4">Project Name</th>
                             <th class="p-5 font-medium w-1/4">Path</th>
                             <th class="p-5 font-medium w-1/6">Status</th>
-                            <th class="p-5 font-medium w-1/6">Usage</th> <th class="p-5 font-medium text-right">Actions</th>
+                            <th class="p-5 font-medium w-1/6">Usage</th>
+                            <th class="p-5 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="project-list">
                         </tbody>
                 </table>
             </div>
-        </div>
-        <div class="p-8 pb-4">
-            <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                </div>
         </div>
 
         <div class="p-8 pt-0 flex-1 flex flex-col min-h-[300px]">
@@ -109,7 +105,6 @@
                     <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                 </div>
 
-                <!-- GÜNCELLENDİ: Özel Tasarım (Premium) Otomatik Tamamlama Menüsü -->
                 <div class="relative">
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
                     <input type="text" id="projTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Bots, Utilities, Web">
@@ -124,6 +119,51 @@
                 <div class="pt-6 flex gap-3">
                     <button type="button" onclick="closeModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
                     <button type="submit" class="flex-1 btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-indigo-500/50 shadow-lg shadow-indigo-900/20">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-visible">
+            <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center rounded-t-xl">
+                <h3 class="text-lg font-semibold text-gray-200">Edit Project</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form id="editForm" class="p-6 space-y-4" onsubmit="submitEditProject(event)">
+                <input type="hidden" id="editProjId">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
+                    <input type="text" id="editProjName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
+                    <input type="text" id="editProjPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
+                    <input type="text" id="editProjCmd" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                </div>
+
+                <div class="relative">
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
+                    <input type="text" id="editProjTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <div id="editTagDropdown" class="w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-inner hidden max-h-40 overflow-y-auto divide-y divide-gray-700/50 transition-all duration-200"></div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <input type="checkbox" id="editProjInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
+                    <label for="editProjInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
+                </div>
+
+                <div class="pt-6 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
+                    <button type="submit" class="flex-1 btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-indigo-500/50 shadow-lg shadow-indigo-900/20">Update Changes</button>
                 </div>
             </form>
         </div>
