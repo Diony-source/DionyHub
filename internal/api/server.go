@@ -108,6 +108,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 			s.projects[i].Path = updatedData.Path
 			s.projects[i].Command = updatedData.Command
 			s.projects[i].Interactive = updatedData.Interactive
+			s.projects[i].AutoStart = updatedData.AutoStart
 			s.projects[i].Tag = updatedData.Tag
 			found = true
 			break

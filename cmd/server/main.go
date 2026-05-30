@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/Diony-source/DionyHub/internal/api"
 	"github.com/Diony-source/DionyHub/internal/config"
@@ -23,13 +24,9 @@ func main() {
 		log.Fatalf("Failed to load projects: %v", err)
 	}
 
-	// 1. WebSocket Yayıncısını oluştur
 	broadcaster := api.NewBroadcaster()
-
-	// 2. Çıktıları çokla (Hem terminale hem tarayıcıya)
 	multiOutput := io.MultiWriter(os.Stdout, broadcaster)
 
-	// 3. Yöneticilere dağıt
 	manager := process.NewManager(multiOutput)
 	apiServer := api.NewServer(manager, projects, broadcaster)
 
@@ -41,6 +38,26 @@ func main() {
 	log.Println("----------------------------------------")
 	log.Printf("Starting DionyHub Backend...")
 	log.Printf("Loaded %d projects from config", len(projects))
+
+	// YENİ: Auto-Start Döngüsü (Sunucu açılır açılmaz çalışacaklar)
+	autoStartCount := 0
+	for _, p := range projects {
+		if p.AutoStart {
+			autoStartCount++
+			parts := strings.Fields(p.Command)
+			if len(parts) > 0 {
+				log.Printf("[Auto-Start] Launching %s...", p.Name)
+				err := manager.Start(p.ID, p.Name, p.Path, p.Interactive, parts[0], parts[1:]...)
+				if err != nil {
+					log.Printf("[Auto-Start Error] Failed to launch %s: %v", p.Name, err)
+				}
+			}
+		}
+	}
+	if autoStartCount > 0 {
+		log.Printf("Successfully auto-started %d projects.", autoStartCount)
+	}
+
 	log.Printf("Listening on http://localhost%s", addr)
 	log.Println("----------------------------------------")
 

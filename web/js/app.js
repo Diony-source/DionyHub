@@ -48,7 +48,8 @@ async function loadProjects() {
             tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
-
+            const autoBadge = p.autoStart ? `<span class="ml-2 text-emerald-400" title="Auto-start Enabled">⚡</span>` : '';
+            
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -199,6 +200,7 @@ function openEditModal(id) {
     document.getElementById('editProjCmd').value = project.command || '';
     document.getElementById('editProjTag').value = project.tag || '';
     document.getElementById('editProjInteractive').checked = project.interactive;
+    document.getElementById('editProjAutoStart').checked = project.autoStart || false;
 
     const modal = document.getElementById('editModal');
     modal.classList.remove('hidden');
@@ -220,6 +222,7 @@ async function submitEditProject(event) {
         command: document.getElementById('editProjCmd').value,
         tag: document.getElementById('editProjTag').value,
         interactive: document.getElementById('editProjInteractive').checked
+        autoStart: document.getElementById('editProjAutoStart').checked
     };
 
     try {
@@ -314,6 +317,7 @@ async function submitNewProject(e) {
         command: document.getElementById('projCmd').value,
         tag: document.getElementById('projTag').value,
         interactive: document.getElementById('projInteractive').checked
+        autoStart: document.getElementById('projAutoStart').checked
     };
     const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
     if (res.ok) { closeModal(); loadProjects(); }

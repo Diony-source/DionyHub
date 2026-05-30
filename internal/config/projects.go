@@ -2,12 +2,12 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
+	"sync"
 )
 
-// Project represents the configuration for a single manageable application.
-// Project represents the configuration for a single manageable application.
+var mu sync.Mutex
+
 // Project represents the configuration for a single manageable application.
 type Project struct {
 	ID          string  `json:"id"`
@@ -15,48 +15,43 @@ type Project struct {
 	Path        string  `json:"path"`
 	Command     string  `json:"command"`
 	Interactive bool    `json:"interactive"`
+	AutoStart   bool    `json:"auto_start"` // YENİ: Otomatik başlatma bayrağı
 	Status      string  `json:"status"`
 	CPU         float64 `json:"cpu,omitempty"`
 	RAM         float64 `json:"ram,omitempty"`
-	Tag         string  `json:"tag,omitempty"`   // YENİ: Kategorizasyon için
-	Order       int     `json:"order,omitempty"` // YENİ: Sürükle-bırak sıralaması için
+	Tag         string  `json:"tag,omitempty"`
+	Order       int     `json:"order,omitempty"`
 }
 
-// projectConfig is a wrapper to match the JSON structure.
-type projectConfig struct {
-	Projects []Project `json:"projects"`
+// LoadProjects reads the project configurations from the given JSON file.
+func LoadProjects(filename string) ([]Project, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []Project{}, nil
+		}
+		return nil, err
+	}
+
+	var projects []Project
+	if err := json.Unmarshal(data, &projects); err != nil {
+		return nil, err
+	}
+	return projects, nil
 }
 
-// LoadProjects safely reads and parses the given JSON file.
-func LoadProjects(filePath string) ([]Project, error) {
-	file, err := os.ReadFile(filePath)
+// SaveProjects writes the project configurations to the given JSON file safely.
+func SaveProjects(filename string, projects []Project) error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	data, err := json.MarshalIndent(projects, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read projects file '%s': %w", filePath, err)
+		return err
 	}
 
-	var cfg projectConfig
-	if err := json.Unmarshal(file, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse projects JSON: %w", err)
-	}
-
-	return cfg.Projects, nil
-}
-
-// SaveProjects safely writes the current project list back to the JSON configuration file.
-func SaveProjects(filePath string, projects []Project) error {
-	cfg := projectConfig{Projects: projects}
-
-	// JSON'u okunabilir (girintili) formatta marshal et
-	data, err := json.MarshalIndent(cfg, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal projects to JSON: %w", err)
-	}
-
-	// Dosyayı standart izinlerle yaz (0644)
-	err = os.WriteFile(filePath, data, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write projects file '%s': %w", filePath, err)
-	}
-
-	return nil
+	return os.WriteFile(filename, data, 0644)
 }
