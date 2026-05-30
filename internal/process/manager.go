@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"sync"
 	"syscall"
+	"time" // YENİ: Hız sınırı (Ticker) için eklendi
 
 	"github.com/shirou/gopsutil/v3/process"
 )
@@ -39,11 +40,19 @@ func NewManager(output io.Writer) *Manager {
 // prefixLogger actively intercepts standard output/error, prepends the project name, and writes it.
 func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	scanner := bufio.NewScanner(r)
+
+	// YENİ: BACKPRESSURE (GERİ BASINÇ / FREN) MEKANİZMASI
+	// Bir programın saniyede okuyabileceği maksimum log satırını sınırlar (Örn: Saniyede max 100 satır).
+	// Eğer arka plandaki program çıldırıp sonsuz döngüye girerse, bu fren sayesinde
+	// pipe dolacak ve işletim sistemi o programı zorla yavaşlatacaktır (CPU spike'ı önlenir).
+	throttle := time.NewTicker(10 * time.Millisecond)
+	defer throttle.Stop()
+
 	for scanner.Scan() {
+		<-throttle.C // Ticker'ın süresi dolana kadar (10ms) burada bekler
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
 	}
 
-	// YENİ: Linter uyarısını çözen ve okuma sırasında oluşan olası hataları yakalayan güvenlik kontrolü
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
 	}
