@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================
-   YENİ: BUTTON LOADING STATE MANAGER
+   BUTTON LOADING STATE MANAGER
 ========================================= */
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
     if (!btn) return originalContent;
@@ -23,7 +23,6 @@ function toggleButtonLoading(btn, isLoading, originalContent = '') {
         const currentContent = btn.innerHTML;
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-not-allowed');
-        // Tailwind SVG Spinner
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 mx-auto inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
         return currentContent;
     } else {
@@ -179,7 +178,6 @@ async function loadProjects() {
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
-            // YENİ: startProject ve stopProject fonksiyonlarına "this" (butonun kendisi) referans olarak eklendi
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -213,7 +211,7 @@ async function loadProjects() {
                     </button>
 
                     <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Delete Project">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
@@ -412,15 +410,20 @@ async function updateStatuses() {
     } catch (e) {}
 }
 
+/* JSON OKUMA HATASI DÜZELTİLDİ: Sadece hata varsa json parse edilir */
 async function startProject(id, btn) { 
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        const data = await res.json();
-        if(!res.ok) showToast(data.error, "error");
-        else showToast("Project started", "success");
+        if (!res.ok) {
+            const data = await res.json();
+            showToast(data.error || "Failed to start", "error");
+        } else {
+            showToast("Project started", "success");
+        }
         updateStatuses(); 
     } catch (e) {
+        console.error("Start Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
@@ -431,11 +434,17 @@ async function stopProject(id, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-        const data = await res.json();
-        if(!res.ok && !data.error.includes("not currently running")) showToast(data.error, "error");
-        else if (res.ok) showToast("Project stopped", "success");
+        if (!res.ok) {
+            const data = await res.json();
+            if (!data.error.includes("not currently running")) {
+                showToast(data.error || "Failed to stop", "error");
+            }
+        } else {
+            showToast("Project stopped", "success");
+        }
         updateStatuses(); 
     } catch (e) {
+        console.error("Stop Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
