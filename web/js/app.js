@@ -6,7 +6,7 @@ let cachedProjects = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
-    loadSettings(); // YENİ: Başlangıçta ayarları sunucudan çek
+    loadSettings();
     setInterval(updateStatuses, 2000);
     connectWebSocket();
     initTagAutocomplete('projTag', 'tagDropdown'); 
@@ -15,7 +15,27 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================
-   SPA VIEW ROUTER & AKILLI AKORDEON
+   YENİ: BUTTON LOADING STATE MANAGER
+========================================= */
+function toggleButtonLoading(btn, isLoading, originalContent = '') {
+    if (!btn) return originalContent;
+    if (isLoading) {
+        const currentContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        // Tailwind SVG Spinner
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 mx-auto inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+        return currentContent;
+    } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btn.innerHTML = originalContent;
+        return '';
+    }
+}
+
+/* =========================================
+   SPA VIEW ROUTER
 ========================================= */
 function switchView(viewName) {
     const dashboardView = document.getElementById('dashboard-view');
@@ -27,12 +47,9 @@ function switchView(viewName) {
     const navSettings = document.getElementById('nav-settings');
 
     if (viewName === 'dashboard') {
-        // HATA ÇÖZÜMÜ: Eğer zaten dashboard görünümündeysek, Board butonuna 
-        // tıklanması akordeonun (taglerin) açılıp kapanmasını sağlamalıdır.
         if (!dashboardView.classList.contains('hidden')) {
             toggleBoard();
         }
-
         dashboardView.classList.remove('hidden');
         settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library";
@@ -52,7 +69,7 @@ function switchView(viewName) {
 }
 
 /* =========================================
-   YENİ: SETTINGS API BAĞLANTILARI
+   SETTINGS API
 ========================================= */
 async function loadSettings() {
     try {
@@ -60,7 +77,6 @@ async function loadSettings() {
         if (response.ok) {
             const settings = await response.json();
             document.getElementById('setting-workspace').value = settings.workspace || 'C:/DionyHub/apps';
-            // İleride logBuffer checkbox'ını da buraya bağlayacağız
         }
     } catch (e) {
         console.error("Failed to load settings:", e);
@@ -69,13 +85,11 @@ async function loadSettings() {
 
 async function saveSettings() {
     const btn = document.getElementById('save-settings-btn');
-    const originalText = btn.innerText;
-    btn.innerText = "Saving...";
-    btn.disabled = true;
+    const originalHTML = toggleButtonLoading(btn, true);
 
     const newSettings = {
         workspace: document.getElementById('setting-workspace').value,
-        log_buffer: true // Şimdilik varsayılan true
+        log_buffer: true
     };
 
     try {
@@ -94,8 +108,7 @@ async function saveSettings() {
     } catch (e) {
         showToast("Server error during save.", "error");
     } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        toggleButtonLoading(btn, false, originalHTML);
     }
 }
 
@@ -166,6 +179,7 @@ async function loadProjects() {
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
+            // YENİ: startProject ve stopProject fonksiyonlarına "this" (butonun kendisi) referans olarak eklendi
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -191,15 +205,15 @@ async function loadProjects() {
                     </div>
                 </td>
                 <td class="p-5 text-right space-x-2">
-                    <button onclick="startProject('${p.id}')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-3 py-1.5 rounded shadow-lg text-xs font-medium">Start</button>
-                    <button onclick="stopProject('${p.id}')" class="btn-action bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-1.5 rounded shadow-lg text-xs font-medium">Stop</button>
+                    <button onclick="startProject('${p.id}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
+                    <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                     
                     <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit Project">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     </button>
 
                     <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Delete Project">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
@@ -306,6 +320,9 @@ function closeEditModal() { document.getElementById('editModal').classList.add('
 
 async function submitEditProject(event) {
     event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    const originalHTML = toggleButtonLoading(btn, true);
+
     const updatedProject = {
         id: document.getElementById('editProjId').value,
         name: document.getElementById('editProjName').value,
@@ -333,6 +350,8 @@ async function submitEditProject(event) {
         }
     } catch (e) {
         showToast("Server error during update", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
     }
 }
 
@@ -393,20 +412,34 @@ async function updateStatuses() {
     } catch (e) {}
 }
 
-async function startProject(id) { 
-    const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-    const data = await res.json();
-    if(!res.ok) showToast(data.error, "error");
-    else showToast("Project started", "success");
-    updateStatuses(); 
+async function startProject(id, btn) { 
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
+        const data = await res.json();
+        if(!res.ok) showToast(data.error, "error");
+        else showToast("Project started", "success");
+        updateStatuses(); 
+    } catch (e) {
+        showToast("Network error", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
 }
 
-async function stopProject(id) { 
-    const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-    const data = await res.json();
-    if(!res.ok && !data.error.includes("not currently running")) showToast(data.error, "error");
-    else if (res.ok) showToast("Project stopped", "success");
-    updateStatuses(); 
+async function stopProject(id, btn) { 
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
+        const data = await res.json();
+        if(!res.ok && !data.error.includes("not currently running")) showToast(data.error, "error");
+        else if (res.ok) showToast("Project stopped", "success");
+        updateStatuses(); 
+    } catch (e) {
+        showToast("Network error", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
 }
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
@@ -414,6 +447,9 @@ function closeModal() { document.getElementById('addModal').classList.add('hidde
 
 async function submitNewProject(e) {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalHTML = toggleButtonLoading(btn, true);
+
     const data = {
         name: document.getElementById('projName').value,
         path: document.getElementById('projPath').value,
@@ -422,30 +458,47 @@ async function submitNewProject(e) {
         interactive: document.getElementById('projInteractive').checked,
         auto_start: document.getElementById('projAutoStart').checked
     };
-    const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-    if (res.ok) { 
-        closeModal(); 
-        loadProjects(); 
-        showToast("Project added successfully!", "success");
-    } else {
-        const err = await res.json();
-        showToast(err.error, "error");
+
+    try {
+        const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
+        if (res.ok) { 
+            closeModal(); 
+            loadProjects(); 
+            showToast("Project added successfully!", "success");
+        } else {
+            const err = await res.json();
+            showToast(err.error, "error");
+        }
+    } catch (err) {
+        showToast("Server connection failed.", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
     }
 }
 
-function openDeleteModal(id) { projectToDelete = id; document.getElementById('deleteModal').classList.replace('hidden', 'flex'); document.getElementById('confirmDeleteBtn').onclick = executeDelete; }
+function openDeleteModal(id) { projectToDelete = id; document.getElementById('deleteModal').classList.replace('hidden', 'flex'); }
 function closeDeleteModal() { document.getElementById('deleteModal').classList.replace('flex', 'hidden'); }
 
 async function executeDelete() { 
-    const res = await fetch(`/api/projects/delete?id=${projectToDelete}`, { method: 'DELETE' }); 
-    if(res.ok) {
-        closeDeleteModal(); 
-        loadProjects();
-        showToast("Project deleted", "success");
-    } else {
-        const data = await res.json();
-        showToast(data.error, "error");
+    const btn = document.getElementById('confirmDeleteBtn');
+    const originalHTML = toggleButtonLoading(btn, true);
+    
+    try {
+        const res = await fetch(`/api/projects/delete?id=${projectToDelete}`, { method: 'DELETE' }); 
+        if(res.ok) {
+            closeDeleteModal(); 
+            loadProjects();
+            showToast("Project deleted", "success");
+        } else {
+            const data = await res.json();
+            showToast(data.error, "error");
+            closeDeleteModal();
+        }
+    } catch (err) {
+        showToast("Failed to delete project", "error");
         closeDeleteModal();
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
     }
 }
 
