@@ -83,29 +83,24 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            
             <form id="addForm" class="p-6 space-y-4" onsubmit="submitNewProject(event)">
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
                     <input type="text" id="projName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
                 </div>
-                
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
                     <input type="text" id="projPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="C:/Users/Diony/Desktop/bot">
                 </div>
-
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
                     <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                 </div>
-
                 <div class="relative">
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
                     <input type="text" id="projTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Bots, Utilities, Web">
                     <div id="tagDropdown" class="w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-inner hidden max-h-40 overflow-y-auto divide-y divide-gray-700/50 transition-all duration-200"></div>
                 </div>
-
                 <div class="flex items-center gap-3 pt-2">
                     <input type="checkbox" id="projInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
                     <label for="projInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
@@ -114,7 +109,6 @@
                     <input type="checkbox" id="projAutoStart" class="w-4 h-4 text-emerald-500 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2">
                     <label for="projAutoStart" class="text-sm text-emerald-400/80">Auto-start project when DionyHub boots</label>
                 </div>
-
                 <div class="pt-6 flex gap-3">
                     <button type="button" onclick="closeModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
                     <button type="submit" class="flex-1 btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-indigo-500/50 shadow-lg shadow-indigo-900/20">Save Project</button>
@@ -131,30 +125,25 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            
             <form id="editForm" class="p-6 space-y-4" onsubmit="submitEditProject(event)">
                 <input type="hidden" id="editProjId">
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
                     <input type="text" id="editProjName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                 </div>
-                
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
                     <input type="text" id="editProjPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                 </div>
-
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
                     <input type="text" id="editProjCmd" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                 </div>
-
                 <div class="relative">
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
                     <input type="text" id="editProjTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
                     <div id="editTagDropdown" class="w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-inner hidden max-h-40 overflow-y-auto divide-y divide-gray-700/50 transition-all duration-200"></div>
                 </div>
-
                 <div class="flex items-center gap-3 pt-2">
                     <input type="checkbox" id="editProjInteractive" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-2">
                     <label for="editProjInteractive" class="text-sm text-gray-300">Requires Interactive Terminal (Windows CMD)</label>
@@ -163,7 +152,6 @@
                     <input type="checkbox" id="editProjAutoStart" class="w-4 h-4 text-emerald-500 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2">
                     <label for="editProjAutoStart" class="text-sm text-emerald-400/80">Auto-start project when DionyHub boots</label>
                 </div>
-
                 <div class="pt-6 flex gap-3">
                     <button type="button" onclick="closeEditModal()" class="flex-1 btn-action bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium border border-gray-600">Cancel</button>
                     <button type="submit" class="flex-1 btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium border border-indigo-500/50 shadow-lg shadow-indigo-900/20">Update Changes</button>
@@ -187,6 +175,8 @@
             </div>
         </div>
     </div>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="/js/app.js"></script>
 </body>

@@ -12,6 +12,40 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
 });
 
+/* =========================================
+   YENİ: TOAST NOTIFICATION SYSTEM
+========================================= */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    
+    // Tema belirleme (Hata ise Kırmızı, Başarılı ise Yeşil)
+    const bgColor = type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400';
+    const icon = type === 'error'
+        ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+        : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+
+    // Glassmorphism ve kayma animasyonu (Tailwind)
+    toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-md shadow-2xl transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto ${bgColor}`;
+    toast.innerHTML = `${icon} <span class="text-sm font-medium drop-shadow-md">${message}</span>`;
+
+    container.appendChild(toast);
+
+    // Animasyonu tetikle (Kayarak giriş)
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full', 'opacity-0');
+    }, 10);
+
+    // 3 saniye sonra kayarak çıkış
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 300); // DOM'dan sil
+    }, 3000);
+}
+/* ========================================= */
+
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
@@ -48,7 +82,6 @@ async function loadProjects() {
             tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
-            // YENİ: Auto-start aktifse ismin yanına şimşek emojisi koy
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
             tr.innerHTML = `
@@ -93,6 +126,7 @@ async function loadProjects() {
         updateStatuses();
     } catch (error) {
         console.error("Load error:", error);
+        showToast("Cannot connect to server.", "error");
     }
 }
 
@@ -100,16 +134,10 @@ async function loadProjects() {
    DRAG & DROP LOGIC
 ========================================= */
 
-function handleDragStart(e) {
-    draggedRow = this;
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => this.classList.add('opacity-50'), 0);
-}
-
+function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
 function handleDragOver(e) { e.preventDefault(); return false; }
 function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
 function handleDragLeave() { this.classList.remove('border-t-2', 'border-indigo-500'); }
-
 function handleDrop(e) {
     e.stopPropagation();
     this.classList.remove('border-t-2', 'border-indigo-500');
@@ -124,26 +152,22 @@ function handleDrop(e) {
     }
     return false;
 }
-
-function handleDragEnd() {
-    this.classList.remove('opacity-50');
-    document.querySelectorAll('#project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500'));
-}
+function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
 
 async function saveNewOrder() {
     const tbody = document.getElementById('project-list');
     const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
-    await fetch('/api/projects/reorder', {
+    const res = await fetch('/api/projects/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newOrderIDs)
     });
+    if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
 }
 
 /* =========================================
    SIDEBAR & TAGS
 ========================================= */
-
 function toggleBoard() {
     const list = document.getElementById('tag-list');
     const chevron = document.getElementById('board-chevron');
@@ -185,14 +209,12 @@ function renderSidebarTags(projects) {
 function openEditModal(id) {
     const project = cachedProjects.find(p => p.id === id);
     if (!project) return;
-
     document.getElementById('editProjId').value = project.id;
     document.getElementById('editProjName').value = project.name;
     document.getElementById('editProjPath').value = project.path;
     document.getElementById('editProjCmd').value = project.command || '';
     document.getElementById('editProjTag').value = project.tag || '';
     document.getElementById('editProjInteractive').checked = project.interactive;
-    // YENİ: Edit formunu açarken veritabanındaki durumu checkbox'a yansıt
     document.getElementById('editProjAutoStart').checked = project.auto_start || false;
 
     const modal = document.getElementById('editModal');
@@ -200,9 +222,7 @@ function openEditModal(id) {
     modal.classList.add('flex');
 }
 
-function closeEditModal() {
-    document.getElementById('editModal').classList.replace('flex', 'hidden');
-}
+function closeEditModal() { document.getElementById('editModal').classList.replace('flex', 'hidden'); }
 
 async function submitEditProject(event) {
     event.preventDefault();
@@ -213,7 +233,7 @@ async function submitEditProject(event) {
         command: document.getElementById('editProjCmd').value,
         tag: document.getElementById('editProjTag').value,
         interactive: document.getElementById('editProjInteractive').checked,
-        auto_start: document.getElementById('editProjAutoStart').checked // YENİ: Güncel ayarı yakala
+        auto_start: document.getElementById('editProjAutoStart').checked
     };
 
     try {
@@ -226,19 +246,19 @@ async function submitEditProject(event) {
         if (response.ok) {
             closeEditModal();
             loadProjects(); 
+            showToast("Project updated successfully!", "success");
         } else {
             const err = await response.json();
-            alert("Update failed: " + err.error);
+            showToast(err.error, "error");
         }
     } catch (e) {
-        console.error("Update error:", e);
+        showToast("Server error during update", "error");
     }
 }
 
 /* =========================================
    PREMIUM AUTOCOMPLETE
 ========================================= */
-
 function initTagAutocomplete(inputId, dropdownId) {
     const input = document.getElementById(inputId);
     const dropdown = document.getElementById(dropdownId);
@@ -294,8 +314,21 @@ async function updateStatuses() {
     } catch (e) {}
 }
 
-async function startProject(id) { await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); updateStatuses(); }
-async function stopProject(id) { await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); updateStatuses(); }
+async function startProject(id) { 
+    const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
+    const data = await res.json();
+    if(!res.ok) showToast(data.error, "error");
+    else showToast("Project started", "success");
+    updateStatuses(); 
+}
+
+async function stopProject(id) { 
+    const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
+    const data = await res.json();
+    if(!res.ok && !data.error.includes("not currently running")) showToast(data.error, "error");
+    else if (res.ok) showToast("Project stopped", "success");
+    updateStatuses(); 
+}
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
 function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); document.getElementById('addForm').reset(); }
@@ -308,15 +341,34 @@ async function submitNewProject(e) {
         command: document.getElementById('projCmd').value,
         tag: document.getElementById('projTag').value,
         interactive: document.getElementById('projInteractive').checked,
-        auto_start: document.getElementById('projAutoStart').checked // YENİ
+        auto_start: document.getElementById('projAutoStart').checked
     };
     const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-    if (res.ok) { closeModal(); loadProjects(); }
+    if (res.ok) { 
+        closeModal(); 
+        loadProjects(); 
+        showToast("Project added successfully!", "success");
+    } else {
+        const err = await res.json();
+        showToast(err.error, "error");
+    }
 }
 
 function openDeleteModal(id) { projectToDelete = id; document.getElementById('deleteModal').classList.replace('hidden', 'flex'); document.getElementById('confirmDeleteBtn').onclick = executeDelete; }
 function closeDeleteModal() { document.getElementById('deleteModal').classList.replace('flex', 'hidden'); }
-async function executeDelete() { await fetch(`/api/projects/delete?id=${projectToDelete}`, { method: 'DELETE' }); closeDeleteModal(); loadProjects(); }
+
+async function executeDelete() { 
+    const res = await fetch(`/api/projects/delete?id=${projectToDelete}`, { method: 'DELETE' }); 
+    if(res.ok) {
+        closeDeleteModal(); 
+        loadProjects();
+        showToast("Project deleted", "success");
+    } else {
+        const data = await res.json();
+        showToast(data.error, "error");
+        closeDeleteModal();
+    }
+}
 
 const terminalOutput = document.getElementById('terminal-output');
 function connectWebSocket() {
