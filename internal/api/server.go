@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os" // YENİ: İşletim sistemi dosya kontrolleri için eklendi
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +41,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
-	mux.HandleFunc("/api/settings", s.handleSettings) // YENİ: Ayarlar API Rotası
+	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
@@ -77,8 +78,7 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
-// --- Aşağıdaki mevcut fonksiyonlar değişmedi ---
-
+// handleGetProjects returns the list of projects combined with their LIVE running status.
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -106,6 +106,7 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(liveProjects)
 }
 
+// handleUpdateProject modifies an existing project's metadata and checks directory existence.
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -127,6 +128,13 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	if updatedData.ID == "" || updatedData.Name == "" || updatedData.Path == "" {
 		http.Error(w, `{"error": "ID, Name, and Path are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// YENİ: KLASÖR DOĞRULAMA (VALIDATION)
+	// Klasör gerçekten işletim sisteminde var mı ve bir dizin mi (dosya değil)?
+	if info, err := os.Stat(updatedData.Path); os.IsNotExist(err) || !info.IsDir() {
+		http.Error(w, `{"error": "The specified Path does not exist or is not a valid directory"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -162,6 +170,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleAddProject dynamically adds a new project after validating the directory.
 func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -186,6 +195,13 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// YENİ: KLASÖR DOĞRULAMA (VALIDATION)
+	// Kullanıcının girdiği yol (path) eğer bilgisayarda yoksa kaydı reddet.
+	if info, err := os.Stat(newProj.Path); os.IsNotExist(err) || !info.IsDir() {
+		http.Error(w, `{"error": "The specified Path does not exist or is not a valid directory"}`, http.StatusBadRequest)
+		return
+	}
+
 	newProj.ID = fmt.Sprintf("%d", time.Now().UnixMilli())
 	newProj.Status = "stopped"
 
@@ -207,6 +223,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newProj)
 }
 
+// handleDeleteProject gracefully stops and removes a project.
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -259,6 +276,7 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleReorderProjects accepts a new sequence of project IDs and updates the configuration.
 func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -304,6 +322,7 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleStartProject starts a specific background process.
 func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -346,6 +365,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleStopProject stops a specific background process.
 func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
