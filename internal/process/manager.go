@@ -1,18 +1,19 @@
-// Package process handles the lifecycle, execution, and monitoring of background applications.
+// Package process handles the lifecycle of OS-level processes.
 package process
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"runtime"
 	"sync"
+	"syscall"
 
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// Process represents a single background application managed by DionyHub.
+// Process holds the internal state and metadata of a running application.
 type Process struct {
 	ID      string
 	Name    string
@@ -20,54 +21,68 @@ type Process struct {
 	Running bool
 }
 
-// Manager holds the state of all running processes.
+// Manager orchestrates the execution, tracking, and termination of processes.
 type Manager struct {
-	mu           sync.RWMutex
-	processes    map[string]*Process
-	GlobalOutput io.Writer // YENİ: Tüm logların akacağı ana kanal
+	mu        sync.RWMutex
+	processes map[string]*Process
+	output    io.Writer
 }
 
-// NewManager initializes and returns a new thread-safe process manager.
-func NewManager(out io.Writer) *Manager {
+// NewManager creates a new Process Manager linked to a specific log output destination.
+func NewManager(output io.Writer) *Manager {
 	return &Manager{
-		processes:    make(map[string]*Process),
-		GlobalOutput: out, // YENİ
+		processes: make(map[string]*Process),
+		output:    output,
 	}
 }
 
-// Start initiates a new process. If interactive, it natively spawns a new visible Windows terminal.
-func (m *Manager) Start(id, name, workDir string, interactive bool, commandName string, args ...string) error {
+// prefixLogger actively intercepts standard output/error, prepends the project name, and writes it.
+func (m *Manager) prefixLogger(projectName string, r io.Reader) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		// YENİ: Her log satırının başına [Proje Adı] etiketini ekliyoruz.
+		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
+	}
+}
+
+// Start spawns a new OS process. If interactive, it attempts to spawn a visible terminal.
+func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if p, exists := m.processes[id]; exists && p.Running {
-		return fmt.Errorf("process '%s' is already running", name)
+		return errors.New("process is already running")
 	}
 
 	var cmd *exec.Cmd
-
-	if interactive && runtime.GOOS == "windows" {
-		fullArgs := []string{"/C", "start", "/WAIT", "", commandName}
-		fullArgs = append(fullArgs, args...)
-		cmd = exec.Command("cmd", fullArgs...)
+	if interactive {
+		// Windows specific interactive mode (opens a new terminal outside DionyHub)
+		cmdArgs := append([]string{"/c", "start", nameCmd}, args...)
+		cmd = exec.Command("cmd", cmdArgs...)
+		cmd.Dir = path
 	} else {
-		cmd = exec.Command(commandName, args...)
+		cmd = exec.Command(nameCmd, args...)
+		cmd.Dir = path
 
-		// YENİ: Çıktıları hem terminale hem de arayüze (WebSocket) yolluyoruz
-		if m.GlobalOutput != nil {
-			cmd.Stdout = m.GlobalOutput
-			cmd.Stderr = m.GlobalOutput
-		} else {
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
+		// YENİ: Çıktıları doğrudan bağlamak yerine Scanner'a yönlendir
+		stdout, err := cmd.StdoutPipe()
+		if err == nil {
+			go m.prefixLogger(name, stdout)
+		}
+
+		stderr, err := cmd.StderrPipe()
+		if err == nil {
+			go m.prefixLogger(name, stderr)
 		}
 	}
 
-	cmd.Dir = workDir
+	// YENİ: Windows'ta arka plan süreçlerinin komut istemi pencerelerini (CMD) gizle
+	if !interactive {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 
-	err := cmd.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start process '%s': %w", name, err)
+	if err := cmd.Start(); err != nil {
+		return err
 	}
 
 	m.processes[id] = &Process{
@@ -77,93 +92,68 @@ func (m *Manager) Start(id, name, workDir string, interactive bool, commandName 
 		Running: true,
 	}
 
-	// /WAIT parametresi sayesinde etkileşimli pencereler de dahil tüm süreçleri takip edebiliriz.
-	go m.monitor(id)
+	// Background routine to wait for the process to finish and update its status
+	go func() {
+		cmd.Wait()
+		m.mu.Lock()
+		if p, exists := m.processes[id]; exists {
+			p.Running = false
+		}
+		m.mu.Unlock()
+	}()
 
 	return nil
 }
 
-// Stop gracefully terminates a running background process AND its children.
+// Stop forcefully terminates a running process by its ID.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	p, exists := m.processes[id]
-	if !exists || !p.Running {
-		return fmt.Errorf("process with ID '%s' is not currently running", id)
+	m.mu.Unlock()
+
+	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {
+		return errors.New("process is not currently running")
 	}
 
-	var err error
-	if runtime.GOOS == "windows" {
-		// Taskkill /T (Tree) parametresi cmd.exe'yi, start komutunu ve içindeki uygulamayı kökten temizler.
-		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(p.Cmd.Process.Pid))
-		err = killCmd.Run()
-	} else {
-		err = p.Cmd.Process.Kill()
-	}
-
+	err := p.Cmd.Process.Kill()
 	if err != nil {
-		return fmt.Errorf("failed to stop process tree '%s': %w", p.Name, err)
+		return err
 	}
 
+	m.mu.Lock()
 	p.Running = false
+	m.mu.Unlock()
+
 	return nil
 }
 
-// monitor waits for the OS process to finish and updates the internal state.
-func (m *Manager) monitor(id string) {
-	m.mu.RLock()
-	p, exists := m.processes[id]
-	m.mu.RUnlock()
-
-	if !exists {
-		return
-	}
-
-	err := p.Cmd.Wait()
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	p.Running = false
-	if err != nil {
-		fmt.Printf("[MONITOR] Process '%s' exited/stopped.\n", p.Name)
-	} else {
-		fmt.Printf("[MONITOR] Process '%s' finished execution successfully.\n", p.Name)
-	}
-}
-
-// IsRunning safely checks the current live status of a process.
+// IsRunning checks the live status of a process.
 func (m *Manager) IsRunning(id string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-
 	p, exists := m.processes[id]
 	return exists && p.Running
 }
 
+// GetStats returns the live CPU and RAM usage of the given process ID.
 func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
 	m.mu.RUnlock()
 
-	// Eğer süreç yoksa, çalışmıyorsa veya PID atanmamışsa 0 dön
 	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {
 		return 0, 0
 	}
 
-	// PID (Process ID) üzerinden işletim sisteminden süreci yakala
 	proc, err := process.NewProcess(int32(p.Cmd.Process.Pid))
 	if err != nil {
 		return 0, 0
 	}
 
-	// CPU ve RAM tüketimini çek
 	cpuPercent, _ := proc.CPUPercent()
 	memInfo, _ := proc.MemoryInfo()
 
 	if memInfo != nil {
-		// RAM değerini Byte'dan Megabyte'a (MB) çevir
 		ram = float64(memInfo.RSS) / (1024 * 1024)
 	}
 
