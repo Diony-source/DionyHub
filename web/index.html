@@ -6,15 +6,25 @@
     <title>DionyHub | Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* YENİ: PREMIUM SCROLLBAR TASARIMI */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+
+        /* YENİ: PREFIX İÇİN GİZLİ SCROLL (Görünmez ama kaydırılabilir) */
+        .prefix-scroll::-webkit-scrollbar { display: none; }
+        .prefix-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden relative">
 
-    <!-- SOL MENÜ -->
-    <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10">
-        <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
+    <aside class="w-64 min-w-[240px] max-w-[500px] resize-x overflow-hidden bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10 shrink-0 relative">
+        <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50 shrink-0">
             <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md cursor-pointer" onclick="switchView('dashboard')">DionyHub</span>
         </div>
-        <nav class="flex-1 px-4 py-6 space-y-2">
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <div class="px-2">
                 <button id="nav-dashboard" onclick="switchView('dashboard')" class="w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors hover:bg-gray-700/80 group">
                     <span class="flex items-center gap-2">📋 Board</span>
@@ -28,18 +38,18 @@
                 </button>
             </div>
         </nav>
+        <div class="absolute right-0 top-1/2 bottom-1/2 w-1 h-12 bg-gray-600/30 rounded-full cursor-col-resize pointer-events-none transform -translate-y-1/2"></div>
     </aside>
 
-    <!-- ANA İÇERİK -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#0f1115]">
         <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm shrink-0">
             <h2 id="view-title" class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
             <div class="flex items-center gap-6">
-                <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
+                <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Project
                 </button>
-                <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6">
+                <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6 shrink-0">
                     System Status: 
                     <span class="relative flex h-3 w-3">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -50,11 +60,10 @@
             </div>
         </header>
 
-        <!-- DASHBOARD VIEW -->
-        <div id="dashboard-view" class="flex flex-col flex-1 min-h-0">
+        <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
             <div class="p-8 pb-4">
-                <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                    <table class="w-full text-left border-collapse">
+                <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr class="bg-gray-900/80 text-gray-400 text-sm border-b border-gray-700 uppercase tracking-wider">
                                 <th class="p-5 font-medium w-1/4">Project Name</th>
@@ -68,9 +77,10 @@
                     </table>
                 </div>
             </div>
-            <div class="p-8 pt-0 flex-1 flex flex-col min-h-[250px]">
-                <div class="bg-[#0a0a0c] rounded-xl border border-gray-700 shadow-xl flex-1 flex flex-col overflow-hidden">
-                    <header class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
+            
+            <div class="px-8 pb-8 pt-0 flex flex-col items-center">
+                <div class="bg-[#0a0a0c] rounded-xl border border-gray-700 shadow-xl flex flex-col overflow-hidden w-full resize-y min-h-[200px] h-[300px]">
+                    <header class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center shrink-0 cursor-row-resize" title="Drag corner to resize">
                         <span class="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center gap-2">
                             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 18h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             Live Terminal
@@ -82,7 +92,6 @@
             </div>
         </div>
 
-        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden p-8 max-w-2xl w-full mx-auto space-y-6">
             <div class="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl shadow-xl p-6 space-y-6">
                 <div>
@@ -112,7 +121,6 @@
         </div>
     </main>
 
-    <!-- YENİLENMİŞ ADD MODAL (GITHUB DESTEĞİ İLE) -->
     <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-visible">
             <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center rounded-t-xl">
@@ -123,7 +131,6 @@
             </div>
             
             <form id="addForm" class="p-6 space-y-4" onsubmit="submitNewProject(event)">
-                <!-- MODE SELECTOR -->
                 <div class="flex gap-6 border-b border-gray-700/80 pb-4">
                     <label class="flex items-center gap-2 cursor-pointer group">
                         <input type="radio" name="sourceMode" value="local" checked class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 focus:ring-indigo-500 cursor-pointer" onchange="toggleSourceMode()">
@@ -138,7 +145,6 @@
                     </label>
                 </div>
 
-                <!-- LOCAL FLOW WRAPPER -->
                 <div id="localFlowWrapper" class="space-y-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
@@ -152,14 +158,14 @@
                                 <label for="useWorkspace" class="text-xs font-medium text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors">Use Global Workspace</label>
                             </div>
                         </div>
-                        <div class="flex shadow-inner rounded-md">
-                            <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center overflow-hidden max-w-[150px] truncate" title="Global Workspace Path"></span>
-                            <input type="text" id="projPath" class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="folder_name">
+                        
+                        <div class="flex shadow-inner rounded-md w-full">
+                            <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center whitespace-nowrap overflow-x-auto prefix-scroll max-w-[60%] shrink-0" title="Global Workspace Path"></span>
+                            <input type="text" id="projPath" class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors min-w-0" placeholder="folder_name">
                         </div>
                     </div>
                 </div>
 
-                <!-- GITHUB FLOW WRAPPER -->
                 <div id="githubFlowWrapper" class="space-y-4 hidden">
                     <div>
                         <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Repository HTTPS URL</label>
@@ -168,7 +174,6 @@
                     </div>
                 </div>
 
-                <!-- ORTAK ALANLAR -->
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
                     <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
@@ -194,7 +199,6 @@
         </div>
     </div>
 
-    <!-- EDIT MODAL (Değişmedi) -->
     <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-visible">
             <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center rounded-t-xl">
@@ -238,7 +242,6 @@
         </div>
     </div>
 
-    <!-- DELETE MODAL (Değişmedi) -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden transform transition-all">
             <div class="p-6 text-center">
