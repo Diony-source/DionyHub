@@ -4,10 +4,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -39,7 +41,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
-	mux.HandleFunc("/api/projects/clone", s.handleCloneProject) // YENİ: GitHub Klonlama Rotası
+	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
+	mux.HandleFunc("/api/projects/env", s.handleProjectEnv) // YENİ: .env Okuma/Yazma Rotası
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
@@ -221,7 +224,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newProj)
 }
 
-// YENİ: GITHUB CLONE & RUN MOTORU (Hata Yakalaması Güçlendirildi)
 func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -247,20 +249,16 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// URL'den Depo (Repo) ismini çıkart (Örn: https://github.com/user/repo.git -> repo)
 	parts := strings.Split(req.RepoURL, "/")
 	repoName := parts[len(parts)-1]
 	repoName = strings.TrimSuffix(repoName, ".git")
 
-	// Global Workspace Yolunu Al
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
 		http.Error(w, `{"error": "Global Workspace is not configured. Please define it in Settings first."}`, http.StatusBadRequest)
 		return
 	}
 
-	// 1. DÜZELTME: Klonlamadan önce ana Workspace klasörünün (Örn: C:/DionyHub/apps) kesinlikle var olduğundan emin ol.
-	// Eğer yoksa, klasörü oluştur!
 	if err := os.MkdirAll(settings.Workspace, 0755); err != nil {
 		http.Error(w, `{"error": "Failed to create Global Workspace parent directory"}`, http.StatusInternalServerError)
 		return
@@ -269,21 +267,17 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	destPath := settings.Workspace + "/" + repoName
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
-	// Klasör zaten var mı kontrol et
 	if _, err := os.Stat(destPath); !os.IsNotExist(err) {
 		http.Error(w, `{"error": "Directory already exists in Workspace. Delete the existing folder first."}`, http.StatusBadRequest)
 		return
 	}
 
 	log.Printf("[API] Cloning repository %s into %s", req.RepoURL, destPath)
-
-	// 2. DÜZELTME: Git komutunun çıktılarını (Log ve Hataları) yakala!
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
 		log.Printf("[API] Git clone failed: %v\nOutput: %s", err, string(output))
-		// Git'in fırlattığı gerçek hatayı temizle ve arayüze (Toast) gönder
 		errMsg := strings.TrimSpace(string(output))
 		errMsg = strings.ReplaceAll(errMsg, "\n", " | ")
 		errMsg = strings.ReplaceAll(errMsg, "\"", "'")
@@ -294,7 +288,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Klonlama %100 başarılı olduysa projeyi sisteme kaydet
 	newProj := config.Project{
 		ID:          fmt.Sprintf("%d", time.Now().UnixMilli()),
 		Name:        repoName,
@@ -330,7 +323,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.URL.Query().Get("id")
-	// YENİ: API'den gelen remove_files komutunu al
 	removeFiles := r.URL.Query().Get("remove_files") == "true"
 
 	if id == "" {
@@ -352,7 +344,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	for _, p := range s.projects {
 		if p.ID == id {
 			found = true
-			// Silinecek projenin kopyasını al ki yolunu (Path) bilelim
 			projCopy := p
 			projectToDelete = &projCopy
 		} else {
@@ -365,12 +356,10 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Eğer kullanıcı dosyaları da silmek istediyse, işletim sisteminden kalıcı olarak uçur!
 	if removeFiles && projectToDelete != nil {
 		log.Printf("[API] Permanently removing directory from disk: %s", projectToDelete.Path)
 		if err := os.RemoveAll(projectToDelete.Path); err != nil {
 			log.Printf("[API] Warning: Failed to forcefully remove directory %s: %v", projectToDelete.Path, err)
-			// Hata olsa bile devam et, en azından veritabanından silelim
 		}
 	}
 
@@ -474,4 +463,72 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// YENİ: .ENV DOSYASI OKUMA VE YAZMA İŞLEMLERİ
+func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	s.mu.RLock()
+	var targetPath string
+	for _, p := range s.projects {
+		if p.ID == id {
+			targetPath = p.Path
+			break
+		}
+	}
+	s.mu.RUnlock()
+
+	if targetPath == "" {
+		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+		return
+	}
+
+	envFile := filepath.Join(targetPath, ".env")
+
+	// OKUMA (GET)
+	if r.Method == http.MethodGet {
+		content, err := ioutil.ReadFile(envFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// Dosya yoksa boş döndür, hata verme
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{"content": ""}`))
+				return
+			}
+			http.Error(w, `{"error": "Failed to read .env file"}`, http.StatusInternalServerError)
+			return
+		}
+
+		response := map[string]string{"content": string(content)}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// YAZMA (POST)
+	if r.Method == http.MethodPost {
+		var req struct {
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+			return
+		}
+
+		if err := ioutil.WriteFile(envFile, []byte(req.Content), 0644); err != nil {
+			http.Error(w, `{"error": "Failed to write .env file"}`, http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("[API] .env file updated for project ID: %s", id)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
