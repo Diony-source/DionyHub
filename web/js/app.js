@@ -187,7 +187,6 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// YENİ: .ENV MODAL VE API İŞLEMLERİ
 async function openEnvModal(id) {
     const project = cachedProjects.find(p => p.id === id);
     if (!project) return;
@@ -288,7 +287,7 @@ async function loadProjects() {
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
-            // YENİ: ENV butonu Actions tablosuna eklendi
+            // GÜNCELLENDİ: Actions tablosu görsel hiyerarşiye göre tasarlandı
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -313,19 +312,30 @@ async function loadProjects() {
                         <span>RAM: --</span>
                     </div>
                 </td>
-                <td class="p-5 text-right space-x-2 whitespace-nowrap">
-                    <button onclick="startProject('${p.id}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
-                    <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
-                    
-                    <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit Project">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    </button>
-                    
-                    <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-600 text-gray-300 hover:text-white px-2 py-1.5 rounded transition-colors font-mono text-[10px] font-bold tracking-widest border border-transparent hover:border-teal-500/30" title="Edit .env Variables">ENV</button>
+                
+                <td class="p-5">
+                    <div class="flex items-center justify-end gap-3 whitespace-nowrap">
+                        
+                        <div class="flex items-center gap-2 border-r border-gray-700 pr-3">
+                            <button onclick="startProject('${p.id}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
+                            <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5">
+                            
+                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit .env Variables">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </button>
 
-                    <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Delete Project">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                            <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit Project">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+
+                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Delete Project">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
