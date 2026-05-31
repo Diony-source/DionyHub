@@ -7,15 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        /* YENİ: PREMIUM SCROLLBAR TASARIMI */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
-
-        /* YENİ: PREFIX İÇİN GİZLİ SCROLL (Görünmez ama kaydırılabilir) */
-        .prefix-scroll::-webkit-scrollbar { display: none; }
-        .prefix-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden relative">
@@ -101,13 +96,13 @@
                 <div class="space-y-4 divide-y divide-gray-700/50">
                     <div class="pt-2">
                         <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Global App Workspace</label>
-                        <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. C:/DionyHub/apps">
+                        <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]" placeholder="e.g. C:/DionyHub/apps">
                         <p class="text-[11px] text-gray-500 mt-1">If enabled during project creation, DionyHub will automatically construct projects inside this directory.</p>
                     </div>
                     <div class="pt-4 flex items-center justify-between opacity-50 cursor-not-allowed">
                         <div>
                             <label class="block text-sm font-medium text-gray-300">Detailed Telemetry Buffering</label>
-                            <p class="text-xs text-gray-500">Keep up to 1000 lines of historical log buffer memory. (Hardcoded for performance)</p>
+                            <p class="text-xs text-gray-500">Keep up to 1000 lines of historical log buffer memory.</p>
                         </div>
                         <input type="checkbox" checked disabled class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded">
                     </div>
@@ -148,7 +143,7 @@
                 <div id="localFlowWrapper" class="space-y-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
-                        <input type="text" id="projName" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
+                        <input type="text" id="projName" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]" placeholder="e.g. Discord Bot">
                     </div>
                     <div>
                         <div class="flex justify-between items-end mb-1">
@@ -159,9 +154,9 @@
                             </div>
                         </div>
                         
-                        <div class="flex shadow-inner rounded-md w-full">
-                            <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center whitespace-nowrap shrink-0" title="Global Workspace Path"></span>
-                            <input type="text" id="projPath" class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors min-w-0" placeholder="folder_name">
+                        <div class="flex shadow-inner rounded-md w-full group transition-all duration-300">
+                            <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center whitespace-nowrap overflow-hidden transition-all duration-500 ease-in-out group-focus-within:max-w-[45px] group-focus-within:px-2 group-focus-within:text-indigo-400 group-focus-within:bg-gray-800 shrink-0" title="Global Workspace Path"></span>
+                            <input type="text" id="projPath" class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 min-w-[100px] focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]" placeholder="folder_name">
                         </div>
                     </div>
                 </div>
@@ -169,18 +164,17 @@
                 <div id="githubFlowWrapper" class="space-y-4 hidden">
                     <div>
                         <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Repository HTTPS URL</label>
-                        <input type="text" id="repoUrl" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors font-mono text-sm" placeholder="https://github.com/Diony-source/go-bank-api">
-                        <p class="text-[11px] text-gray-500 mt-1">The repository will be automatically cloned into your designated Global Workspace.</p>
+                        <input type="text" id="repoUrl" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] font-mono text-sm" placeholder="https://github.com/Diony-source/go-bank-api">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
-                    <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <textarea id="projCmd" required rows="1" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] resize-y min-h-[42px] max-h-[150px]">go run main.go</textarea>
                 </div>
                 <div class="relative">
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
-                    <input type="text" id="projTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Bots, Utilities, Web">
+                    <input type="text" id="projTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]" placeholder="e.g. Bots, Utilities, Web">
                     <div id="tagDropdown" class="w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-inner hidden max-h-40 overflow-y-auto divide-y divide-gray-700/50 transition-all duration-200"></div>
                 </div>
                 <div class="flex items-center gap-3 pt-2">
@@ -211,19 +205,19 @@
                 <input type="hidden" id="editProjId">
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
-                    <input type="text" id="editProjName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <input type="text" id="editProjName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
-                    <input type="text" id="editProjPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <input type="text" id="editProjPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
-                    <input type="text" id="editProjCmd" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <textarea id="editProjCmd" required rows="1" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] resize-y min-h-[42px] max-h-[150px]"></textarea>
                 </div>
                 <div class="relative">
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Category / Tag (Optional)</label>
-                    <input type="text" id="editProjTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <input type="text" id="editProjTag" autocomplete="off" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]">
                     <div id="editTagDropdown" class="w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-inner hidden max-h-40 overflow-y-auto divide-y divide-gray-700/50 transition-all duration-200"></div>
                 </div>
                 <div class="flex items-center gap-3 pt-2">

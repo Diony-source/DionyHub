@@ -18,22 +18,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================
-   YENİ: KUSURSUZ KARAKTER BAZLI KIRPMA MOTORU
+   GÜNCELLENDİ: DAHA SIKI KIRPMA MOTORU
 ========================================= */
 function formatWorkspacePath(path) {
-    const maxLength = 35; // Kutuyu taşırmayacak ideal karakter limiti
+    const maxLength = 22; // Kutuyu taşırmayacak, inputa nefes aldıracak altın oran
     
     let cleanPath = path.replace(/\\/g, '/');
     if (!cleanPath.endsWith('/')) cleanPath += '/';
 
-    // Eğer limitin altındaysa hiç dokunma
     if (cleanPath.length <= maxLength) return cleanPath;
 
-    // Uzunsa: Baştan 3 karakter al (Örn: "C:/")
     const startPart = cleanPath.substring(0, 3);
-
-    // Kalan hakkımızı hesapla ve metnin EN SONDAN geriye doğru al
-    const endPartLength = maxLength - startPart.length - 3; // 3 karakter "..." için
+    const endPartLength = maxLength - startPart.length - 3; 
     const endPart = cleanPath.substring(cleanPath.length - endPartLength);
 
     return startPart + '...' + endPart;
@@ -93,7 +89,6 @@ function toggleWorkspaceMode() {
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
         
         prefix.title = formattedWs; 
-        // YENİ: Kusursuz kırpma motorumuzu çağırıyoruz
         prefix.innerText = formatWorkspacePath(globalWorkspace);
         
         input.classList.remove('rounded-md');
