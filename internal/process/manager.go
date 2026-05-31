@@ -1,4 +1,3 @@
-// Package process handles the lifecycle of OS-level processes.
 package process
 
 import (
@@ -6,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os" // İşletim sistemi ENV okumak için
 	"os/exec"
 	"sync"
 	"syscall"
-	"time" // YENİ: Hız sınırı (Ticker) için eklendi
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// Process holds the internal state and metadata of a running application.
 type Process struct {
 	ID      string
 	Name    string
@@ -22,14 +21,12 @@ type Process struct {
 	Running bool
 }
 
-// Manager orchestrates the execution, tracking, and termination of processes.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
 	output    io.Writer
 }
 
-// NewManager creates a new Process Manager linked to a specific log output destination.
 func NewManager(output io.Writer) *Manager {
 	return &Manager{
 		processes: make(map[string]*Process),
@@ -37,19 +34,13 @@ func NewManager(output io.Writer) *Manager {
 	}
 }
 
-// prefixLogger actively intercepts standard output/error, prepends the project name, and writes it.
 func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	scanner := bufio.NewScanner(r)
-
-	// YENİ: BACKPRESSURE (GERİ BASINÇ / FREN) MEKANİZMASI
-	// Bir programın saniyede okuyabileceği maksimum log satırını sınırlar (Örn: Saniyede max 100 satır).
-	// Eğer arka plandaki program çıldırıp sonsuz döngüye girerse, bu fren sayesinde
-	// pipe dolacak ve işletim sistemi o programı zorla yavaşlatacaktır (CPU spike'ı önlenir).
 	throttle := time.NewTicker(10 * time.Millisecond)
 	defer throttle.Stop()
 
 	for scanner.Scan() {
-		<-throttle.C // Ticker'ın süresi dolana kadar (10ms) burada bekler
+		<-throttle.C
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
 	}
 
@@ -58,8 +49,8 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	}
 }
 
-// Start spawns a new OS process. If interactive, it attempts to spawn a visible terminal.
-func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string, args ...string) error {
+// YÜKSELTİLDİ: Global ENV parametresi eklendi
+func (m *Manager) Start(id, name, path string, interactive bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -86,6 +77,10 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 			go m.prefixLogger(name, stderr)
 		}
 	}
+
+	// YENİ: Global Evrensel Değişkenleri İşletim Sistemine Enjekte Et
+	cmd.Env = os.Environ()                   // Mevcut sistem değişkenlerini al
+	cmd.Env = append(cmd.Env, globalEnvs...) // Bizim global ayarlarımızı üstüne ekle
 
 	if !interactive {
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -114,7 +109,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, nameCmd string,
 	return nil
 }
 
-// Stop forcefully terminates a running process by its ID.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
@@ -136,7 +130,6 @@ func (m *Manager) Stop(id string) error {
 	return nil
 }
 
-// IsRunning checks the live status of a process.
 func (m *Manager) IsRunning(id string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -144,7 +137,6 @@ func (m *Manager) IsRunning(id string) bool {
 	return exists && p.Running
 }
 
-// GetStats returns the live CPU and RAM usage of the given process ID.
 func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io" // YENİ: MultiWriter için eklendi
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -18,11 +18,10 @@ func main() {
 	// Projeleri yükle
 	projects, _ := config.LoadProjects("config.json")
 
-	// 1. Broadcaster'ı (WebSocket Yayıncısı) ayağa kaldır
+	// 1. Broadcaster'ı ayağa kaldır (Start/Run metodu yok, bu haliyle kusursuz!)
 	broadcaster := api.NewBroadcaster()
-	go broadcaster.Run()
 
-	// 2. SİHİRLİ DOKUNUŞ: Logları hem CMD terminaline hem de Web Arayüzüne (Live Terminal) kopyala!
+	// 2. Logları hem CMD terminaline hem de Web Arayüzüne (Live Terminal) kopyala!
 	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
 
 	// 3. Process Manager'a bu çoklu yazıcıyı bağla ki loglar arayüze aksın

@@ -11,7 +11,8 @@ var settingsMu sync.Mutex
 // AppSettings represents the global configuration for DionyHub
 type AppSettings struct {
 	Workspace string `json:"workspace"`
-	LogBuffer bool   `json:"log_buffer"` // İlerisi için ayırdığımız telemetry ayarı
+	LogBuffer bool   `json:"log_buffer"`
+	GlobalEnv string `json:"global_env"` // YENİ: Evrensel Çevre Değişkenleri
 }
 
 // LoadSettings reads the global settings from the given JSON file.
@@ -22,10 +23,10 @@ func LoadSettings(filename string) (AppSettings, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Dosya yoksa varsayılan ayarları dön
 			return AppSettings{
 				Workspace: "C:/DionyHub/apps",
 				LogBuffer: true,
+				GlobalEnv: "",
 			}, nil
 		}
 		return AppSettings{}, err
