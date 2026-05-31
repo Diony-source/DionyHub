@@ -38,11 +38,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/update", s.handleUpdateProject)
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
-
-	// YENİ: Toplu (Bulk) Operasyon Rotaları
 	mux.HandleFunc("/api/projects/start-bulk", s.handleStartBulk)
 	mux.HandleFunc("/api/projects/stop-bulk", s.handleStopBulk)
-
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
@@ -75,7 +72,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202A", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202C", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\\", "/")
-
 		newSettings.GlobalEnv = strings.TrimSpace(newSettings.GlobalEnv)
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
@@ -88,7 +84,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"message": "Settings saved successfully"}`))
 		return
 	}
-
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
@@ -97,7 +92,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
-
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -114,7 +108,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 			liveProjects[i].Status = "stopped"
 		}
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(liveProjects)
 }
@@ -170,6 +163,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 			s.projects[i].Command = updatedData.Command
 			s.projects[i].Interactive = updatedData.Interactive
 			s.projects[i].AutoStart = updatedData.AutoStart
+			s.projects[i].AutoRestart = updatedData.AutoRestart // YENİ EKLENDİ
 			s.projects[i].Tag = updatedData.Tag
 			found = true
 			break
@@ -185,7 +179,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to save configuration"}`, http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -202,6 +195,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Tag         string `json:"tag"`
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
+		AutoRestart bool   `json:"auto_restart"` // YENİ EKLENDİ
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -240,8 +234,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		envPath := filepath.Join(cleanPath, ".env")
 		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
 			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
-		} else {
-			log.Printf("[API] Initial .env file securely created at %s", envPath)
 		}
 	}
 
@@ -253,6 +245,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Tag:         req.Tag,
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
+		AutoRestart: req.AutoRestart, // YENİ EKLENDİ
 		Status:      "stopped",
 	}
 
@@ -284,6 +277,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Tag         string `json:"tag"`
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
+		AutoRestart bool   `json:"auto_restart"` // YENİ EKLENDİ
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -339,8 +333,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		envPath := filepath.Join(destPath, ".env")
 		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
 			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
-		} else {
-			log.Printf("[API] Initial .env file securely created at %s", envPath)
 		}
 	}
 
@@ -352,6 +344,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Tag:         req.Tag,
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
+		AutoRestart: req.AutoRestart, // YENİ EKLENDİ
 		Status:      "stopped",
 	}
 
@@ -466,10 +459,7 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.projects = reorderedProjects
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		http.Error(w, `{"error": "Failed to save reordered projects"}`, http.StatusInternalServerError)
-		return
-	}
+	config.SaveProjects("config.json", s.projects)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -517,7 +507,8 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, globalEnvs, parts[0], parts[1:]...); err != nil {
+	// YENİ: p.AutoRestart parametresi Start'a eklendi
+	if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -538,7 +529,6 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// YENİ: Toplu Başlatma İşlemi
 func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -578,7 +568,8 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		if target != nil {
 			parts := strings.Fields(target.Command)
 			if len(parts) > 0 {
-				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, globalEnvs, parts[0], parts[1:]...); err == nil {
+				// YENİ: p.AutoRestart eklendi
+				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
 					startedCount++
 				}
 			}
@@ -590,7 +581,6 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully started %d project(s)", startedCount)})
 }
 
-// YENİ: Toplu Durdurma İşlemi
 func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)

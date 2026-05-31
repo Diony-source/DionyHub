@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os" // İşletim sistemi ENV okumak için
+	"os"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -15,10 +15,11 @@ import (
 )
 
 type Process struct {
-	ID      string
-	Name    string
-	Cmd     *exec.Cmd
-	Running bool
+	ID           string
+	Name         string
+	Cmd          *exec.Cmd
+	Running      bool
+	IntendedStop bool // YENİ: Kullanıcı bilerek mi durdurdu? (Watchdog iptali için)
 }
 
 type Manager struct {
@@ -49,14 +50,14 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	}
 }
 
-// YÜKSELTİLDİ: Global ENV parametresi eklendi
-func (m *Manager) Start(id, name, path string, interactive bool, globalEnvs []string, nameCmd string, args ...string) error {
+// YENİ: autoRestart parametresi eklendi
+func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if p, exists := m.processes[id]; exists && p.Running {
+		m.mu.Unlock()
 		return errors.New("process is already running")
 	}
+	m.mu.Unlock()
 
 	var cmd *exec.Cmd
 	if interactive {
@@ -78,9 +79,8 @@ func (m *Manager) Start(id, name, path string, interactive bool, globalEnvs []st
 		}
 	}
 
-	// YENİ: Global Evrensel Değişkenleri İşletim Sistemine Enjekte Et
-	cmd.Env = os.Environ()                   // Mevcut sistem değişkenlerini al
-	cmd.Env = append(cmd.Env, globalEnvs...) // Bizim global ayarlarımızı üstüne ekle
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, globalEnvs...)
 
 	if !interactive {
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -90,20 +90,46 @@ func (m *Manager) Start(id, name, path string, interactive bool, globalEnvs []st
 		return err
 	}
 
+	m.mu.Lock()
 	m.processes[id] = &Process{
-		ID:      id,
-		Name:    name,
-		Cmd:     cmd,
-		Running: true,
+		ID:           id,
+		Name:         name,
+		Cmd:          cmd,
+		Running:      true,
+		IntendedStop: false, // İlk açılışta kasıtlı durdurma false'tur
 	}
+	m.mu.Unlock()
 
+	// GÖZLEMCİ (WATCHDOG) GOROUTINE
 	go func() {
 		cmd.Wait()
+
 		m.mu.Lock()
+		var intended bool
 		if p, exists := m.processes[id]; exists {
 			p.Running = false
+			intended = p.IntendedStop
 		}
 		m.mu.Unlock()
+
+		// Eğer otomatik başlatma açıksa ve kullanıcı KENDİSİ durdurmamışsa (Çökmüşse)
+		if autoRestart && !intended {
+			fmt.Fprintf(m.output, "[%s] [WATCHDOG] ⚠️ Process crashed or exited unexpectedly! Restarting in 3 seconds...\n", name)
+			time.Sleep(3 * time.Second)
+
+			// 3 saniye sonra hala mevcut mu kontrol et (belki o sırada silindi)
+			m.mu.RLock()
+			stillExists := false
+			if p, exists := m.processes[id]; exists && !p.Running {
+				stillExists = true
+			}
+			m.mu.RUnlock()
+
+			if stillExists {
+				fmt.Fprintf(m.output, "[%s] [WATCHDOG] 🛡️ Initiating auto-recovery...\n", name)
+				m.Start(id, name, path, interactive, autoRestart, globalEnvs, nameCmd, args...)
+			}
+		}
 	}()
 
 	return nil
@@ -112,6 +138,10 @@ func (m *Manager) Start(id, name, path string, interactive bool, globalEnvs []st
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
+	if exists {
+		// Watchdog'a haber ver: "Bu bir çökme değil, kullanıcı kendisi durdurdu. Yeniden başlatma!"
+		p.IntendedStop = true
+	}
 	m.mu.Unlock()
 
 	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {

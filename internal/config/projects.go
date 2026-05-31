@@ -6,27 +6,28 @@ import (
 	"sync"
 )
 
-var mu sync.Mutex
+var projectsMu sync.Mutex
 
-// Project represents the configuration for a single manageable application.
+// Project represents a single application managed by DionyHub
 type Project struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Path        string  `json:"path"`
 	Command     string  `json:"command"`
+	Tag         string  `json:"tag"`
 	Interactive bool    `json:"interactive"`
-	AutoStart   bool    `json:"auto_start"` // YENİ: Otomatik başlatma bayrağı
-	Status      string  `json:"status"`
+	AutoStart   bool    `json:"auto_start"`
+	AutoRestart bool    `json:"auto_restart"` // YENİ: Watchdog (Otomatik Yeniden Başlatma)
+	Status      string  `json:"status,omitempty"`
+	Order       int     `json:"order"`
 	CPU         float64 `json:"cpu,omitempty"`
 	RAM         float64 `json:"ram,omitempty"`
-	Tag         string  `json:"tag,omitempty"`
-	Order       int     `json:"order,omitempty"`
 }
 
-// LoadProjects reads the project configurations from the given JSON file.
+// LoadProjects reads the project configurations securely from the JSON file
 func LoadProjects(filename string) ([]Project, error) {
-	mu.Lock()
-	defer mu.Unlock()
+	projectsMu.Lock()
+	defer projectsMu.Unlock()
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -43,10 +44,10 @@ func LoadProjects(filename string) ([]Project, error) {
 	return projects, nil
 }
 
-// SaveProjects writes the project configurations to the given JSON file safely.
+// SaveProjects securely writes the project configurations to the JSON file
 func SaveProjects(filename string, projects []Project) error {
-	mu.Lock()
-	defer mu.Unlock()
+	projectsMu.Lock()
+	defer projectsMu.Unlock()
 
 	data, err := json.MarshalIndent(projects, "", "  ")
 	if err != nil {

@@ -359,6 +359,7 @@ async function loadProjects() {
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
+            const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Watchdog Enabled">🛡️</span>` : '';
 
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
@@ -371,6 +372,7 @@ async function loadProjects() {
                     <div class="flex flex-col">
                         <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge}</div>
                     </div>
+                    <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div>
                 </td>
                 <td class="p-5 text-sm text-gray-400 font-mono text-xs truncate max-w-xs" title="${p.path}">
                     ${p.path}
@@ -488,6 +490,7 @@ function openEditModal(id) {
     document.getElementById('editProjTag').value = project.tag || '';
     document.getElementById('editProjInteractive').checked = project.interactive;
     document.getElementById('editProjAutoStart').checked = project.auto_start || false;
+    document.getElementById('editProjAutoRestart').checked = project.auto_restart || false;
 
     const modal = document.getElementById('editModal');
     modal.classList.remove('hidden');
@@ -508,7 +511,8 @@ async function submitEditProject(event) {
         command: document.getElementById('editProjCmd').value,
         tag: document.getElementById('editProjTag').value,
         interactive: document.getElementById('editProjInteractive').checked,
-        auto_start: document.getElementById('editProjAutoStart').checked
+        auto_start: document.getElementById('editProjAutoStart').checked,
+        auto_restart: document.getElementById('editProjAutoRestart').checked
     };
 
     try {
@@ -649,7 +653,8 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value,
                 interactive: document.getElementById('projInteractive').checked,
                 auto_start: document.getElementById('projAutoStart').checked,
-                initial_env: document.getElementById('projInitialEnv').value 
+                initial_env: document.getElementById('projInitialEnv').value,
+                auto_restart: document.getElementById('projAutoRestart').checked 
             };
 
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });

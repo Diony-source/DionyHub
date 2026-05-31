@@ -15,25 +15,16 @@ import (
 func main() {
 	log.Println("Starting DionyHub Server...")
 
-	// Projeleri yükle
 	projects, _ := config.LoadProjects("config.json")
-
-	// 1. Broadcaster'ı ayağa kaldır (Start/Run metodu yok, bu haliyle kusursuz!)
 	broadcaster := api.NewBroadcaster()
-
-	// 2. Logları hem CMD terminaline hem de Web Arayüzüne (Live Terminal) kopyala!
 	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
-
-	// 3. Process Manager'a bu çoklu yazıcıyı bağla ki loglar arayüze aksın
 	procManager := process.NewManager(multiWriter)
 
-	// Auto-Start (Otomatik Başlatma) Döngüsü
 	for _, p := range projects {
 		if p.AutoStart {
 			parts := strings.Fields(p.Command)
 			if len(parts) > 0 {
 
-				// Global ayarları ve ENV'leri yükle
 				settings, _ := config.LoadSettings("app_config.json")
 				var globalEnvs []string
 				if settings.GlobalEnv != "" {
@@ -46,8 +37,8 @@ func main() {
 					}
 				}
 
-				// Projeyi çalıştır
-				err := procManager.Start(p.ID, p.Name, p.Path, p.Interactive, globalEnvs, parts[0], parts[1:]...)
+				// YENİ: p.AutoRestart parametresi Start'a eklendi
+				err := procManager.Start(p.ID, p.Name, p.Path, p.Interactive, p.AutoRestart, globalEnvs, parts[0], parts[1:]...)
 				if err != nil {
 					log.Printf("Failed to auto-start project %s: %v", p.Name, err)
 				} else {
@@ -57,15 +48,11 @@ func main() {
 		}
 	}
 
-	// API Sunucusunu kur
 	server := api.NewServer(procManager, projects, broadcaster)
 	mux := http.NewServeMux()
 
-	// Statik (HTML/JS/CSS) dosyaları sun
 	fs := http.FileServer(http.Dir("./web"))
 	mux.Handle("/", fs)
-
-	// Route'ları (Uç noktaları) kaydet
 	server.RegisterRoutes(mux)
 
 	log.Println("Server is running on http://localhost:8080")
