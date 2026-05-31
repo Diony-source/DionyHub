@@ -4,7 +4,6 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 
-// YENİ: Global Workspace Değişkeni
 let globalWorkspace = "C:/DionyHub/apps";
 const MAX_LOG_LINES = 1000;
 
@@ -18,9 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     switchView('dashboard');
 });
 
-/* =========================================
-   BUTTON LOADING STATE MANAGER
-========================================= */
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
     if (!btn) return originalContent;
     if (isLoading) {
@@ -37,15 +33,11 @@ function toggleButtonLoading(btn, isLoading, originalContent = '') {
     }
 }
 
-/* =========================================
-   SPA VIEW ROUTER
-========================================= */
 function switchView(viewName) {
     const dashboardView = document.getElementById('dashboard-view');
     const settingsView = document.getElementById('settings-view');
     const viewTitle = document.getElementById('view-title');
     const addBtn = document.getElementById('header-add-btn');
-
     const navDashboard = document.getElementById('nav-dashboard');
     const navSettings = document.getElementById('nav-settings');
 
@@ -69,9 +61,6 @@ function switchView(viewName) {
     }
 }
 
-/* =========================================
-   YENİ: WORKSPACE UI MOTORU
-========================================= */
 function toggleWorkspaceMode() {
     const useWs = document.getElementById('useWorkspace').checked;
     const prefix = document.getElementById('workspacePrefix');
@@ -81,7 +70,7 @@ function toggleWorkspaceMode() {
         prefix.classList.remove('hidden');
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
         prefix.innerText = formattedWs;
-        prefix.title = formattedWs; // Üzerine gelince tam yolu göstersin
+        prefix.title = formattedWs; 
         
         input.classList.remove('rounded-md');
         input.classList.add('rounded-r-md');
@@ -94,9 +83,31 @@ function toggleWorkspaceMode() {
     }
 }
 
-/* =========================================
-   SETTINGS API
-========================================= */
+// YENİ: GITHUB & LOCAL GÖRÜNÜM DEĞİŞTİRİCİ
+function toggleSourceMode() {
+    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+    const localWrapper = document.getElementById('localFlowWrapper');
+    const githubWrapper = document.getElementById('githubFlowWrapper');
+    
+    const projName = document.getElementById('projName');
+    const projPath = document.getElementById('projPath');
+    const repoUrl = document.getElementById('repoUrl');
+
+    if (mode === 'local') {
+        localWrapper.classList.remove('hidden');
+        githubWrapper.classList.add('hidden');
+        projName.required = true;
+        projPath.required = true;
+        repoUrl.required = false;
+    } else {
+        localWrapper.classList.add('hidden');
+        githubWrapper.classList.remove('hidden');
+        projName.required = false;
+        projPath.required = false;
+        repoUrl.required = true;
+    }
+}
+
 async function loadSettings() {
     try {
         const response = await fetch('/api/settings');
@@ -104,7 +115,7 @@ async function loadSettings() {
             const settings = await response.json();
             globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
             document.getElementById('setting-workspace').value = globalWorkspace;
-            toggleWorkspaceMode(); // Ayar yüklendiğinde UI'ı güncelle
+            toggleWorkspaceMode(); 
         }
     } catch (e) {
         console.error("Failed to load settings:", e);
@@ -131,7 +142,7 @@ async function saveSettings() {
 
         if (response.ok) {
             showToast("System settings applied successfully.", "success");
-            toggleWorkspaceMode(); // Ayar kaydedilince UI'ı anında yenile
+            toggleWorkspaceMode(); 
         } else {
             const err = await response.json();
             showToast(err.error, "error");
@@ -143,9 +154,6 @@ async function saveSettings() {
     }
 }
 
-/* =========================================
-   TOAST NOTIFICATION SYSTEM
-========================================= */
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -168,9 +176,6 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-/* =========================================
-   PROJECT LOADING & RENDERING
-========================================= */
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
@@ -255,9 +260,6 @@ async function loadProjects() {
     }
 }
 
-/* =========================================
-   DRAG & DROP LOGIC
-========================================= */
 function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
 function handleDragOver(e) { e.preventDefault(); return false; }
 function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
@@ -285,9 +287,6 @@ async function saveNewOrder() {
     if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
 }
 
-/* =========================================
-   SIDEBAR & TAGS
-========================================= */
 function toggleBoard() {
     const list = document.getElementById('tag-list');
     const chevron = document.getElementById('board-chevron');
@@ -322,9 +321,6 @@ function renderSidebarTags(projects) {
     });
 }
 
-/* =========================================
-   EDIT PROJECT LOGIC
-========================================= */
 function openEditModal(id) {
     const project = cachedProjects.find(p => p.id === id);
     if (!project) return;
@@ -375,9 +371,6 @@ async function submitEditProject(event) {
     }
 }
 
-/* =========================================
-   PREMIUM AUTOCOMPLETE
-========================================= */
 function initTagAutocomplete(inputId, dropdownId) {
     const input = document.getElementById(inputId);
     const dropdown = document.getElementById(dropdownId);
@@ -402,9 +395,6 @@ function initTagAutocomplete(inputId, dropdownId) {
     }
 }
 
-/* =========================================
-   CORE API & STATUS
-========================================= */
 async function updateStatuses() {
     try {
         const response = await fetch('/api/projects');
@@ -470,43 +460,69 @@ async function stopProject(id, btn) {
 
 function openModal() { 
     document.getElementById('addModal').classList.replace('hidden', 'flex'); 
-    toggleWorkspaceMode(); // Modalı açarken form UI'ını güncelle
+    toggleSourceMode(); // Modalı açtığında UI state'ini düzelt
+    toggleWorkspaceMode(); 
 }
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
-/* YENİ: WORKSPACE BİRLEŞTİRME VE KAYIT İŞLEMİ */
+// YENİ: KAYIT ve GITHUB KLONLAMA İŞLEMİNİ YÖNETEN ANA FONKSİYON
 async function submitNewProject(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const originalHTML = toggleButtonLoading(btn, true);
-
-    let finalPath = document.getElementById('projPath').value.trim();
-    const useWs = document.getElementById('useWorkspace').checked;
-
-    // Eğer workspace açıksa, globalWorkspace ile inputu birleştir
-    if (useWs) {
-        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        finalPath = formattedWs + finalPath;
-    }
-
-    const data = {
-        name: document.getElementById('projName').value,
-        path: finalPath, // Birleştirilmiş veya mutlak yolu gönder
-        command: document.getElementById('projCmd').value,
-        tag: document.getElementById('projTag').value,
-        interactive: document.getElementById('projInteractive').checked,
-        auto_start: document.getElementById('projAutoStart').checked
-    };
+    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+    
+    // GitHub Klonlaması uzun sürebileceği için butona özel yükleniyor efekti ver
+    const loadingText = mode === 'github' ? 'Cloning Repo...' : '';
+    const originalHTML = toggleButtonLoading(btn, true, loadingText);
 
     try {
-        const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-        if (res.ok) { 
-            closeModal(); 
-            loadProjects(); 
-            showToast("Workspace folder created and project added!", "success");
+        if (mode === 'local') {
+            let finalPath = document.getElementById('projPath').value.trim();
+            const useWs = document.getElementById('useWorkspace').checked;
+
+            if (useWs) {
+                const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+                finalPath = formattedWs + finalPath;
+            }
+
+            const data = {
+                name: document.getElementById('projName').value,
+                path: finalPath,
+                command: document.getElementById('projCmd').value,
+                tag: document.getElementById('projTag').value,
+                interactive: document.getElementById('projInteractive').checked,
+                auto_start: document.getElementById('projAutoStart').checked
+            };
+
+            const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
+            if (res.ok) { 
+                closeModal(); 
+                loadProjects(); 
+                showToast("Workspace folder created and project added!", "success");
+            } else {
+                const err = await res.json();
+                showToast(err.error, "error");
+            }
+
         } else {
-            const err = await res.json();
-            showToast(err.error, "error");
+            // GITHUB KLONLAMA MODU
+            const data = {
+                repo_url: document.getElementById('repoUrl').value,
+                command: document.getElementById('projCmd').value,
+                tag: document.getElementById('projTag').value,
+                interactive: document.getElementById('projInteractive').checked,
+                auto_start: document.getElementById('projAutoStart').checked
+            };
+
+            const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
+            if (res.ok) { 
+                closeModal(); 
+                loadProjects(); 
+                showToast("Repository perfectly cloned into workspace!", "success");
+            } else {
+                const err = await res.json();
+                showToast(err.error, "error");
+            }
         }
     } catch (err) {
         showToast("Server connection failed.", "error");
@@ -541,9 +557,6 @@ async function executeDelete() {
     }
 }
 
-/* =========================================
-   ENHANCED TERMINAL & WEBSOCKET
-========================================= */
 const terminalOutput = document.getElementById('terminal-output');
 
 function connectWebSocket() {

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -38,6 +39,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
+	mux.HandleFunc("/api/projects/clone", s.handleCloneProject) // YENİ: GitHub Klonlama Rotası
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
@@ -58,7 +60,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
-		// Windows path temizliği
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\\", "/")
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
@@ -127,7 +128,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Klasör yoksa DionyHub oluştursun!
 	if info, err := os.Stat(updatedData.Path); os.IsNotExist(err) {
 		if mkErr := os.MkdirAll(updatedData.Path, 0755); mkErr != nil {
 			http.Error(w, `{"error": "Failed to create directory automatically"}`, http.StatusInternalServerError)
@@ -192,13 +192,11 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Klasör yoksa DionyHub oluştursun (Workspace Desteği)
 	if info, err := os.Stat(newProj.Path); os.IsNotExist(err) {
 		if mkErr := os.MkdirAll(newProj.Path, 0755); mkErr != nil {
 			http.Error(w, `{"error": "Failed to create workspace directory automatically"}`, http.StatusInternalServerError)
 			return
 		}
-		log.Printf("[API] Created new workspace directory: %s", newProj.Path)
 	} else if !info.IsDir() {
 		http.Error(w, `{"error": "The specified Path exists but is not a valid directory"}`, http.StatusBadRequest)
 		return
@@ -218,6 +216,92 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(newProj)
+}
+
+// YENİ: GITHUB CLONE & RUN MOTORU
+func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		RepoURL     string `json:"repo_url"`
+		Command     string `json:"command"`
+		Tag         string `json:"tag"`
+		Interactive bool   `json:"interactive"`
+		AutoStart   bool   `json:"auto_start"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid JSON payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	req.RepoURL = strings.TrimSpace(req.RepoURL)
+	if req.RepoURL == "" {
+		http.Error(w, `{"error": "Repository URL is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// URL'den Depo (Repo) ismini çıkart (Örn: https://github.com/user/repo.git -> repo)
+	parts := strings.Split(req.RepoURL, "/")
+	repoName := parts[len(parts)-1]
+	repoName = strings.TrimSuffix(repoName, ".git")
+
+	// Global Workspace Yolunu Al
+	settings, err := config.LoadSettings("app_config.json")
+	if err != nil || settings.Workspace == "" {
+		http.Error(w, `{"error": "Global Workspace is not configured. Please define it in Settings first."}`, http.StatusBadRequest)
+		return
+	}
+
+	destPath := settings.Workspace + "/" + repoName
+	destPath = strings.ReplaceAll(destPath, "\\", "/")
+
+	// Klasör zaten var mı kontrol et
+	if _, err := os.Stat(destPath); !os.IsNotExist(err) {
+		http.Error(w, `{"error": "Directory already exists in Workspace. Use local project addition or delete the existing folder."}`, http.StatusBadRequest)
+		return
+	}
+
+	// İşletim Sistemine Git Clone Komutu Gönder
+	log.Printf("[API] Cloning repository %s into %s", req.RepoURL, destPath)
+	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
+
+	if err := cmd.Run(); err != nil {
+		log.Printf("[API] Git clone failed: %v", err)
+		http.Error(w, `{"error": "Failed to clone repository. Make sure Git is installed and the repository is public."}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Klonlama başarılı, projeyi sisteme kaydet
+	newProj := config.Project{
+		ID:          fmt.Sprintf("%d", time.Now().UnixMilli()),
+		Name:        repoName,
+		Path:        destPath,
+		Command:     req.Command,
+		Tag:         req.Tag,
+		Interactive: req.Interactive,
+		AutoStart:   req.AutoStart,
+		Status:      "stopped",
+	}
+
+	s.mu.Lock()
+	newProj.Order = len(s.projects)
+	s.projects = append(s.projects, newProj)
+	saveErr := config.SaveProjects("config.json", s.projects)
+	s.mu.Unlock()
+
+	if saveErr != nil {
+		http.Error(w, `{"error": "Repository cloned but failed to save configuration"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[API] GitHub project successfully cloned and registered: %s", repoName)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newProj)

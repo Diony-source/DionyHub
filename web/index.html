@@ -9,6 +9,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex overflow-hidden relative">
 
+    <!-- SOL MENÜ -->
     <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-10">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
             <span class="text-xl font-bold tracking-wider text-indigo-400 drop-shadow-md cursor-pointer" onclick="switchView('dashboard')">DionyHub</span>
@@ -29,6 +30,7 @@
         </nav>
     </aside>
 
+    <!-- ANA İÇERİK -->
     <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
         <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm shrink-0">
             <h2 id="view-title" class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
@@ -48,6 +50,7 @@
             </div>
         </header>
 
+        <!-- DASHBOARD VIEW -->
         <div id="dashboard-view" class="flex flex-col flex-1 min-h-0">
             <div class="p-8 pb-4">
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-hidden">
@@ -79,6 +82,7 @@
             </div>
         </div>
 
+        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden p-8 max-w-2xl w-full mx-auto space-y-6">
             <div class="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl shadow-xl p-6 space-y-6">
                 <div>
@@ -108,34 +112,63 @@
         </div>
     </main>
 
+    <!-- YENİLENMİŞ ADD MODAL (GITHUB DESTEĞİ İLE) -->
     <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-visible">
             <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center rounded-t-xl">
-                <h3 class="text-lg font-semibold text-gray-200">Register New Project</h3>
+                <h3 class="text-lg font-semibold text-gray-200">Register Project</h3>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+            
             <form id="addForm" class="p-6 space-y-4" onsubmit="submitNewProject(event)">
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
-                    <input type="text" id="projName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
+                <!-- MODE SELECTOR -->
+                <div class="flex gap-6 border-b border-gray-700/80 pb-4">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="radio" name="sourceMode" value="local" checked class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 focus:ring-indigo-500 cursor-pointer" onchange="toggleSourceMode()">
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Local Directory</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="radio" name="sourceMode" value="github" class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 focus:ring-indigo-500 cursor-pointer" onchange="toggleSourceMode()">
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                            GitHub Clone
+                        </span>
+                    </label>
                 </div>
-                
-                <div>
-                    <div class="flex justify-between items-end mb-1">
-                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">Project Path</label>
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="useWorkspace" checked class="w-3.5 h-3.5 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-offset-gray-800 cursor-pointer" onchange="toggleWorkspaceMode()">
-                            <label for="useWorkspace" class="text-xs font-medium text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors">Use Global Workspace</label>
-                        </div>
+
+                <!-- LOCAL FLOW WRAPPER -->
+                <div id="localFlowWrapper" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
+                        <input type="text" id="projName" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
                     </div>
-                    <div class="flex shadow-inner rounded-md">
-                        <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center overflow-hidden max-w-[150px] truncate" title="Global Workspace Path"></span>
-                        <input type="text" id="projPath" required class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="folder_name">
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">Project Path</label>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="useWorkspace" checked class="w-3.5 h-3.5 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-offset-gray-800 cursor-pointer" onchange="toggleWorkspaceMode()">
+                                <label for="useWorkspace" class="text-xs font-medium text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors">Use Global Workspace</label>
+                            </div>
+                        </div>
+                        <div class="flex shadow-inner rounded-md">
+                            <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center overflow-hidden max-w-[150px] truncate" title="Global Workspace Path"></span>
+                            <input type="text" id="projPath" class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="folder_name">
+                        </div>
                     </div>
                 </div>
 
+                <!-- GITHUB FLOW WRAPPER -->
+                <div id="githubFlowWrapper" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Repository HTTPS URL</label>
+                        <input type="text" id="repoUrl" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors font-mono text-sm" placeholder="https://github.com/Diony-source/go-bank-api">
+                        <p class="text-[11px] text-gray-500 mt-1">The repository will be automatically cloned into your designated Global Workspace.</p>
+                    </div>
+                </div>
+
+                <!-- ORTAK ALANLAR -->
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
                     <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
@@ -161,6 +194,7 @@
         </div>
     </div>
 
+    <!-- EDIT MODAL (Değişmedi) -->
     <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-visible">
             <div class="p-6 border-b border-gray-700 bg-gray-900/50 flex justify-between items-center rounded-t-xl">
@@ -204,6 +238,7 @@
         </div>
     </div>
 
+    <!-- DELETE MODAL (Değişmedi) -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden transform transition-all">
             <div class="p-6 text-center">
