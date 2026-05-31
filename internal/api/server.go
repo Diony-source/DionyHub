@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Diony-source/DionyHub/internal/archive" // YENİ EKLENDİ
+	"github.com/Diony-source/DionyHub/internal/archive"
 	"github.com/Diony-source/DionyHub/internal/config"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
@@ -45,7 +45,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
-	mux.HandleFunc("/api/projects/backup", s.handleBackupProject) // YENİ ROTA
+	mux.HandleFunc("/api/projects/backup", s.handleBackupProject)
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
@@ -597,7 +597,6 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
-// YENİ: Yedekleme (Backup) işlemi rotası
 // handleBackupProject safely archives the target project directory into a designated backups folder.
 func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -633,20 +632,18 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create backup directory securely inside Global Workspace
 	backupDir := filepath.Join(settings.Workspace, "DionyHub_Backups")
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
 		http.Error(w, `{"error": "Failed to create backup directory"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Generate a secure, timestamped filename
-	timestamp := time.Now().Format("20060102_150405")
+	// YENİ: Zaman damgası çok daha okunaklı bir formata (YYYY-MM-DD_HH-MM-SS) çevrildi.
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	safeName := strings.ReplaceAll(targetProject.Name, " ", "_")
 	zipFileName := fmt.Sprintf("%s_backup_%s.zip", safeName, timestamp)
 	targetZipPath := filepath.Join(backupDir, zipFileName)
 
-	// Execute archiving logic
 	if err := archive.ZipDirectory(targetProject.Path, targetZipPath); err != nil {
 		log.Printf("[API] Backup failed for %s: %v", targetProject.Name, err)
 		http.Error(w, `{"error": "Failed to create zip archive"}`, http.StatusInternalServerError)
@@ -657,6 +654,6 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("Backup saved to Backups folder as %s", zipFileName),
+		"message": fmt.Sprintf("Backup saved as %s", zipFileName),
 	})
 }
