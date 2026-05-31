@@ -194,7 +194,39 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// YENİ: Backup Tetikleme Fonksiyonu
+// YENİ: Toplu Başlatma / Durdurma Fonksiyonu
+async function executeBulkAction(action) {
+    if (!currentTagFilter) return; // Güvenlik kontrolü (Sadece Tag varken çalışsın)
+    
+    const filteredProjects = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase());
+    const idsToProcess = filteredProjects.map(p => p.id);
+    
+    if (idsToProcess.length === 0) {
+        showToast("No projects found in this tag.", "error");
+        return;
+    }
+
+    const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';
+    showToast(`${action === 'start' ? 'Starting' : 'Stopping'} ${idsToProcess.length} projects...`, "success");
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(idsToProcess)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(data.message, "success");
+            updateStatuses();
+        } else {
+            showToast(data.error || `Bulk ${action} failed`, "error");
+        }
+    } catch (e) {
+        showToast("Network error during bulk action", "error");
+    }
+}
+
 async function backupProject(id, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
@@ -292,6 +324,21 @@ async function loadProjects() {
             ? projects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase())
             : projects;
 
+        // YENİ: Toplu İşlem (Bulk Actions) Panelini Göster / Gizle
+        const bulkContainer = document.getElementById('bulk-actions-container');
+        if (bulkContainer) {
+            if (currentTagFilter !== null) {
+                document.getElementById('bulk-tag-name').innerText = `# ${currentTagFilter}`;
+                document.getElementById('bulk-project-count').innerText = `${filteredProjects.length} project(s)`;
+                bulkContainer.classList.remove('hidden');
+                bulkContainer.classList.add('flex');
+            } else {
+                // "All Projects" modundayken sistemi çökertmemek için sakla
+                bulkContainer.classList.add('hidden');
+                bulkContainer.classList.remove('flex');
+            }
+        }
+
         if (filteredProjects.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">No projects found.</td></tr>`;
             return;
@@ -313,7 +360,6 @@ async function loadProjects() {
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
-            // YENİ: Backup ikonu eklendi (ENV ikonunun yanına)
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
