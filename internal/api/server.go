@@ -12,10 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Diony-source/DionyHub/internal/archive" // YENİ EKLENDİ
 	"github.com/Diony-source/DionyHub/internal/config"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
+// Server handles all REST API requests and manages process state securely.
 type Server struct {
 	manager     *process.Manager
 	mu          sync.RWMutex
@@ -23,6 +25,7 @@ type Server struct {
 	broadcaster *Broadcaster
 }
 
+// NewServer initializes and returns a new Server instance.
 func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	return &Server{
 		manager:     m,
@@ -31,6 +34,7 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	}
 }
 
+// RegisterRoutes maps HTTP endpoints to their respective handler functions.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
@@ -41,13 +45,18 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
+	mux.HandleFunc("/api/projects/backup", s.handleBackupProject) // YENİ ROTA
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		settings, _ := config.LoadSettings("app_config.json")
+		settings, err := config.LoadSettings("app_config.json")
+		if err != nil {
+			http.Error(w, `{"error": "Failed to load settings"}`, http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(settings)
 		return
@@ -455,7 +464,10 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.projects = reorderedProjects
-	config.SaveProjects("config.json", s.projects)
+	if err := config.SaveProjects("config.json", s.projects); err != nil {
+		http.Error(w, `{"error": "Failed to save reordered projects"}`, http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -487,7 +499,11 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, _ := config.LoadSettings("app_config.json")
+	settings, err := config.LoadSettings("app_config.json")
+	if err != nil {
+		log.Printf("[API] Warning: Failed to load global settings before start: %v", err)
+	}
+
 	var globalEnvs []string
 	if settings.GlobalEnv != "" {
 		lines := strings.Split(settings.GlobalEnv, "\n")
@@ -546,8 +562,6 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		content, err := os.ReadFile(envFile)
-		// KESİN ÇÖZÜM: Dosya yoksa veya Windows okumaya izin vermediyse panik yapma!
-		// Doğrudan boş bir editör ekranı döndür ki kullanıcı düzenlemeye başlayabilsin.
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{"content": ""}`))
@@ -556,7 +570,9 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 		response := map[string]string{"content": string(content)}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, `{"error": "Failed to encode response"}`, http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -579,4 +595,68 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+}
+
+// YENİ: Yedekleme (Backup) işlemi rotası
+// handleBackupProject safely archives the target project directory into a designated backups folder.
+func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	s.mu.RLock()
+	var targetProject *config.Project
+	for _, p := range s.projects {
+		if p.ID == id {
+			pCopy := p
+			targetProject = &pCopy
+			break
+		}
+	}
+	s.mu.RUnlock()
+
+	if targetProject == nil {
+		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+		return
+	}
+
+	settings, err := config.LoadSettings("app_config.json")
+	if err != nil || settings.Workspace == "" {
+		http.Error(w, `{"error": "Workspace is not defined. Cannot determine backup location."}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Create backup directory securely inside Global Workspace
+	backupDir := filepath.Join(settings.Workspace, "DionyHub_Backups")
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		http.Error(w, `{"error": "Failed to create backup directory"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Generate a secure, timestamped filename
+	timestamp := time.Now().Format("20060102_150405")
+	safeName := strings.ReplaceAll(targetProject.Name, " ", "_")
+	zipFileName := fmt.Sprintf("%s_backup_%s.zip", safeName, timestamp)
+	targetZipPath := filepath.Join(backupDir, zipFileName)
+
+	// Execute archiving logic
+	if err := archive.ZipDirectory(targetProject.Path, targetZipPath); err != nil {
+		log.Printf("[API] Backup failed for %s: %v", targetProject.Name, err)
+		http.Error(w, `{"error": "Failed to create zip archive"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[API] Project %s successfully backed up to %s", targetProject.Name, targetZipPath)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": fmt.Sprintf("Backup saved to Backups folder as %s", zipFileName),
+	})
 }
