@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"io"
+	"io" // YENİ: MultiWriter için eklendi
 	"log"
 	"net/http"
 	"os"
@@ -14,55 +13,64 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to initialize environment: %v", err)
-	}
+	log.Println("Starting DionyHub Server...")
 
-	projects, err := config.LoadProjects("config.json")
-	if err != nil {
-		log.Fatalf("Failed to load projects: %v", err)
-	}
+	// Projeleri yükle
+	projects, _ := config.LoadProjects("config.json")
 
+	// 1. Broadcaster'ı (WebSocket Yayıncısı) ayağa kaldır
 	broadcaster := api.NewBroadcaster()
-	multiOutput := io.MultiWriter(os.Stdout, broadcaster)
+	go broadcaster.Run()
 
-	manager := process.NewManager(multiOutput)
-	apiServer := api.NewServer(manager, projects, broadcaster)
+	// 2. SİHİRLİ DOKUNUŞ: Logları hem CMD terminaline hem de Web Arayüzüne (Live Terminal) kopyala!
+	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
 
-	mux := http.NewServeMux()
-	apiServer.RegisterRoutes(mux)
-	mux.Handle("/", http.FileServer(http.Dir("web")))
+	// 3. Process Manager'a bu çoklu yazıcıyı bağla ki loglar arayüze aksın
+	procManager := process.NewManager(multiWriter)
 
-	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Println("----------------------------------------")
-	log.Printf("Starting DionyHub Backend...")
-	log.Printf("Loaded %d projects from config", len(projects))
-
-	// YENİ: Auto-Start Döngüsü (Sunucu açılır açılmaz çalışacaklar)
-	autoStartCount := 0
+	// Auto-Start (Otomatik Başlatma) Döngüsü
 	for _, p := range projects {
 		if p.AutoStart {
-			autoStartCount++
 			parts := strings.Fields(p.Command)
 			if len(parts) > 0 {
-				log.Printf("[Auto-Start] Launching %s...", p.Name)
-				err := manager.Start(p.ID, p.Name, p.Path, p.Interactive, parts[0], parts[1:]...)
+
+				// Global ayarları ve ENV'leri yükle
+				settings, _ := config.LoadSettings("app_config.json")
+				var globalEnvs []string
+				if settings.GlobalEnv != "" {
+					lines := strings.Split(settings.GlobalEnv, "\n")
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						if line != "" && !strings.HasPrefix(line, "#") {
+							globalEnvs = append(globalEnvs, line)
+						}
+					}
+				}
+
+				// Projeyi çalıştır
+				err := procManager.Start(p.ID, p.Name, p.Path, p.Interactive, globalEnvs, parts[0], parts[1:]...)
 				if err != nil {
-					log.Printf("[Auto-Start Error] Failed to launch %s: %v", p.Name, err)
+					log.Printf("Failed to auto-start project %s: %v", p.Name, err)
+				} else {
+					log.Printf("Auto-started project: %s", p.Name)
 				}
 			}
 		}
 	}
-	if autoStartCount > 0 {
-		log.Printf("Successfully auto-started %d projects.", autoStartCount)
-	}
 
-	log.Printf("Listening on http://localhost%s", addr)
-	log.Println("----------------------------------------")
+	// API Sunucusunu kur
+	server := api.NewServer(procManager, projects, broadcaster)
+	mux := http.NewServeMux()
 
-	err = http.ListenAndServe(addr, mux)
-	if err != nil {
-		log.Fatalf("Server forcefully shut down: %v", err)
+	// Statik (HTML/JS/CSS) dosyaları sun
+	fs := http.FileServer(http.Dir("./web"))
+	mux.Handle("/", fs)
+
+	// Route'ları (Uç noktaları) kaydet
+	server.RegisterRoutes(mux)
+
+	log.Println("Server is running on http://localhost:8080")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		log.Fatalf("Server crashed: %v", err)
 	}
 }
