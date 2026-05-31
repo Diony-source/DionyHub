@@ -18,30 +18,25 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================
-   YENİ: AKILLI ORTADAN KIRPMA MOTORU
+   YENİ: KUSURSUZ KARAKTER BAZLI KIRPMA MOTORU
 ========================================= */
 function formatWorkspacePath(path) {
-    const maxLength = 35; 
+    const maxLength = 35; // Kutuyu taşırmayacak ideal karakter limiti
     
-    // Eğer zaten kısaysa veya sadece birkaç klasörden oluşuyorsa olduğu gibi bırak ve sonuna '/' ekle
-    const isShort = path.length <= maxLength;
-    const cleanPath = path.replace(/\\/g, '/');
-    const endsWithSlash = cleanPath.endsWith('/');
-    const finalPath = isShort && !endsWithSlash ? cleanPath + '/' : cleanPath;
-    
-    if (isShort) return finalPath;
+    let cleanPath = path.replace(/\\/g, '/');
+    if (!cleanPath.endsWith('/')) cleanPath += '/';
 
-    // Uzunsa klasörleri parçala (Örn: C:, Users, Diony, Desktop, apps)
-    const parts = cleanPath.split('/').filter(Boolean);
-    
-    // Yeterince klasör varsa (Ana dizin + ... + son 2 klasör) formülünü uygula
-    if (parts.length >= 4) {
-        return `${parts[0]}/.../${parts[parts.length-2]}/${parts[parts.length-1]}/`;
-    }
-    
-    // Eğer çok uzun tek bir klasör ismi varsa acil durum kesmesi yap
-    const half = Math.floor((maxLength - 3) / 2);
-    return path.substring(0, half) + '...' + path.substring(path.length - half);
+    // Eğer limitin altındaysa hiç dokunma
+    if (cleanPath.length <= maxLength) return cleanPath;
+
+    // Uzunsa: Baştan 3 karakter al (Örn: "C:/")
+    const startPart = cleanPath.substring(0, 3);
+
+    // Kalan hakkımızı hesapla ve metnin EN SONDAN geriye doğru al
+    const endPartLength = maxLength - startPart.length - 3; // 3 karakter "..." için
+    const endPart = cleanPath.substring(cleanPath.length - endPartLength);
+
+    return startPart + '...' + endPart;
 }
 
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
@@ -95,14 +90,10 @@ function toggleWorkspaceMode() {
 
     if(useWs) {
         prefix.classList.remove('hidden');
-        
-        // Asıl tam yol
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
         
-        // Hover yapıldığında TAM YOLU göster
         prefix.title = formattedWs; 
-        
-        // Ekranda GÖRÜNEN YOLU ortadan kırp (Örn: C:/.../DionyHub/apps/)
+        // YENİ: Kusursuz kırpma motorumuzu çağırıyoruz
         prefix.innerText = formatWorkspacePath(globalWorkspace);
         
         input.classList.remove('rounded-md');
