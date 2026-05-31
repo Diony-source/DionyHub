@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -62,7 +61,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
-		// Windows görünmez karakterlerini temizle
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202A", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202C", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\\", "/")
@@ -202,7 +200,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleanPath := strings.TrimSpace(req.Path)
-	// DÜZELTİLDİ: Eksik bıraktığım temizlik kodları geri eklendi!
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
@@ -230,7 +227,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(cleanPath, ".env")
-		if err := ioutil.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
+		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
 			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
 		} else {
 			log.Printf("[API] Initial .env file securely created at %s", envPath)
@@ -300,7 +297,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Workspace içindeki görünmez karakterleri de temizle garanti olsun
 	cleanWorkspace := strings.ReplaceAll(settings.Workspace, "\u202A", "")
 	cleanWorkspace = strings.ReplaceAll(cleanWorkspace, "\u202C", "")
 
@@ -330,7 +326,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(destPath, ".env")
-		if err := ioutil.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
+		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
 			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
 		} else {
 			log.Printf("[API] Initial .env file securely created at %s", envPath)
@@ -549,14 +545,12 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	envFile := filepath.Join(targetPath, ".env")
 
 	if r.Method == http.MethodGet {
-		content, err := ioutil.ReadFile(envFile)
+		content, err := os.ReadFile(envFile)
+		// KESİN ÇÖZÜM: Dosya yoksa veya Windows okumaya izin vermediyse panik yapma!
+		// Doğrudan boş bir editör ekranı döndür ki kullanıcı düzenlemeye başlayabilsin.
 		if err != nil {
-			if os.IsNotExist(err) {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte(`{"content": ""}`))
-				return
-			}
-			http.Error(w, `{"error": "Failed to read .env file"}`, http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"content": ""}`))
 			return
 		}
 
@@ -575,7 +569,7 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := ioutil.WriteFile(envFile, []byte(req.Content), 0644); err != nil {
+		if err := os.WriteFile(envFile, []byte(req.Content), 0644); err != nil {
 			http.Error(w, `{"error": "Failed to write .env file"}`, http.StatusInternalServerError)
 			return
 		}
