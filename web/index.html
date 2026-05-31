@@ -21,7 +21,6 @@
                 </button>
                 <div id="tag-list" class="mt-2 space-y-1 pl-4 hidden overflow-hidden transition-all duration-300"></div>
             </div>
-            
             <div class="px-2">
                 <button id="nav-settings" onclick="switchView('settings')" class="w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left">
                     <span>⚙️ Settings</span>
@@ -33,13 +32,11 @@
     <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#0f1115]">
         <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8 shadow-sm shrink-0">
             <h2 id="view-title" class="text-lg font-semibold tracking-wide text-gray-200">Active Library</h2>
-            
             <div class="flex items-center gap-6">
                 <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600/90 hover:bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg shadow-indigo-900/20 text-sm font-medium flex items-center gap-2 border border-indigo-500/50">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Project
                 </button>
-
                 <div class="text-sm text-gray-400 flex items-center gap-2 border-l border-gray-700 pl-6">
                     System Status: 
                     <span class="relative flex h-3 w-3">
@@ -68,7 +65,6 @@
                     </table>
                 </div>
             </div>
-
             <div class="p-8 pt-0 flex-1 flex flex-col min-h-[250px]">
                 <div class="bg-[#0a0a0c] rounded-xl border border-gray-700 shadow-xl flex-1 flex flex-col overflow-hidden">
                     <header class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
@@ -89,23 +85,20 @@
                     <h3 class="text-base font-semibold text-gray-200 mb-1">Global Core Settings</h3>
                     <p class="text-xs text-gray-400">Configure DionyHub's internal software behavior and global path scopes.</p>
                 </div>
-                
                 <div class="space-y-4 divide-y divide-gray-700/50">
                     <div class="pt-2">
-                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Global App Workspace (Steam Common style)</label>
-                        <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. C:/DionyHub/apps" value="C:/DionyHub/apps">
-                        <p class="text-[11px] text-gray-500 mt-1">Future applications cloned from GitHub or created internally will be structured inside this primary directory isolate.</p>
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Global App Workspace</label>
+                        <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. C:/DionyHub/apps">
+                        <p class="text-[11px] text-gray-500 mt-1">If enabled during project creation, DionyHub will automatically construct projects inside this directory.</p>
                     </div>
-
-                    <div class="pt-4 flex items-center justify-between">
+                    <div class="pt-4 flex items-center justify-between opacity-50 cursor-not-allowed">
                         <div>
                             <label class="block text-sm font-medium text-gray-300">Detailed Telemetry Buffering</label>
-                            <p class="text-xs text-gray-500">Keep up to 5000 lines of historical log buffer memory per active process execution.</p>
+                            <p class="text-xs text-gray-500">Keep up to 1000 lines of historical log buffer memory. (Hardcoded for performance)</p>
                         </div>
-                        <input type="checkbox" checked class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500">
+                        <input type="checkbox" checked disabled class="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-600 rounded">
                     </div>
                 </div>
-
                 <div class="pt-4 border-t border-gray-700 flex justify-end">
                     <button id="save-settings-btn" onclick="saveSettings()" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-md text-sm font-medium shadow-lg shadow-indigo-900/20 border border-indigo-500/50">
                         Save Configurations
@@ -128,10 +121,21 @@
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
                     <input type="text" id="projName" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="e.g. Discord Bot">
                 </div>
+                
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Absolute Path</label>
-                    <input type="text" id="projPath" required class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="C:/Users/Diony/Desktop/bot">
+                    <div class="flex justify-between items-end mb-1">
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">Project Path</label>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="useWorkspace" checked class="w-3.5 h-3.5 text-indigo-600 bg-gray-900 border-gray-600 rounded focus:ring-indigo-500 focus:ring-offset-gray-800 cursor-pointer" onchange="toggleWorkspaceMode()">
+                            <label for="useWorkspace" class="text-xs font-medium text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors">Use Global Workspace</label>
+                        </div>
+                    </div>
+                    <div class="flex shadow-inner rounded-md">
+                        <span id="workspacePrefix" class="bg-gray-700/80 border border-gray-600 border-r-0 rounded-l-md px-3 py-2 text-gray-300 text-sm font-mono select-none flex items-center overflow-hidden max-w-[150px] truncate" title="Global Workspace Path"></span>
+                        <input type="text" id="projPath" required class="flex-1 w-full bg-gray-900 border border-gray-600 rounded-r-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="folder_name">
+                    </div>
                 </div>
+
                 <div>
                     <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Execution Command</label>
                     <input type="text" id="projCmd" required value="go run main.go" class="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">

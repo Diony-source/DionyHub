@@ -4,7 +4,8 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 
-// YENİ: Maksimum log limiti (Performans için)
+// YENİ: Global Workspace Değişkeni
+let globalWorkspace = "C:/DionyHub/apps";
 const MAX_LOG_LINES = 1000;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -49,9 +50,7 @@ function switchView(viewName) {
     const navSettings = document.getElementById('nav-settings');
 
     if (viewName === 'dashboard') {
-        if (!dashboardView.classList.contains('hidden')) {
-            toggleBoard();
-        }
+        if (!dashboardView.classList.contains('hidden')) toggleBoard();
         dashboardView.classList.remove('hidden');
         settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library";
@@ -71,6 +70,31 @@ function switchView(viewName) {
 }
 
 /* =========================================
+   YENİ: WORKSPACE UI MOTORU
+========================================= */
+function toggleWorkspaceMode() {
+    const useWs = document.getElementById('useWorkspace').checked;
+    const prefix = document.getElementById('workspacePrefix');
+    const input = document.getElementById('projPath');
+
+    if(useWs) {
+        prefix.classList.remove('hidden');
+        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+        prefix.innerText = formattedWs;
+        prefix.title = formattedWs; // Üzerine gelince tam yolu göstersin
+        
+        input.classList.remove('rounded-md');
+        input.classList.add('rounded-r-md');
+        input.placeholder = "folder_name";
+    } else {
+        prefix.classList.add('hidden');
+        input.classList.add('rounded-md');
+        input.classList.remove('rounded-r-md');
+        input.placeholder = "C:/Users/Diony/Desktop/bot";
+    }
+}
+
+/* =========================================
    SETTINGS API
 ========================================= */
 async function loadSettings() {
@@ -78,7 +102,9 @@ async function loadSettings() {
         const response = await fetch('/api/settings');
         if (response.ok) {
             const settings = await response.json();
-            document.getElementById('setting-workspace').value = settings.workspace || 'C:/DionyHub/apps';
+            globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
+            document.getElementById('setting-workspace').value = globalWorkspace;
+            toggleWorkspaceMode(); // Ayar yüklendiğinde UI'ı güncelle
         }
     } catch (e) {
         console.error("Failed to load settings:", e);
@@ -89,8 +115,10 @@ async function saveSettings() {
     const btn = document.getElementById('save-settings-btn');
     const originalHTML = toggleButtonLoading(btn, true);
 
+    globalWorkspace = document.getElementById('setting-workspace').value;
+    
     const newSettings = {
-        workspace: document.getElementById('setting-workspace').value,
+        workspace: globalWorkspace,
         log_buffer: true
     };
 
@@ -103,6 +131,7 @@ async function saveSettings() {
 
         if (response.ok) {
             showToast("System settings applied successfully.", "success");
+            toggleWorkspaceMode(); // Ayar kaydedilince UI'ı anında yenile
         } else {
             const err = await response.json();
             showToast(err.error, "error");
@@ -222,7 +251,6 @@ async function loadProjects() {
         });
         updateStatuses();
     } catch (error) {
-        console.error("Load error:", error);
         showToast("Cannot connect to server.", "error");
     }
 }
@@ -253,11 +281,7 @@ function handleDragEnd() { this.classList.remove('opacity-50'); document.querySe
 async function saveNewOrder() {
     const tbody = document.getElementById('project-list');
     const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
-    const res = await fetch('/api/projects/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrderIDs)
-    });
+    const res = await fetch('/api/projects/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrderIDs) });
     if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
 }
 
@@ -335,12 +359,7 @@ async function submitEditProject(event) {
     };
 
     try {
-        const response = await fetch('/api/projects/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedProject)
-        });
-
+        const response = await fetch('/api/projects/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedProject) });
         if (response.ok) {
             closeEditModal();
             loadProjects(); 
@@ -425,7 +444,6 @@ async function startProject(id, btn) {
         }
         updateStatuses(); 
     } catch (e) {
-        console.error("Start Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
@@ -438,32 +456,42 @@ async function stopProject(id, btn) {
         const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
         if (!res.ok) {
             const data = await res.json();
-            if (!data.error.includes("not currently running")) {
-                showToast(data.error || "Failed to stop", "error");
-            }
+            if (!data.error.includes("not currently running")) showToast(data.error || "Failed to stop", "error");
         } else {
             showToast("Project stopped", "success");
         }
         updateStatuses(); 
     } catch (e) {
-        console.error("Stop Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
     }
 }
 
-function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
+function openModal() { 
+    document.getElementById('addModal').classList.replace('hidden', 'flex'); 
+    toggleWorkspaceMode(); // Modalı açarken form UI'ını güncelle
+}
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
+/* YENİ: WORKSPACE BİRLEŞTİRME VE KAYIT İŞLEMİ */
 async function submitNewProject(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const originalHTML = toggleButtonLoading(btn, true);
 
+    let finalPath = document.getElementById('projPath').value.trim();
+    const useWs = document.getElementById('useWorkspace').checked;
+
+    // Eğer workspace açıksa, globalWorkspace ile inputu birleştir
+    if (useWs) {
+        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+        finalPath = formattedWs + finalPath;
+    }
+
     const data = {
         name: document.getElementById('projName').value,
-        path: document.getElementById('projPath').value,
+        path: finalPath, // Birleştirilmiş veya mutlak yolu gönder
         command: document.getElementById('projCmd').value,
         tag: document.getElementById('projTag').value,
         interactive: document.getElementById('projInteractive').checked,
@@ -475,7 +503,7 @@ async function submitNewProject(e) {
         if (res.ok) { 
             closeModal(); 
             loadProjects(); 
-            showToast("Project added successfully!", "success");
+            showToast("Workspace folder created and project added!", "success");
         } else {
             const err = await res.json();
             showToast(err.error, "error");
@@ -514,7 +542,7 @@ async function executeDelete() {
 }
 
 /* =========================================
-   ENHANCED TERMINAL & WEBSOCKET (OPTIMİZE EDİLDİ)
+   ENHANCED TERMINAL & WEBSOCKET
 ========================================= */
 const terminalOutput = document.getElementById('terminal-output');
 
@@ -531,18 +559,14 @@ function appendLog(msg, forceColorClass = null) {
     const lines = msg.split('\n');
     const now = new Date();
     const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
-
-    // YENİ: Toplu ekleme için Fragment kullanıyoruz
     const fragment = document.createDocumentFragment();
 
     lines.forEach(l => {
         if (!l.trim()) return;
-        
         const lineDiv = document.createElement('div');
         lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
         
         let textColor = forceColorClass || 'text-gray-300';
-        
         if (!forceColorClass) {
             const lowerLine = l.toLowerCase();
             if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
@@ -558,14 +582,8 @@ function appendLog(msg, forceColorClass = null) {
         fragment.appendChild(lineDiv);
     });
     
-    // Tek seferde DOM'a yaz (Performans)
     terminalOutput.appendChild(fragment);
-
-    // YENİ: Maksimum log satırını sınırla (DOM Şişmesini/Kilitlenmesini Engelle)
-    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
-        terminalOutput.removeChild(terminalOutput.firstElementChild);
-    }
-    
+    while (terminalOutput.childElementCount > MAX_LOG_LINES) terminalOutput.removeChild(terminalOutput.firstElementChild);
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 

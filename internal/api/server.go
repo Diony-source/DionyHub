@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os" // YENİ: İşletim sistemi dosya kontrolleri için eklendi
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +15,6 @@ import (
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
-// Server holds dependencies required by the HTTP handlers.
 type Server struct {
 	manager     *process.Manager
 	mu          sync.RWMutex
@@ -23,7 +22,6 @@ type Server struct {
 	broadcaster *Broadcaster
 }
 
-// NewServer creates a new API Server instance.
 func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	return &Server{
 		manager:     m,
@@ -32,7 +30,6 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	}
 }
 
-// RegisterRoutes maps URL paths to their respective handler functions.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
@@ -45,7 +42,6 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 }
 
-// handleSettings manages both GET (reading) and POST (saving) for global application settings.
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		settings, _ := config.LoadSettings("app_config.json")
@@ -62,6 +58,8 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
+		// Windows path temizliği
+		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\\", "/")
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
 			log.Printf("[API] Failed to save settings: %v", err)
@@ -78,7 +76,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
-// handleGetProjects returns the list of projects combined with their LIVE running status.
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -106,7 +103,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(liveProjects)
 }
 
-// handleUpdateProject modifies an existing project's metadata and checks directory existence.
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -131,10 +127,14 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: KLASÖR DOĞRULAMA (VALIDATION)
-	// Klasör gerçekten işletim sisteminde var mı ve bir dizin mi (dosya değil)?
-	if info, err := os.Stat(updatedData.Path); os.IsNotExist(err) || !info.IsDir() {
-		http.Error(w, `{"error": "The specified Path does not exist or is not a valid directory"}`, http.StatusBadRequest)
+	// YENİ: Klasör yoksa DionyHub oluştursun!
+	if info, err := os.Stat(updatedData.Path); os.IsNotExist(err) {
+		if mkErr := os.MkdirAll(updatedData.Path, 0755); mkErr != nil {
+			http.Error(w, `{"error": "Failed to create directory automatically"}`, http.StatusInternalServerError)
+			return
+		}
+	} else if !info.IsDir() {
+		http.Error(w, `{"error": "The specified Path exists but is not a valid directory"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -161,16 +161,13 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		log.Printf("[API] Update save error: %v", err)
 		http.Error(w, `{"error": "Failed to save configuration"}`, http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("[API] Project updated: %s (ID: %s)", updatedData.Name, updatedData.ID)
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleAddProject dynamically adds a new project after validating the directory.
 func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -195,10 +192,15 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: KLASÖR DOĞRULAMA (VALIDATION)
-	// Kullanıcının girdiği yol (path) eğer bilgisayarda yoksa kaydı reddet.
-	if info, err := os.Stat(newProj.Path); os.IsNotExist(err) || !info.IsDir() {
-		http.Error(w, `{"error": "The specified Path does not exist or is not a valid directory"}`, http.StatusBadRequest)
+	// YENİ: Klasör yoksa DionyHub oluştursun (Workspace Desteği)
+	if info, err := os.Stat(newProj.Path); os.IsNotExist(err) {
+		if mkErr := os.MkdirAll(newProj.Path, 0755); mkErr != nil {
+			http.Error(w, `{"error": "Failed to create workspace directory automatically"}`, http.StatusInternalServerError)
+			return
+		}
+		log.Printf("[API] Created new workspace directory: %s", newProj.Path)
+	} else if !info.IsDir() {
+		http.Error(w, `{"error": "The specified Path exists but is not a valid directory"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -212,18 +214,15 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 
 	if err != nil {
-		log.Printf("[API] Error saving new project: %v", err)
 		http.Error(w, `{"error": "Failed to save project configuration"}`, http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("[API] New project registered: %s (ID: %s)", newProj.Name, newProj.ID)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newProj)
 }
 
-// handleDeleteProject gracefully stops and removes a project.
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -237,7 +236,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.manager.IsRunning(id) {
-		log.Printf("[API] Force stopping running project before deletion (ID: %s)", id)
 		_ = s.manager.Stop(id)
 	}
 
@@ -249,7 +247,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	for _, p := range s.projects {
 		if p.ID == id {
 			found = true
-			log.Printf("[API] Project deleted: %s", p.Name)
 		} else {
 			updatedProjects = append(updatedProjects, p)
 		}
@@ -265,9 +262,7 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.projects = updatedProjects
-	err := config.SaveProjects("config.json", s.projects)
-	if err != nil {
-		log.Printf("[API] Error saving config after deletion: %v", err)
+	if err := config.SaveProjects("config.json", s.projects); err != nil {
 		http.Error(w, `{"error": "Failed to save configuration after deletion"}`, http.StatusInternalServerError)
 		return
 	}
@@ -276,7 +271,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleReorderProjects accepts a new sequence of project IDs and updates the configuration.
 func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -312,17 +306,10 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.projects = reorderedProjects
-	err := config.SaveProjects("config.json", s.projects)
-	if err != nil {
-		log.Printf("[API] Error saving reordered configuration: %v", err)
-		http.Error(w, `{"error": "Failed to save reordered configuration"}`, http.StatusInternalServerError)
-		return
-	}
-
+	config.SaveProjects("config.json", s.projects)
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleStartProject starts a specific background process.
 func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -330,11 +317,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
-		return
-	}
-
 	s.mu.RLock()
 	var target *config.Project
 	for _, p := range s.projects {
@@ -356,8 +338,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, parts[0], parts[1:]...)
-	if err != nil {
+	if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, parts[0], parts[1:]...); err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -365,24 +346,15 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handleStopProject stops a specific background process.
 func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
-		return
-	}
-
-	err := s.manager.Stop(id)
-	if err != nil {
+	if err := s.manager.Stop(r.URL.Query().Get("id")); err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
