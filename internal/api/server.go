@@ -330,6 +330,9 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.URL.Query().Get("id")
+	// YENİ: API'den gelen remove_files komutunu al
+	removeFiles := r.URL.Query().Get("remove_files") == "true"
+
 	if id == "" {
 		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
 		return
@@ -344,9 +347,14 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	found := false
 	var updatedProjects []config.Project
+	var projectToDelete *config.Project
+
 	for _, p := range s.projects {
 		if p.ID == id {
 			found = true
+			// Silinecek projenin kopyasını al ki yolunu (Path) bilelim
+			projCopy := p
+			projectToDelete = &projCopy
 		} else {
 			updatedProjects = append(updatedProjects, p)
 		}
@@ -355,6 +363,15 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
+	}
+
+	// YENİ: Eğer kullanıcı dosyaları da silmek istediyse, işletim sisteminden kalıcı olarak uçur!
+	if removeFiles && projectToDelete != nil {
+		log.Printf("[API] Permanently removing directory from disk: %s", projectToDelete.Path)
+		if err := os.RemoveAll(projectToDelete.Path); err != nil {
+			log.Printf("[API] Warning: Failed to forcefully remove directory %s: %v", projectToDelete.Path, err)
+			// Hata olsa bile devam et, en azından veritabanından silelim
+		}
 	}
 
 	for i := range updatedProjects {

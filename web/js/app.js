@@ -538,12 +538,22 @@ async function executeDelete() {
     const btn = document.getElementById('confirmDeleteBtn');
     const originalHTML = toggleButtonLoading(btn, true);
     
+    // YENİ: Checkbox işaretli mi kontrol et
+    const deleteFiles = document.getElementById('deleteFilesFromDisk').checked;
+    
     try {
-        const res = await fetch(`/api/projects/delete?id=${projectToDelete}`, { method: 'DELETE' }); 
+        // YENİ: remove_files parametresini API'ye yolla
+        const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
         if(res.ok) {
             closeDeleteModal(); 
             loadProjects();
-            showToast("Project deleted", "success");
+            
+            // Kullanıcıya ne olduğunu net söyle
+            if (deleteFiles) {
+                showToast("Project and files permanently deleted", "success");
+            } else {
+                showToast("Project removed from dashboard", "success");
+            }
         } else {
             const data = await res.json();
             showToast(data.error, "error");
@@ -554,6 +564,8 @@ async function executeDelete() {
         closeDeleteModal();
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
+        // Modalı kapattıktan sonra checkbox'ı sıfırla ki bir sonraki silmede tehlike yaratmasın
+        document.getElementById('deleteFilesFromDisk').checked = false;
     }
 }
 
