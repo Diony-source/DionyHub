@@ -17,7 +17,6 @@ import (
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
-// Server handles all REST API requests and manages process state securely.
 type Server struct {
 	manager     *process.Manager
 	mu          sync.RWMutex
@@ -25,7 +24,6 @@ type Server struct {
 	broadcaster *Broadcaster
 }
 
-// NewServer initializes and returns a new Server instance.
 func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	return &Server{
 		manager:     m,
@@ -34,13 +32,17 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 	}
 }
 
-// RegisterRoutes maps HTTP endpoints to their respective handler functions.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
 	mux.HandleFunc("/api/projects/update", s.handleUpdateProject)
 	mux.HandleFunc("/api/projects/start", s.handleStartProject)
 	mux.HandleFunc("/api/projects/stop", s.handleStopProject)
+
+	// YENİ: Toplu (Bulk) Operasyon Rotaları
+	mux.HandleFunc("/api/projects/start-bulk", s.handleStartBulk)
+	mux.HandleFunc("/api/projects/stop-bulk", s.handleStopBulk)
+
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
@@ -536,6 +538,83 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// YENİ: Toplu Başlatma İşlemi
+func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var ids []string
+	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+		http.Error(w, `{"error": "Invalid JSON array"}`, http.StatusBadRequest)
+		return
+	}
+
+	settings, _ := config.LoadSettings("app_config.json")
+	var globalEnvs []string
+	if settings.GlobalEnv != "" {
+		lines := strings.Split(settings.GlobalEnv, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" && !strings.HasPrefix(line, "#") {
+				globalEnvs = append(globalEnvs, line)
+			}
+		}
+	}
+
+	startedCount := 0
+	for _, id := range ids {
+		s.mu.RLock()
+		var target *config.Project
+		for _, p := range s.projects {
+			if p.ID == id {
+				target = &p
+				break
+			}
+		}
+		s.mu.RUnlock()
+
+		if target != nil {
+			parts := strings.Fields(target.Command)
+			if len(parts) > 0 {
+				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, globalEnvs, parts[0], parts[1:]...); err == nil {
+					startedCount++
+				}
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully started %d project(s)", startedCount)})
+}
+
+// YENİ: Toplu Durdurma İşlemi
+func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var ids []string
+	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+		http.Error(w, `{"error": "Invalid JSON array"}`, http.StatusBadRequest)
+		return
+	}
+
+	stoppedCount := 0
+	for _, id := range ids {
+		if err := s.manager.Stop(id); err == nil {
+			stoppedCount++
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully stopped %d project(s)", stoppedCount)})
+}
+
 func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -597,7 +676,6 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
-// handleBackupProject safely archives the target project directory into a designated backups folder.
 func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -638,7 +716,6 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Zaman damgası çok daha okunaklı bir formata (YYYY-MM-DD_HH-MM-SS) çevrildi.
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	safeName := strings.ReplaceAll(targetProject.Name, " ", "_")
 	zipFileName := fmt.Sprintf("%s_backup_%s.zip", safeName, timestamp)
