@@ -17,6 +17,33 @@ document.addEventListener("DOMContentLoaded", () => {
     switchView('dashboard');
 });
 
+/* =========================================
+   YENİ: AKILLI ORTADAN KIRPMA MOTORU
+========================================= */
+function formatWorkspacePath(path) {
+    const maxLength = 35; 
+    
+    // Eğer zaten kısaysa veya sadece birkaç klasörden oluşuyorsa olduğu gibi bırak ve sonuna '/' ekle
+    const isShort = path.length <= maxLength;
+    const cleanPath = path.replace(/\\/g, '/');
+    const endsWithSlash = cleanPath.endsWith('/');
+    const finalPath = isShort && !endsWithSlash ? cleanPath + '/' : cleanPath;
+    
+    if (isShort) return finalPath;
+
+    // Uzunsa klasörleri parçala (Örn: C:, Users, Diony, Desktop, apps)
+    const parts = cleanPath.split('/').filter(Boolean);
+    
+    // Yeterince klasör varsa (Ana dizin + ... + son 2 klasör) formülünü uygula
+    if (parts.length >= 4) {
+        return `${parts[0]}/.../${parts[parts.length-2]}/${parts[parts.length-1]}/`;
+    }
+    
+    // Eğer çok uzun tek bir klasör ismi varsa acil durum kesmesi yap
+    const half = Math.floor((maxLength - 3) / 2);
+    return path.substring(0, half) + '...' + path.substring(path.length - half);
+}
+
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
     if (!btn) return originalContent;
     if (isLoading) {
@@ -68,9 +95,15 @@ function toggleWorkspaceMode() {
 
     if(useWs) {
         prefix.classList.remove('hidden');
+        
+        // Asıl tam yol
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        prefix.innerText = formattedWs;
+        
+        // Hover yapıldığında TAM YOLU göster
         prefix.title = formattedWs; 
+        
+        // Ekranda GÖRÜNEN YOLU ortadan kırp (Örn: C:/.../DionyHub/apps/)
+        prefix.innerText = formatWorkspacePath(globalWorkspace);
         
         input.classList.remove('rounded-md');
         input.classList.add('rounded-r-md');
@@ -83,7 +116,6 @@ function toggleWorkspaceMode() {
     }
 }
 
-// YENİ: GITHUB & LOCAL GÖRÜNÜM DEĞİŞTİRİCİ
 function toggleSourceMode() {
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
     const localWrapper = document.getElementById('localFlowWrapper');
@@ -434,6 +466,7 @@ async function startProject(id, btn) {
         }
         updateStatuses(); 
     } catch (e) {
+        console.error("Start Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
@@ -452,6 +485,7 @@ async function stopProject(id, btn) {
         }
         updateStatuses(); 
     } catch (e) {
+        console.error("Stop Error:", e);
         showToast("Network error", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
@@ -460,18 +494,16 @@ async function stopProject(id, btn) {
 
 function openModal() { 
     document.getElementById('addModal').classList.replace('hidden', 'flex'); 
-    toggleSourceMode(); // Modalı açtığında UI state'ini düzelt
+    toggleSourceMode(); 
     toggleWorkspaceMode(); 
 }
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
-// YENİ: KAYIT ve GITHUB KLONLAMA İŞLEMİNİ YÖNETEN ANA FONKSİYON
 async function submitNewProject(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
     
-    // GitHub Klonlaması uzun sürebileceği için butona özel yükleniyor efekti ver
     const loadingText = mode === 'github' ? 'Cloning Repo...' : '';
     const originalHTML = toggleButtonLoading(btn, true, loadingText);
 
@@ -505,7 +537,6 @@ async function submitNewProject(e) {
             }
 
         } else {
-            // GITHUB KLONLAMA MODU
             const data = {
                 repo_url: document.getElementById('repoUrl').value,
                 command: document.getElementById('projCmd').value,
@@ -537,18 +568,14 @@ function closeDeleteModal() { document.getElementById('deleteModal').classList.r
 async function executeDelete() { 
     const btn = document.getElementById('confirmDeleteBtn');
     const originalHTML = toggleButtonLoading(btn, true);
-    
-    // YENİ: Checkbox işaretli mi kontrol et
     const deleteFiles = document.getElementById('deleteFilesFromDisk').checked;
     
     try {
-        // YENİ: remove_files parametresini API'ye yolla
         const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
         if(res.ok) {
             closeDeleteModal(); 
             loadProjects();
             
-            // Kullanıcıya ne olduğunu net söyle
             if (deleteFiles) {
                 showToast("Project and files permanently deleted", "success");
             } else {
@@ -564,7 +591,6 @@ async function executeDelete() {
         closeDeleteModal();
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
-        // Modalı kapattıktan sonra checkbox'ı sıfırla ki bir sonraki silmede tehlike yaratmasın
         document.getElementById('deleteFilesFromDisk').checked = false;
     }
 }
