@@ -119,7 +119,6 @@ function toggleSourceMode() {
     }
 }
 
-// YÜKSELTİLDİ: Settings'ten Global ENV okunuyor
 async function loadSettings() {
     try {
         const response = await fetch('/api/settings');
@@ -149,7 +148,7 @@ async function saveSettings() {
     const newSettings = {
         workspace: globalWorkspace,
         log_buffer: true,
-        global_env: globalEnv // Yeni Parametre
+        global_env: globalEnv
     };
 
     try {
@@ -193,6 +192,25 @@ function showToast(message, type = 'success') {
         toast.classList.add('translate-x-full', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// YENİ: Backup Tetikleme Fonksiyonu
+async function backupProject(id, btn) {
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast(data.message, "success");
+        } else {
+            showToast(data.error || "Backup failed", "error");
+        }
+    } catch (e) {
+        showToast("Network error during backup", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
 }
 
 async function openEnvModal(id) {
@@ -295,6 +313,7 @@ async function loadProjects() {
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
 
+            // YENİ: Backup ikonu eklendi (ENV ikonunun yanına)
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
@@ -326,6 +345,11 @@ async function loadProjects() {
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
+                            
+                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-700 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Export as .zip Archive">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </button>
+
                             <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit .env Variables">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                             </button>
@@ -554,7 +578,6 @@ function openModal() {
 }
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
 
-// YÜKSELTİLDİ: initial_env payload'a dahil edildi
 async function submitNewProject(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
@@ -580,7 +603,7 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value,
                 interactive: document.getElementById('projInteractive').checked,
                 auto_start: document.getElementById('projAutoStart').checked,
-                initial_env: document.getElementById('projInitialEnv').value // YENİ EKLENDİ
+                initial_env: document.getElementById('projInitialEnv').value 
             };
 
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
@@ -600,7 +623,7 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value,
                 interactive: document.getElementById('projInteractive').checked,
                 auto_start: document.getElementById('projAutoStart').checked,
-                initial_env: document.getElementById('projInitialEnv').value // YENİ EKLENDİ
+                initial_env: document.getElementById('projInitialEnv').value 
             };
 
             const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
