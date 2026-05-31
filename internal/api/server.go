@@ -221,7 +221,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newProj)
 }
 
-// YENİ: GITHUB CLONE & RUN MOTORU
+// YENİ: GITHUB CLONE & RUN MOTORU (Hata Yakalaması Güçlendirildi)
 func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -259,26 +259,42 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 1. DÜZELTME: Klonlamadan önce ana Workspace klasörünün (Örn: C:/DionyHub/apps) kesinlikle var olduğundan emin ol.
+	// Eğer yoksa, klasörü oluştur!
+	if err := os.MkdirAll(settings.Workspace, 0755); err != nil {
+		http.Error(w, `{"error": "Failed to create Global Workspace parent directory"}`, http.StatusInternalServerError)
+		return
+	}
+
 	destPath := settings.Workspace + "/" + repoName
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
 	// Klasör zaten var mı kontrol et
 	if _, err := os.Stat(destPath); !os.IsNotExist(err) {
-		http.Error(w, `{"error": "Directory already exists in Workspace. Use local project addition or delete the existing folder."}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Directory already exists in Workspace. Delete the existing folder first."}`, http.StatusBadRequest)
 		return
 	}
 
-	// İşletim Sistemine Git Clone Komutu Gönder
 	log.Printf("[API] Cloning repository %s into %s", req.RepoURL, destPath)
-	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
 
-	if err := cmd.Run(); err != nil {
-		log.Printf("[API] Git clone failed: %v", err)
-		http.Error(w, `{"error": "Failed to clone repository. Make sure Git is installed and the repository is public."}`, http.StatusInternalServerError)
+	// 2. DÜZELTME: Git komutunun çıktılarını (Log ve Hataları) yakala!
+	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		log.Printf("[API] Git clone failed: %v\nOutput: %s", err, string(output))
+		// Git'in fırlattığı gerçek hatayı temizle ve arayüze (Toast) gönder
+		errMsg := strings.TrimSpace(string(output))
+		errMsg = strings.ReplaceAll(errMsg, "\n", " | ")
+		errMsg = strings.ReplaceAll(errMsg, "\"", "'")
+		if errMsg == "" {
+			errMsg = "Make sure Git is installed on your Windows machine and in your PATH."
+		}
+		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, errMsg), http.StatusInternalServerError)
 		return
 	}
 
-	// Klonlama başarılı, projeyi sisteme kaydet
+	// Klonlama %100 başarılı olduysa projeyi sisteme kaydet
 	newProj := config.Project{
 		ID:          fmt.Sprintf("%d", time.Now().UnixMilli()),
 		Name:        repoName,
