@@ -7,6 +7,10 @@ let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 const MAX_LOG_LINES = 1000;
 
+// OPTİMİZASYON YAMASI: Log Havuzu (Buffer)
+let logBuffer = [];
+let logFlushInterval = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     loadSettings();
@@ -15,6 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
+    
+    // YENİ: Havuzdaki logları her 200ms'de bir topluca ekrana bas (Performans için)
+    logFlushInterval = setInterval(flushLogBuffer, 200);
 });
 
 function formatWorkspacePath(path) {
@@ -356,8 +363,6 @@ async function loadProjects() {
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
-            
-            // YENİ JARGON: Watchdog -> Auto-Restart
             const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Auto-Restart Enabled">🛡️</span>` : '';
 
             tr.innerHTML = `
@@ -391,11 +396,9 @@ async function loadProjects() {
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            
                             <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-700 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Export as .zip Archive">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                             </button>
-
                             <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit .env Variables">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                             </button>
@@ -731,8 +734,57 @@ const terminalOutput = document.getElementById('terminal-output');
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onopen = () => appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
-    socket.onmessage = (e) => appendLog(e.data);
+    
+    // OPTİMİZASYON YAMASI: Doğrudan ekrana basmak yerine havuza (buffer) at
+    socket.onmessage = (e) => {
+        logBuffer.push(e.data);
+    };
+    
     socket.onclose = () => setTimeout(connectWebSocket, 3000);
+}
+
+// OPTİMİZASYON YAMASI: Havuzu kontrollü bir şekilde ekrana boşaltma fonksiyonu
+function flushLogBuffer() {
+    if (logBuffer.length === 0 || !terminalOutput) return;
+
+    const fragment = document.createDocumentFragment();
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
+
+    // Havuzdaki tüm logları tek seferde işle
+    logBuffer.forEach(msg => {
+        const lines = msg.split('\n');
+        lines.forEach(l => {
+            if (!l.trim()) return;
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
+            
+            let textColor = 'text-gray-300';
+            const lowerLine = l.toLowerCase();
+            if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
+                textColor = 'text-red-400';
+            } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
+                textColor = 'text-yellow-400';
+            } else if (lowerLine.includes('starting') || lowerLine.includes('listening') || lowerLine.includes('success')) {
+                textColor = 'text-emerald-400';
+            }
+
+            lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
+            fragment.appendChild(lineDiv);
+        });
+    });
+
+    // Tek bir DOM güncellemesi ile hepsini ekle (Tarayıcıyı kurtaran hamle)
+    terminalOutput.appendChild(fragment);
+    
+    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
+        terminalOutput.removeChild(terminalOutput.firstElementChild);
+    }
+    
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    
+    // Havuzu temizle
+    logBuffer = [];
 }
 
 function appendLog(msg, forceColorClass = null) {
@@ -747,19 +799,7 @@ function appendLog(msg, forceColorClass = null) {
         if (!l.trim()) return;
         const lineDiv = document.createElement('div');
         lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
-        
         let textColor = forceColorClass || 'text-gray-300';
-        if (!forceColorClass) {
-            const lowerLine = l.toLowerCase();
-            if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
-                textColor = 'text-red-400';
-            } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
-                textColor = 'text-yellow-400';
-            } else if (lowerLine.includes('starting') || lowerLine.includes('listening') || lowerLine.includes('success')) {
-                textColor = 'text-emerald-400';
-            }
-        }
-
         lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
         fragment.appendChild(lineDiv);
     });
@@ -771,5 +811,6 @@ function appendLog(msg, forceColorClass = null) {
 
 function clearTerminal() { 
     if(terminalOutput) terminalOutput.innerHTML = ''; 
+    logBuffer = []; // Temizlerken havuzu da boşalt
     appendLog("=== Terminal Cleared ===", "text-gray-500");
 }
