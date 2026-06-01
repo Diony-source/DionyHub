@@ -47,8 +47,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
 	mux.HandleFunc("/api/projects/backup", s.handleBackupProject)
 	mux.HandleFunc("/api/settings", s.handleSettings)
-	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder) // YENİ ROTA EKLENDİ
+	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
+	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
 }
 
 // handleBrowseFolder triggers the native OS folder picker dialog
@@ -745,4 +746,34 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": fmt.Sprintf("Backup saved as %s", zipFileName),
 	})
+}
+
+// handleProjectInput receives keystrokes from the web terminal and pipes them to the running process
+func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		ID   string `json:"id"`
+		Data string `json:"data"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.ID == "" {
+		http.Error(w, `{"error": "Project ID is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := s.manager.WriteInput(req.ID, req.Data); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
