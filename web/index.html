@@ -14,7 +14,6 @@
 </head>
 <body class="bg-gray-900 text-white h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30">
 
-    <!-- SIDEBAR -->
     <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-20">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
             <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md">DionyHub</span>
@@ -32,7 +31,6 @@
                 
                 <div id="tag-list" class="pl-4 pr-2 py-2 space-y-1">
                     <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border bg-indigo-500/20 text-indigo-400 border-indigo-500/30">All Projects</button>
-                    <!-- Dinamik Taglar Buraya Gelecek -->
                 </div>
 
                 <button onclick="switchView('settings')" id="nav-settings" class="w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left mt-2">
@@ -43,10 +41,8 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col bg-gray-900 relative">
         
-        <!-- HEADER -->
         <header class="h-16 bg-gray-800/80 backdrop-blur border-b border-gray-700 flex items-center justify-between px-8 z-10 sticky top-0">
             <h1 id="view-title" class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm">Active Library</h1>
             <div class="flex items-center gap-6">
@@ -61,10 +57,8 @@
             </div>
         </header>
 
-        <!-- DASHBOARD VIEW -->
         <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
             
-            <!-- TOPLU İŞLEM (BULK ACTIONS) CONTAINER -->
             <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
                 <div class="flex items-center gap-3">
                     <span class="text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-md text-sm font-bold uppercase tracking-wider shadow-sm" id="bulk-tag-name"># TAG</span>
@@ -82,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- PROJE TABLOSU -->
             <div class="px-8 pt-4 pb-4">
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[800px]">
@@ -95,14 +88,11 @@
                                 <th class="p-5 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="project-list">
-                            <!-- JS ile doldurulacak -->
-                        </tbody>
+                        <tbody id="project-list"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- CANLI TERMİNAL -->
             <div class="px-8 pb-8 flex-1 flex flex-col min-h-[300px]">
                 <div class="bg-[#0d1117] rounded-xl border border-gray-700 shadow-2xl flex flex-col h-full overflow-hidden">
                     <div class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center shrink-0">
@@ -117,10 +107,8 @@
             </div>
         </div>
 
-        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden flex-col flex-1 overflow-y-auto px-8 py-8">
             <div class="max-w-3xl mx-auto w-full space-y-6">
-                <!-- Workspace Settings -->
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl p-6">
                     <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">
                         <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
@@ -135,7 +123,6 @@
                     </div>
                 </div>
 
-                <!-- Global ENV Settings -->
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl p-6">
                     <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">
                         <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -156,7 +143,6 @@
 
     </div>
 
-    <!-- ADD MODAL -->
     <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
@@ -205,7 +191,7 @@
 
                     <div id="githubFlowWrapper" class="space-y-5 hidden">
                         <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-md p-3 text-xs text-indigo-200 leading-relaxed">
-                            <span class="font-semibold text-indigo-400">Notice:</span> The repository will be cloned into your <span class="font-mono text-indigo-300">Global Workspace</span>. The folder name will be automatically derived from the GitHub URL.
+                            <span class="font-semibold text-indigo-400">Notice:</span> The repository will be cloned into your <span class="font-mono text-indigo-300">Global Workspace</span>.
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Repository URL <span class="text-rose-500">*</span></label>
@@ -230,7 +216,6 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                             Create Initial .env (Optional)
                         </label>
-                        <p class="text-xs text-gray-500 mb-2">If provided, this content will be written to a <code class="text-gray-400 bg-gray-900 px-1 py-0.5 rounded">.env</code> file in the project folder upon creation/cloning.</p>
                         <textarea id="projInitialEnv" rows="3" class="w-full bg-[#0d1117] border border-gray-700 rounded-md px-3 py-2 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors resize-y" placeholder="PORT=3000&#10;SECRET=my_secret_key"></textarea>
                     </div>
 
@@ -242,8 +227,8 @@
                                 <div class="absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform peer-checked:translate-x-5"></div>
                             </div>
                             <div>
-                                <div class="text-sm font-medium text-gray-200">Interactive Shell</div>
-                                <div class="text-xs text-gray-500">Run process in a pseudo-terminal (PTY)</div>
+                                <div class="text-sm font-medium text-gray-200">External Terminal</div>
+                                <div class="text-xs text-gray-500">Opens process in a separate visible window</div>
                             </div>
                         </label>
                         <label class="flex items-center gap-3 cursor-pointer group">
@@ -257,7 +242,6 @@
                                 <div class="text-xs text-gray-500">Launch automatically when DionyHub boots</div>
                             </div>
                         </label>
-                        
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative flex items-center">
                                 <input type="checkbox" id="projAutoRestart" class="sr-only peer">
@@ -265,8 +249,8 @@
                                 <div class="absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform peer-checked:translate-x-5"></div>
                             </div>
                             <div>
-                                <div class="text-sm font-medium text-gray-200 flex items-center gap-1">Watchdog <span class="text-amber-400 text-xs">🛡️</span></div>
-                                <div class="text-xs text-gray-500">Auto-restart the project if it crashes unexpectedly</div>
+                                <div class="text-sm font-medium text-gray-200 flex items-center gap-1">Auto-Restart on Crash <span class="text-amber-400 text-xs">🛡️</span></div>
+                                <div class="text-xs text-gray-500">Restarts the project automatically if it stops unexpectedly</div>
                             </div>
                         </label>
                     </div>
@@ -280,7 +264,6 @@
         </div>
     </div>
 
-    <!-- EDIT MODAL -->
     <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700">
@@ -312,7 +295,7 @@
                     <div class="flex gap-6 mt-2 bg-gray-900 p-3 rounded border border-gray-700 flex-wrap">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="editProjInteractive" class="rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-300">Interactive</span>
+                            <span class="text-sm text-gray-300">External Terminal</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="editProjAutoStart" class="rounded bg-gray-800 border-gray-600 text-emerald-500 focus:ring-emerald-500">
@@ -320,7 +303,7 @@
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="editProjAutoRestart" class="rounded bg-gray-800 border-gray-600 text-amber-500 focus:ring-amber-500">
-                            <span class="text-sm text-gray-300">Watchdog</span>
+                            <span class="text-sm text-gray-300">Auto-Restart</span>
                         </label>
                     </div>
                     <div class="pt-4 flex justify-end gap-3 border-t border-gray-700">
@@ -332,7 +315,6 @@
         </div>
     </div>
 
-    <!-- ENV MODAL -->
     <div id="envModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-2xl mx-4 flex flex-col h-[70vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
@@ -365,7 +347,6 @@
         </div>
     </div>
 
-    <!-- DELETE CONFIRMATION MODAL -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-rose-900/50 shadow-2xl w-full max-w-md mx-4 transform transition-all">
             <div class="p-6">
@@ -393,7 +374,6 @@
         </div>
     </div>
 
-    <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="/js/app.js"></script>

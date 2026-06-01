@@ -194,9 +194,8 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// YENİ: Toplu Başlatma / Durdurma Fonksiyonu
 async function executeBulkAction(action) {
-    if (!currentTagFilter) return; // Güvenlik kontrolü (Sadece Tag varken çalışsın)
+    if (!currentTagFilter) return; 
     
     const filteredProjects = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase());
     const idsToProcess = filteredProjects.map(p => p.id);
@@ -324,7 +323,6 @@ async function loadProjects() {
             ? projects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase())
             : projects;
 
-        // YENİ: Toplu İşlem (Bulk Actions) Panelini Göster / Gizle
         const bulkContainer = document.getElementById('bulk-actions-container');
         if (bulkContainer) {
             if (currentTagFilter !== null) {
@@ -333,7 +331,6 @@ async function loadProjects() {
                 bulkContainer.classList.remove('hidden');
                 bulkContainer.classList.add('flex');
             } else {
-                // "All Projects" modundayken sistemi çökertmemek için sakla
                 bulkContainer.classList.add('hidden');
                 bulkContainer.classList.remove('flex');
             }
@@ -358,8 +355,10 @@ async function loadProjects() {
             tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
-            const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-start Enabled">⚡</span>` : '';
-            const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Watchdog Enabled">🛡️</span>` : '';
+            const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
+            
+            // YENİ JARGON: Watchdog -> Auto-Restart
+            const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Auto-Restart Enabled">🛡️</span>` : '';
 
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
@@ -370,9 +369,8 @@ async function loadProjects() {
                         ${p.name.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex flex-col">
-                        <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge}</div>
+                        <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div>
                     </div>
-                    <div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div>
                 </td>
                 <td class="p-5 text-sm text-gray-400 font-mono text-xs truncate max-w-xs" title="${p.path}">
                     ${p.path}
@@ -653,8 +651,8 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value,
                 interactive: document.getElementById('projInteractive').checked,
                 auto_start: document.getElementById('projAutoStart').checked,
-                initial_env: document.getElementById('projInitialEnv').value,
-                auto_restart: document.getElementById('projAutoRestart').checked 
+                auto_restart: document.getElementById('projAutoRestart').checked,
+                initial_env: document.getElementById('projInitialEnv').value 
             };
 
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
@@ -674,6 +672,7 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value,
                 interactive: document.getElementById('projInteractive').checked,
                 auto_start: document.getElementById('projAutoStart').checked,
+                auto_restart: document.getElementById('projAutoRestart').checked,
                 initial_env: document.getElementById('projInitialEnv').value 
             };
 
