@@ -7,7 +7,6 @@ let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 const MAX_LOG_LINES = 1000;
 
-// OPTİMİZASYON YAMASI: Log Havuzu (Buffer)
 let logBuffer = [];
 let logFlushInterval = null;
 
@@ -20,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
     
-    // YENİ: Havuzdaki logları her 200ms'de bir topluca ekrana bas (Performans için)
     logFlushInterval = setInterval(flushLogBuffer, 200);
 });
 
@@ -333,7 +331,8 @@ async function loadProjects() {
         const bulkContainer = document.getElementById('bulk-actions-container');
         if (bulkContainer) {
             if (currentTagFilter !== null) {
-                document.getElementById('bulk-tag-name').innerText = `# ${currentTagFilter}`;
+                // OPTİMİZE EDİLDİ: Artık '#' işareti daha şık ve tag tam girildiği harf yapısıyla yazdırılıyor
+                document.getElementById('bulk-tag-name').innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
                 document.getElementById('bulk-project-count').innerText = `${filteredProjects.length} project(s)`;
                 bulkContainer.classList.remove('hidden');
                 bulkContainer.classList.add('flex');
@@ -361,7 +360,9 @@ async function loadProjects() {
             tr.addEventListener('drop', handleDrop);
             tr.addEventListener('dragend', handleDragEnd);
             
-            const tagBadge = p.tag ? `<span class="ml-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-wider rounded border border-indigo-500/30">${p.tag}</span>` : '';
+            // OPTİMİZE EDİLDİ: Katı "uppercase" silindi, hap formatına geçirildi ve şık bir # ikonu eklendi.
+            const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-medium rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-bold">#</span>${p.tag}</span>` : '';
+            
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
             const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Auto-Restart Enabled">🛡️</span>` : '';
 
@@ -370,7 +371,7 @@ async function loadProjects() {
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
                     </div>
-                    <div class="h-8 w-8 rounded bg-gray-700 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors">
+                    <div class="h-8 w-8 rounded bg-gray-700 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors shrink-0">
                         ${p.name.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex flex-col">
@@ -735,7 +736,6 @@ function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onopen = () => appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
     
-    // OPTİMİZASYON YAMASI: Doğrudan ekrana basmak yerine havuza (buffer) at
     socket.onmessage = (e) => {
         logBuffer.push(e.data);
     };
@@ -743,7 +743,6 @@ function connectWebSocket() {
     socket.onclose = () => setTimeout(connectWebSocket, 3000);
 }
 
-// OPTİMİZASYON YAMASI: Havuzu kontrollü bir şekilde ekrana boşaltma fonksiyonu
 function flushLogBuffer() {
     if (logBuffer.length === 0 || !terminalOutput) return;
 
@@ -751,7 +750,6 @@ function flushLogBuffer() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
 
-    // Havuzdaki tüm logları tek seferde işle
     logBuffer.forEach(msg => {
         const lines = msg.split('\n');
         lines.forEach(l => {
@@ -774,7 +772,6 @@ function flushLogBuffer() {
         });
     });
 
-    // Tek bir DOM güncellemesi ile hepsini ekle (Tarayıcıyı kurtaran hamle)
     terminalOutput.appendChild(fragment);
     
     while (terminalOutput.childElementCount > MAX_LOG_LINES) {
@@ -783,7 +780,6 @@ function flushLogBuffer() {
     
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
     
-    // Havuzu temizle
     logBuffer = [];
 }
 
@@ -811,6 +807,6 @@ function appendLog(msg, forceColorClass = null) {
 
 function clearTerminal() { 
     if(terminalOutput) terminalOutput.innerHTML = ''; 
-    logBuffer = []; // Temizlerken havuzu da boşalt
+    logBuffer = []; 
     appendLog("=== Terminal Cleared ===", "text-gray-500");
 }
