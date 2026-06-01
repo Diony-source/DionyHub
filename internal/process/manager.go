@@ -62,12 +62,12 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var cmd *exec.Cmd
 	if interactive {
 		if runtime.GOOS == "windows" {
-			// KUSURSUZ ÇÖZÜM: 'start' komutu YERİNE CREATE_NEW_CONSOLE (16) bayrağı kullanıyoruz.
-			// Bu sayede pencere Go'dan kopmaz, durumu doğru takip edilir ve Stop butonu pencereyi kapatabilir.
-			cmdArgs := append([]string{"/c", nameCmd}, args...)
+			// KUSURSUZ ÇÖZÜM: 'start /WAIT' kullanıyoruz!
+			// /WAIT: Pencere kapanana kadar beklemesini sağlar (Anında stopped olmasını engeller).
+			// name: Pencerenin başlığına (Title) projenin adını yazar.
+			cmdArgs := append([]string{"/c", "start", "/WAIT", name, nameCmd}, args...)
 			cmd = exec.Command("cmd", cmdArgs...)
 			cmd.Dir = path
-			cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 16}
 		} else {
 			// Mac/Linux Fallback
 			cmd = exec.Command("x-terminal-emulator", append([]string{"-e", nameCmd}, args...)...)
@@ -87,7 +87,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			go m.prefixLogger(name, stderr)
 		}
 
-		// Arka planda çalışırken konsol penceresi açılmasını engeller
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
 
@@ -108,7 +107,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	}
 	m.mu.Unlock()
 
-	// YENİ: Arayüze projenin başladığını net bir şekilde bildir
 	fmt.Fprintf(m.output, "[%s] 🚀 Project started successfully (PID: %d).\n", name, cmd.Process.Pid)
 
 	// GÖZLEMCİ (WATCHDOG) GOROUTINE
@@ -139,7 +137,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 				m.Start(id, name, path, interactive, autoRestart, globalEnvs, nameCmd, args...)
 			}
 		} else if !intended {
-			// Proje watchdog kapalıyken kendi kendine durduysa logla
 			fmt.Fprintf(m.output, "[%s] ⚪ Process exited normally.\n", name)
 		}
 	}()
@@ -161,7 +158,6 @@ func (m *Manager) Stop(id string) error {
 
 	pid := p.Cmd.Process.Pid
 
-	// YENİ: Arayüze projenin durdurulduğunu bildir
 	fmt.Fprintf(m.output, "[%s] 🛑 Stop signal sent. Terminating process tree...\n", p.Name)
 
 	var err error
