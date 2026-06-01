@@ -57,10 +57,25 @@ function initTerminal() {
         fitAddon.fit();
     });
 
-    // KLAVYE DİNLEYİCİSİ: Terminale yazılan tuşları Backend'e (Stdin) fırlatır
+    // KUSURSUZ ÇÖZÜM: Local Echo & Enter (CRLF) Çevirisi
     term.onData(data => {
         if (!activeTerminalProjectId) return;
 
+        // Klavye tuşunu ekranda göster (Local Echo)
+        const code = data.charCodeAt(0);
+        if (code === 13) { 
+            // Enter tuşuna basıldıysa, ekranda alt satıra geç ama Backend'e \n gönder
+            term.write('\r\n');
+            data = '\n'; 
+        } else if (code === 127) { 
+            // Backspace (Silme) tuşuna basıldıysa karakteri ekrandan sil
+            term.write('\b \b');
+        } else {
+            // Normal harfleri ekrana yazdır
+            term.write(data);
+        }
+
+        // Veriyi Go Backend'ine yolla
         fetch('/api/projects/input', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
