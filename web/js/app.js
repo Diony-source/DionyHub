@@ -5,12 +5,14 @@ let availableTags = [];
 let cachedProjects = [];
 
 let globalWorkspace = "C:/DionyHub/apps";
-const MAX_LOG_LINES = 1000;
 
-// YENİ: Akıllı Scroll Kilidi
-let isAutoScroll = true;
+// Xterm.js Değişkenleri
+let term;
+let fitAddon;
+let activeTerminalProjectId = null; // Şu an terminalde klavyesi bağlı olan proje ID'si
 
 document.addEventListener("DOMContentLoaded", () => {
+    initTerminal();
     loadProjects();
     loadSettings();
     setInterval(updateStatuses, 2000);
@@ -18,106 +20,103 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
-    
-    // YENİ: Arama çubuğu filtreleme dinleyicisi
-    const searchInput = document.getElementById('terminal-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const terminalOutput = document.getElementById('terminal-output');
-            const lines = terminalOutput.children;
-            for(let i=0; i<lines.length; i++) {
-                if(lines[i].textContent.toLowerCase().includes(term)) {
-                    lines[i].style.display = 'flex';
-                } else {
-                    lines[i].style.display = 'none';
-                }
-            }
-            if(isAutoScroll) scrollToBottom();
-        });
-    }
-
-    // YENİ: Akıllı Scroll Dedektörü
-    const terminalOutput = document.getElementById('terminal-output');
-    const scrollBtn = document.getElementById('terminal-scroll-btn');
-    if (terminalOutput) {
-        terminalOutput.addEventListener('scroll', () => {
-            // Kullanıcı en alt 10 pixel sınırından yukarı çıktıysa auto-scroll'u iptal et
-            const isAtBottom = terminalOutput.scrollHeight - terminalOutput.scrollTop - terminalOutput.clientHeight < 10;
-            if (isAtBottom) {
-                isAutoScroll = true;
-                scrollBtn.classList.add('hidden');
-            } else {
-                isAutoScroll = false;
-                scrollBtn.classList.remove('hidden');
-            }
-        });
-    }
 });
 
-// YENİ: Butona basınca en alta inme fonksiyonu
-function scrollToBottom() {
-    const terminalOutput = document.getElementById('terminal-output');
-    if (terminalOutput) {
-        isAutoScroll = true;
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        document.getElementById('terminal-scroll-btn').classList.add('hidden');
-    }
+// Xterm.js Başlatıcı Fonksiyon
+function initTerminal() {
+    term = new Terminal({
+        theme: {
+            background: '#0d1117',
+            foreground: '#e5e7eb',
+            cursor: '#6366f1',
+            selection: '#6366f140',
+            black: '#1f2937',
+            red: '#ef4444',
+            green: '#10b981',
+            yellow: '#f59e0b',
+            blue: '#3b82f6',
+            magenta: '#d946ef',
+            cyan: '#06b6d4',
+            white: '#f9fafb'
+        },
+        fontFamily: 'Consolas, "Courier New", monospace',
+        fontSize: 13,
+        cursorBlink: true,
+        scrollback: 5000, // 5000 satıra kadar hafızada tutar (DOM şişmez)
+        convertEol: true // Backend'den gelen \n'leri otomatik \r\n yapar
+    });
+
+    fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+
+    const terminalContainer = document.getElementById('terminal-output');
+    term.open(terminalContainer);
+    fitAddon.fit();
+
+    window.addEventListener('resize', () => {
+        fitAddon.fit();
+    });
+
+    // KLAVYE DİNLEYİCİSİ: Terminale yazılan tuşları Backend'e (Stdin) fırlatır
+    term.onData(data => {
+        if (!activeTerminalProjectId) return;
+
+        fetch('/api/projects/input', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: activeTerminalProjectId,
+                data: data
+            })
+        }).catch(err => console.error("Failed to send keystroke:", err));
+    });
+
+    term.writeln('\x1b[35m=== DionyHub Xterm.js Engine Initialized ===\x1b[0m');
+    term.writeln('\x1b[90mWaiting for logs...\x1b[0m');
 }
 
-// YENİ: SİHİRLİ ANSI RENK ÇEVİRİCİ MOTOR
-function ansiToHtml(text) {
-    let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Terminal Odaklama (Focus) Fonksiyonu
+function focusTerminal(projectId, projectName) {
+    activeTerminalProjectId = projectId;
     
-    // Tıklanabilir Link (URL) Entegrasyonu
-    html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-indigo-400 underline hover:text-indigo-300 transition-colors">$1</a>');
+    // UI Güncellemesi
+    const badge = document.getElementById('terminal-focus-badge');
+    if (badge) {
+        badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]";
+        badge.innerText = `Focus: ${projectName}`;
+    }
 
-    // Terminal Renk Paleti (Tailwind karşılıklarıyla)
-    const ansiCodes = {
-        '30': 'color: #888888', // Siyah/Gri
-        '31': 'color: #ef4444', // Kırmızı
-        '32': 'color: #10b981', // Yeşil
-        '33': 'color: #f59e0b', // Sarı
-        '34': 'color: #3b82f6', // Mavi
-        '35': 'color: #d946ef', // Fuşya/Magenta
-        '36': 'color: #06b6d4', // Camgöbeği/Cyan
-        '37': 'color: #f3f4f6', // Beyaz
-        '90': 'color: #9ca3af', // Açık Gri
-        '91': 'color: #f87171', // Açık Kırmızı
-        '92': 'color: #34d399', // Açık Yeşil
-        '93': 'color: #fbbf24', // Açık Sarı
-        '94': 'color: #60a5fa', // Açık Mavi
-        '95': 'color: #e879f9', // Açık Fuşya
-        '96': 'color: #22d3ee', // Açık Cyan
-        '97': 'color: #ffffff', // Parlak Beyaz
-        '1': 'font-weight: bold',
-    };
-
-    let inSpan = false;
-    // \x1b[31m veya \x1b[1;31m gibi kodları yakala
-    html = html.replace(/\x1b\[([0-9;]+)m/g, (match, p1) => {
-        if (p1 === '0' || p1 === '00') {
-            if (inSpan) {
-                inSpan = false;
-                return '</span>';
-            }
-            return '';
-        }
-        const codes = p1.split(';');
-        let styles = [];
-        codes.forEach(code => {
-            if (ansiCodes[code]) styles.push(ansiCodes[code]);
-        });
-        if (styles.length > 0) {
-            let close = inSpan ? '</span>' : '';
-            inSpan = true;
-            return close + `<span style="${styles.join(';')}">`;
-        }
-        return '';
+    // Satırı vurgula
+    document.querySelectorAll('#project-list tr').forEach(tr => {
+        tr.classList.remove('ring-1', 'ring-indigo-500', 'bg-gray-800/50');
     });
-    if (inSpan) html += '</span>';
+    
+    const row = document.querySelector(`tr[data-id="${projectId}"]`);
+    if (row) {
+        row.classList.add('ring-1', 'ring-indigo-500', 'bg-gray-800/50');
+    }
 
-    return html;
+    term.focus();
+}
+
+function clearTerminal() { 
+    if (term) term.clear(); 
+}
+
+function connectWebSocket() {
+    const socket = new WebSocket(`ws://${window.location.host}/ws`);
+    
+    socket.onmessage = (e) => {
+        if (term) {
+            // Xterm.js doğrudan ANSI ve metinleri kabul eder
+            term.write(e.data);
+        }
+    };
+    
+    socket.onclose = () => {
+        if (term) term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
+        setTimeout(connectWebSocket, 3000);
+    };
 }
 
 function formatWorkspacePath(path) {
@@ -164,6 +163,9 @@ function switchView(viewName) {
 
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left";
+        
+        // Tab değiştiğinde terminali yeniden boyutlandır ki buga girmesin
+        setTimeout(() => { if (fitAddon) fitAddon.fit(); }, 100);
     } else if (viewName === 'settings') {
         dashboardView.classList.add('hidden');
         settingsView.classList.remove('hidden');
@@ -252,7 +254,6 @@ async function loadSettings() {
             if (settings.global_env) {
                 document.getElementById('setting-global-env').value = settings.global_env;
             }
-            
             toggleWorkspaceMode(); 
         }
     } catch (e) {
@@ -281,14 +282,14 @@ async function saveSettings() {
         });
 
         if (response.ok) {
-            showToast("System settings and Global ENV applied successfully.", "success");
+            showToast("System settings applied.", "success");
             toggleWorkspaceMode(); 
         } else {
             const err = await response.json();
             showToast(err.error, "error");
         }
     } catch (e) {
-        showToast("Server error during save.", "error");
+        showToast("Server error.", "error");
     } finally {
         toggleButtonLoading(btn, false, originalHTML);
     }
@@ -465,9 +466,16 @@ async function loadProjects() {
 
         filteredProjects.forEach(p => {
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-gray-700/50 hover:bg-gray-750 transition-colors group bg-gray-800/20';
+            // Satıra tıklanınca terminali bu projeye odaklar
+            tr.className = `border-b border-gray-700/50 hover:bg-gray-750 transition-colors group cursor-pointer ${activeTerminalProjectId === p.id ? 'ring-1 ring-indigo-500 bg-gray-800/50' : 'bg-gray-800/20'}`;
             tr.setAttribute('draggable', 'true');
             tr.dataset.id = p.id;
+            
+            tr.addEventListener('click', (e) => {
+                // Eğer butona basıldıysa odaklama yapma
+                if (e.target.closest('button')) return;
+                focusTerminal(p.id, p.name);
+            });
             
             tr.addEventListener('dragstart', handleDragStart);
             tr.addEventListener('dragover', handleDragOver);
@@ -477,7 +485,6 @@ async function loadProjects() {
             tr.addEventListener('dragend', handleDragEnd);
             
             const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-medium rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-bold">#</span>${p.tag}</span>` : '';
-            
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
             const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Auto-Restart Enabled">🛡️</span>` : '';
 
@@ -508,7 +515,7 @@ async function loadProjects() {
                 <td class="p-5">
                     <div class="flex items-center justify-end gap-3 whitespace-nowrap">
                         <div class="flex items-center gap-2 border-r border-gray-700 pr-3">
-                            <button onclick="startProject('${p.id}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
+                            <button onclick="startProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
@@ -700,7 +707,8 @@ async function updateStatuses() {
     } catch (e) {}
 }
 
-async function startProject(id, btn) { 
+async function startProject(id, name, btn) { 
+    focusTerminal(id, name); // YENİ: Başlatınca terminali direkt odaklar
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
@@ -843,84 +851,4 @@ async function executeDelete() {
         toggleButtonLoading(btn, false, originalHTML);
         document.getElementById('deleteFilesFromDisk').checked = false;
     }
-}
-
-const terminalOutput = document.getElementById('terminal-output');
-
-function connectWebSocket() {
-    const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    socket.onopen = () => appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
-    socket.onmessage = (e) => appendLog(e.data);
-    socket.onclose = () => setTimeout(connectWebSocket, 3000);
-}
-
-// YENİ: Zenginleştirilmiş Terminal Basma Fonksiyonu
-function appendLog(msg, forceColorClass = null) {
-    if (!terminalOutput) return;
-
-    const lines = msg.split('\n');
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
-    const fragment = document.createDocumentFragment();
-    
-    // Arama kutusundaki kelimeyi al
-    const searchInput = document.getElementById('terminal-search');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
-
-    lines.forEach(l => {
-        if (!l.trim()) return;
-        const lineDiv = document.createElement('div');
-        lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
-        
-        // Eğer arama yapılmışsa ve log bu kelimeyi içermiyorsa anında gizle
-        if (searchTerm && !l.toLowerCase().includes(searchTerm)) {
-            lineDiv.style.display = 'none';
-        }
-
-        let contentHTML = "";
-
-        if (forceColorClass) {
-            contentHTML = `<span class="${forceColorClass} break-all">${l}</span>`;
-        } else {
-            // Eğer logda ANSI renk kodu varsa, yeni motorumuzu kullan
-            if (l.includes('\x1b[')) {
-                contentHTML = `<span class="break-all text-gray-300">${ansiToHtml(l)}</span>`;
-            } else {
-                // ANSI yoksa eski akıllı renklendirmeye ve Linkify'a devam et
-                let textColor = 'text-gray-300';
-                const lowerLine = l.toLowerCase();
-                if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
-                    textColor = 'text-red-400';
-                } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
-                    textColor = 'text-yellow-400';
-                } else if (lowerLine.includes('started successfully') || lowerLine.includes('listening') || lowerLine.includes('success')) {
-                    textColor = 'text-emerald-400';
-                }
-                
-                // Linkleri tıkabilir formata çevir
-                let safeL = l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                safeL = safeL.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-indigo-400 underline hover:text-indigo-300 transition-colors">$1</a>');
-                contentHTML = `<span class="${textColor} break-all">${safeL}</span>`;
-            }
-        }
-
-        lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span>${contentHTML}`;
-        fragment.appendChild(lineDiv);
-    });
-    
-    terminalOutput.appendChild(fragment);
-    
-    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
-        terminalOutput.removeChild(terminalOutput.firstElementChild);
-    }
-    
-    // Eğer auto-scroll açıksa aşağı kaydır
-    if (isAutoScroll) {
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
-    }
-}
-
-function clearTerminal() { 
-    if(terminalOutput) terminalOutput.innerHTML = ''; 
-    appendLog("=== Terminal Cleared ===", "text-gray-500");
 }

@@ -23,7 +23,8 @@ type Process struct {
 	Name         string
 	Path         string
 	Cmd          *exec.Cmd
-	RecoveredPID int // Kurtarılan süreçlerin PID'sini tutmak için
+	Stdin        io.WriteCloser // YENİ: Sürece klavyeden veri (Keystroke) göndermek için veri borusu
+	RecoveredPID int
 	Running      bool
 	IntendedStop bool
 }
@@ -51,13 +52,11 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
 	}
 
-	// YENİ: Linter'ın haklı olarak uyardığı hata kontrolünü geri ekliyoruz.
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
 	}
 }
 
-// YENİ: Recover fonksiyonu diskteki PID dosyasını okuyup süreci hayata döndürür
 func (m *Manager) Recover(id, name, path string) bool {
 	pidFile := filepath.Join(path, ".diony_hub.pid")
 	data, err := os.ReadFile(pidFile)
@@ -71,10 +70,9 @@ func (m *Manager) Recover(id, name, path string) bool {
 		return false
 	}
 
-	// İşletim sisteminde bu PID hala yaşıyor mu?
 	exists, err := process.PidExists(int32(pid))
 	if err != nil || !exists {
-		os.Remove(pidFile) // Ölmüşse çöp dosyayı sil
+		os.Remove(pidFile)
 		return false
 	}
 
@@ -90,7 +88,6 @@ func (m *Manager) Recover(id, name, path string) bool {
 
 	fmt.Fprintf(m.output, "[%s] 🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m\n", name, pid)
 
-	// Kurtarılan sürecin durumunu izleyen mini-watchdog
 	go func() {
 		for {
 			time.Sleep(2 * time.Second)
@@ -111,6 +108,26 @@ func (m *Manager) Recover(id, name, path string) bool {
 	return true
 }
 
+// YENİ: Arayüzdeki terminalden yazılan yazıları doğrudan arka plandaki sürecin içine enjekte eder
+func (m *Manager) WriteInput(id string, input string) error {
+	m.mu.RLock()
+	p, exists := m.processes[id]
+	m.mu.RUnlock()
+
+	if !exists || !p.Running {
+		return errors.New("process is not running")
+	}
+
+	// Sadece arka planda (Hidden) çalışan ve yeni başlatılan projelerin Stdin borusu vardır.
+	// (External Terminal ile açılan veya Recover edilen süreçlerin konsolları ayrıdır).
+	if p.Stdin == nil {
+		return errors.New("this process does not accept internal terminal inputs (might be external console or recovered)")
+	}
+
+	_, err := io.WriteString(p.Stdin, input)
+	return err
+}
+
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	if p, exists := m.processes[id]; exists && p.Running {
@@ -120,6 +137,8 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	m.mu.Unlock()
 
 	var cmd *exec.Cmd
+	var stdinPipe io.WriteCloser // YENİ
+
 	if interactive {
 		if runtime.GOOS == "windows" {
 			title := fmt.Sprintf("%s - DionyHub", name)
@@ -144,6 +163,9 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			go m.prefixLogger(name, stderr)
 		}
 
+		// YENİ: Terminal veri giriş borusunu aç
+		stdinPipe, _ = cmd.StdinPipe()
+
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
 
@@ -154,7 +176,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		return err
 	}
 
-	// YENİ: Süreç başlar başlamaz PID'yi klasörüne yazıyoruz (Mühürleme)
 	pid := cmd.Process.Pid
 	pidFile := filepath.Join(path, ".diony_hub.pid")
 	os.WriteFile(pidFile, []byte(fmt.Sprint(pid)), 0644)
@@ -165,6 +186,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		Name:         name,
 		Path:         path,
 		Cmd:          cmd,
+		Stdin:        stdinPipe, // YENİ: Boruyu kaydet
 		Running:      true,
 		IntendedStop: false,
 	}
@@ -183,7 +205,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		}
 		m.mu.Unlock()
 
-		// Süreç durduğunda (ister hata, ister kasıtlı) mühür dosyasını siliyoruz
 		os.Remove(pidFile)
 
 		if autoRestart && !intended {
@@ -221,7 +242,6 @@ func (m *Manager) Stop(id string) error {
 		return errors.New("process is not currently running")
 	}
 
-	// YENİ: Standart cmd yoksa (kurtarılmış süreçse), diske yazdığımız kurtarılan PID'yi kullan
 	var pid int
 	if p.Cmd != nil && p.Cmd.Process != nil {
 		pid = p.Cmd.Process.Pid
@@ -254,7 +274,6 @@ func (m *Manager) Stop(id string) error {
 	p.Running = false
 	m.mu.Unlock()
 
-	// Kapatma işlemi başarılıysa mühür dosyasını sil
 	os.Remove(filepath.Join(p.Path, ".diony_hub.pid"))
 
 	return err
