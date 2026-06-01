@@ -10,6 +10,8 @@ let globalWorkspace = "C:/DionyHub/apps";
 let term;
 let fitAddon;
 let activeTerminalProjectId = null; // Şu an terminalde klavyesi bağlı olan proje ID'si
+let inputQueue = [];
+let isSendingInput = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     initTerminal();
@@ -57,33 +59,43 @@ function initTerminal() {
         fitAddon.fit();
     });
 
-    // KUSURSUZ ÇÖZÜM: Local Echo & Enter (CRLF) Çevirisi
-    term.onData(data => {
-        if (!activeTerminalProjectId) return;
+    function processInputQueue() {
+        if (isSendingInput || inputQueue.length === 0) return;
+        isSendingInput = true;
+        const item = inputQueue.shift();
 
-        // Klavye tuşunu ekranda göster (Local Echo)
-        const code = data.charCodeAt(0);
-        if (code === 13) { 
-            // Enter tuşuna basıldıysa, ekranda alt satıra geç ama Backend'e \n gönder
-            term.write('\r\n');
-            data = '\n'; 
-        } else if (code === 127) { 
-            // Backspace (Silme) tuşuna basıldıysa karakteri ekrandan sil
-            term.write('\b \b');
-        } else {
-            // Normal harfleri ekrana yazdır
-            term.write(data);
-        }
-
-        // Veriyi Go Backend'ine yolla
         fetch('/api/projects/input', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: activeTerminalProjectId,
-                data: data
-            })
-        }).catch(err => console.error("Failed to send keystroke:", err));
+            body: JSON.stringify(item)
+        }).finally(() => {
+            isSendingInput = false;
+            processInputQueue(); // Kuyruktaki diğer tuşu gönder
+        });
+    }
+
+    // KUSURSUZ ÇÖZÜM: Local Echo, CRLF Çevirisi ve Sıralı Gönderim
+    term.onData(data => {
+        if (!activeTerminalProjectId) return;
+
+        let payload = data;
+        const code = data.charCodeAt(0);
+        
+        if (code === 13) { 
+            // Enter tuşu: Ekranda alt satıra geç ve Windows için \r\n gönder
+            term.write('\r\n');
+            payload = '\r\n'; 
+        } else if (code === 127) { 
+            // Backspace (Silme) tuşu
+            term.write('\b \b');
+        } else {
+            // Normal harfler
+            term.write(data);
+        }
+
+        // Veriyi kuyruğa ekle ve gönderimi tetikle
+        inputQueue.push({ id: activeTerminalProjectId, data: payload });
+        processInputQueue();
     });
 
     term.writeln('\x1b[35m=== DionyHub Xterm.js Engine Initialized ===\x1b[0m');
