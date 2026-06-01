@@ -17,13 +17,10 @@ import (
 )
 
 func main() {
-	// YENİ: Broadcaster ve MultiWriter'ı en başta oluşturuyoruz
 	broadcaster := api.NewBroadcaster()
 	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
 
-	// YENİ: Go'nun standart log motorunu doğrudan bizim Live Terminal'e (MultiWriter) bağlıyoruz!
 	log.SetOutput(multiWriter)
-	// Loglardaki varsayılan tarih/saat kısmını siliyoruz ki arayüzdeki şık saat tasarımıyla çift yazmasın
 	log.SetFlags(0)
 
 	log.Println("[SYSTEM] Starting DionyHub Command Center...")
@@ -32,7 +29,12 @@ func main() {
 	procManager := process.NewManager(multiWriter)
 
 	for _, p := range projects {
-		if p.AutoStart {
+
+		// YENİ 1: ÖNCE PROJEYİ KURTARMAYI DENE (PID PERSISTENCE)
+		recovered := procManager.Recover(p.ID, p.Name, p.Path)
+
+		// YENİ 2: SADECE KURTARILAMADIYSA VE AUTO-START AÇIKSA SIFIRDAN BAŞLAT
+		if !recovered && p.AutoStart {
 			parts := strings.Fields(p.Command)
 			if len(parts) > 0 {
 				settings, _ := config.LoadSettings("app_config.json")
@@ -50,8 +52,6 @@ func main() {
 				err := procManager.Start(p.ID, p.Name, p.Path, p.Interactive, p.AutoRestart, globalEnvs, parts[0], parts[1:]...)
 				if err != nil {
 					log.Printf("[SYSTEM] Failed to auto-start project %s: %v", p.Name, err)
-				} else {
-					log.Printf("[SYSTEM] Auto-started project: %s", p.Name)
 				}
 			}
 		}
@@ -95,7 +95,5 @@ func main() {
 	}
 
 	log.Println("[SYSTEM] DionyHub shutdown sequence complete. Goodbye!")
-
-	// YENİ: Son veda mesajının WebSocket üzerinden arayüze ulaşabilmesi için sisteme 1 saniye nefes payı veriyoruz.
 	time.Sleep(1 * time.Second)
 }

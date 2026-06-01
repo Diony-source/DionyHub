@@ -7,7 +7,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -18,7 +21,9 @@ import (
 type Process struct {
 	ID           string
 	Name         string
+	Path         string
 	Cmd          *exec.Cmd
+	RecoveredPID int // Kurtarılan süreçlerin PID'sini tutmak için
 	Running      bool
 	IntendedStop bool
 }
@@ -45,10 +50,60 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 		<-throttle.C
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
 	}
+}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
+// YENİ: Recover fonksiyonu diskteki PID dosyasını okuyup süreci hayata döndürür
+func (m *Manager) Recover(id, name, path string) bool {
+	pidFile := filepath.Join(path, ".diony_hub.pid")
+	data, err := os.ReadFile(pidFile)
+	if err != nil {
+		return false
 	}
+
+	pidStr := strings.TrimSpace(string(data))
+	pid, err := strconv.Atoi(pidStr)
+	if err != nil {
+		return false
+	}
+
+	// İşletim sisteminde bu PID hala yaşıyor mu?
+	exists, err := process.PidExists(int32(pid))
+	if err != nil || !exists {
+		os.Remove(pidFile) // Ölmüşse çöp dosyayı sil
+		return false
+	}
+
+	m.mu.Lock()
+	m.processes[id] = &Process{
+		ID:           id,
+		Name:         name,
+		Path:         path,
+		RecoveredPID: pid,
+		Running:      true,
+	}
+	m.mu.Unlock()
+
+	fmt.Fprintf(m.output, "[%s] 🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m\n", name, pid)
+
+	// Kurtarılan sürecin durumunu izleyen mini-watchdog
+	go func() {
+		for {
+			time.Sleep(2 * time.Second)
+			alive, _ := process.PidExists(int32(pid))
+			if !alive {
+				m.mu.Lock()
+				if p, ok := m.processes[id]; ok && p.RecoveredPID == pid {
+					p.Running = false
+				}
+				m.mu.Unlock()
+				os.Remove(pidFile)
+				fmt.Fprintf(m.output, "[%s] ⚪ Recovered process exited.\n", name)
+				break
+			}
+		}
+	}()
+
+	return true
 }
 
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
@@ -62,8 +117,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var cmd *exec.Cmd
 	if interactive {
 		if runtime.GOOS == "windows" {
-			// KUSURSUZ HİLE: Metne boşluk ekliyoruz ki Go bunu "..." içine sarsın.
-			// Windows bu tırnakları görünce bunun Komut değil, "Pencere Başlığı" olduğunu anlar!
 			title := fmt.Sprintf("%s - DionyHub", name)
 			cmdArgs := append([]string{"/c", "start", title, "/WAIT", nameCmd}, args...)
 			cmd = exec.Command("cmd", cmdArgs...)
@@ -96,17 +149,23 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		return err
 	}
 
+	// YENİ: Süreç başlar başlamaz PID'yi klasörüne yazıyoruz (Mühürleme)
+	pid := cmd.Process.Pid
+	pidFile := filepath.Join(path, ".diony_hub.pid")
+	os.WriteFile(pidFile, []byte(fmt.Sprint(pid)), 0644)
+
 	m.mu.Lock()
 	m.processes[id] = &Process{
 		ID:           id,
 		Name:         name,
+		Path:         path,
 		Cmd:          cmd,
 		Running:      true,
 		IntendedStop: false,
 	}
 	m.mu.Unlock()
 
-	fmt.Fprintf(m.output, "[%s] 🚀 Project started successfully (PID: %d).\n", name, cmd.Process.Pid)
+	fmt.Fprintf(m.output, "[%s] 🚀 \x1b[32mProject started successfully (PID: %d).\x1b[0m\n", name, pid)
 
 	go func() {
 		cmd.Wait()
@@ -119,8 +178,11 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		}
 		m.mu.Unlock()
 
+		// Süreç durduğunda (ister hata, ister kasıtlı) mühür dosyasını siliyoruz
+		os.Remove(pidFile)
+
 		if autoRestart && !intended {
-			fmt.Fprintf(m.output, "[%s] ⚠️ Process crashed or exited unexpectedly! Restarting in 3 seconds...\n", name)
+			fmt.Fprintf(m.output, "[%s] ⚠️ \x1b[33mProcess crashed! Restarting in 3 seconds...\x1b[0m\n", name)
 			time.Sleep(3 * time.Second)
 
 			m.mu.RLock()
@@ -150,41 +212,47 @@ func (m *Manager) Stop(id string) error {
 	}
 	m.mu.Unlock()
 
-	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {
+	if !exists || !p.Running {
 		return errors.New("process is not currently running")
 	}
 
-	pid := p.Cmd.Process.Pid
+	// YENİ: Standart cmd yoksa (kurtarılmış süreçse), diske yazdığımız kurtarılan PID'yi kullan
+	var pid int
+	if p.Cmd != nil && p.Cmd.Process != nil {
+		pid = p.Cmd.Process.Pid
+	} else if p.RecoveredPID > 0 {
+		pid = p.RecoveredPID
+	} else {
+		return errors.New("cannot determine process ID to kill")
+	}
 
 	fmt.Fprintf(m.output, "[%s] 🛑 Stop signal sent. Terminating process tree...\n", p.Name)
 
 	var err error
 	if runtime.GOOS == "windows" {
-		// 1. Standart Ağaç Katliamı (Zombi avcısı)
 		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(pid))
 		killCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		err = killCmd.Run()
 
-		// 2. KUSURSUZ TEMİZLİK: Eğer External Terminal açıldıysa, pencere başlığından vur!
-		// start komutu pencereyi PID'den koparsa bile, bu komut açık kalan CMD penceresini affetmez.
 		windowTitle := fmt.Sprintf("%s - DionyHub*", p.Name)
 		titleKillCmd := exec.Command("taskkill", "/F", "/FI", fmt.Sprintf("WINDOWTITLE eq %s", windowTitle))
 		titleKillCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		titleKillCmd.Run() // Hata verse bile devam et (Belki terminal kapalıdır)
-
+		titleKillCmd.Run()
 	} else {
-		err = p.Cmd.Process.Kill()
-	}
-
-	if err != nil {
-		p.Cmd.Process.Kill()
+		proc, _ := os.FindProcess(pid)
+		if proc != nil {
+			err = proc.Kill()
+		}
 	}
 
 	m.mu.Lock()
 	p.Running = false
 	m.mu.Unlock()
 
-	return nil
+	// Kapatma işlemi başarılıysa mühür dosyasını sil
+	os.Remove(filepath.Join(p.Path, ".diony_hub.pid"))
+
+	return err
 }
 
 func (m *Manager) IsRunning(id string) bool {
@@ -199,11 +267,18 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	p, exists := m.processes[id]
 	m.mu.RUnlock()
 
-	if !exists || !p.Running || p.Cmd == nil || p.Cmd.Process == nil {
+	if !exists || !p.Running {
 		return 0, 0
 	}
 
-	proc, err := process.NewProcess(int32(p.Cmd.Process.Pid))
+	var pid int
+	if p.Cmd != nil && p.Cmd.Process != nil {
+		pid = p.Cmd.Process.Pid
+	} else {
+		pid = p.RecoveredPID
+	}
+
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return 0, 0
 	}
