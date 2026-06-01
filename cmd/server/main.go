@@ -17,11 +17,18 @@ import (
 )
 
 func main() {
+	// YENİ: Broadcaster ve MultiWriter'ı en başta oluşturuyoruz
+	broadcaster := api.NewBroadcaster()
+	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
+
+	// YENİ: Go'nun standart log motorunu doğrudan bizim Live Terminal'e (MultiWriter) bağlıyoruz!
+	log.SetOutput(multiWriter)
+	// Loglardaki varsayılan tarih/saat kısmını siliyoruz ki arayüzdeki şık saat tasarımıyla çift yazmasın
+	log.SetFlags(0)
+
 	log.Println("[SYSTEM] Starting DionyHub Command Center...")
 
 	projects, _ := config.LoadProjects("config.json")
-	broadcaster := api.NewBroadcaster()
-	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
 	procManager := process.NewManager(multiWriter)
 
 	for _, p := range projects {
@@ -62,12 +69,9 @@ func main() {
 		Handler: mux,
 	}
 
-	// YENİ: Graceful Shutdown (Güvenli Kapanış) Kanalı
 	stop := make(chan os.Signal, 1)
-	// İşletim sisteminden gelen Interrupt (Ctrl+C) veya Terminate sinyallerini yakala
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	// Web sunucusunu kendi goroutine'inde (arka planda) başlatıyoruz
 	go func() {
 		log.Println("[SYSTEM] Server is running on http://localhost:8080")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -75,16 +79,14 @@ func main() {
 		}
 	}()
 
-	// Sistem sinyal gelene kadar burada bekler (Bloklar)
 	<-stop
 
-	log.Println("\n[SYSTEM] Shutdown signal received! Initiating Graceful Shutdown...")
-
-	// 1. ADIM: Açık olan tüm projeleri güvenli şekilde öldür (Zombi avı)
+	log.Println("")
+	log.Println("[SYSTEM] Shutdown signal received! Initiating Graceful Shutdown...")
 	log.Println("[SYSTEM] Terminating all running background processes...")
+
 	procManager.StopAll()
 
-	// 2. ADIM: Web sunucusunu güvenli şekilde kapat (Bağlı kullanıcılar varsa 5 saniye bekle)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -93,4 +95,7 @@ func main() {
 	}
 
 	log.Println("[SYSTEM] DionyHub shutdown sequence complete. Goodbye!")
+
+	// YENİ: Son veda mesajının WebSocket üzerinden arayüze ulaşabilmesi için sisteme 1 saniye nefes payı veriyoruz.
+	time.Sleep(1 * time.Second)
 }
