@@ -10,7 +10,6 @@ let globalWorkspace = "C:/DionyHub/apps";
 let term;
 let fitAddon;
 let activeTerminalProjectId = null; // Şu an terminalde klavyesi bağlı olan proje ID'si
-let currentLine = "";
 
 document.addEventListener("DOMContentLoaded", () => {
     initTerminal();
@@ -57,6 +56,10 @@ function initTerminal() {
     window.addEventListener('resize', () => {
         fitAddon.fit();
     });
+
+    // GERÇEK TERMİNAL SİMÜLASYONU (Cooked Mode)
+    // Kullanıcının yazdıklarını Enter'a basana kadar burada biriktiriyoruz
+    let currentLine = "";
 
     term.onData(data => {
         if (!activeTerminalProjectId) return;
@@ -378,7 +381,6 @@ async function backupProject(id, btn) {
     try {
         const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
         const data = await res.json();
-        
         if (res.ok) {
             showToast(data.message, "success");
         } else {
@@ -543,12 +545,6 @@ async function loadProjects() {
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-700 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Export as .zip Archive">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            </button>
-                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit .env Variables">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                            </button>
                             <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit Project">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
@@ -732,7 +728,7 @@ async function updateStatuses() {
 }
 
 async function startProject(id, name, btn) { 
-    focusTerminal(id, name); // YENİ: Başlatınca terminali direkt odaklar
+    focusTerminal(id, name); // Başlatınca terminali direkt odaklar
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
