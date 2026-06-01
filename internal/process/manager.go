@@ -204,3 +204,21 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 
 	return cpuPercent, ram
 }
+
+// StopAll forcefully terminates all currently running processes managed by DionyHub.
+// This is critical for Graceful Shutdown to prevent orphaned background tasks.
+func (m *Manager) StopAll() {
+	m.mu.RLock()
+	var ids []string
+	for id, p := range m.processes {
+		if p.Running {
+			ids = append(ids, id)
+		}
+	}
+	m.mu.RUnlock()
+
+	// Toplanan ID'leri durdur (Kilidi RUnlock yaptıktan sonra çağırıyoruz ki Deadlock olmasın)
+	for _, id := range ids {
+		m.Stop(id)
+	}
+}
