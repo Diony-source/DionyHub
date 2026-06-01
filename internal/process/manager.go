@@ -62,14 +62,13 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var cmd *exec.Cmd
 	if interactive {
 		if runtime.GOOS == "windows" {
-			// KUSURSUZ ÇÖZÜM: 'start' komutunda başlık (Title) MUTLAKA çift tırnak içinde olmalıdır ("Title").
-			// Aksi takdirde Windows ilk kelimeyi çalıştırılacak program sanır (Hatanın sebebi buydu).
-			titleArg := fmt.Sprintf(`"%s"`, name)
-			cmdArgs := append([]string{"/c", "start", titleArg, "/WAIT", nameCmd}, args...)
+			// KUSURSUZ HİLE: Metne boşluk ekliyoruz ki Go bunu "..." içine sarsın.
+			// Windows bu tırnakları görünce bunun Komut değil, "Pencere Başlığı" olduğunu anlar!
+			title := fmt.Sprintf("%s - DionyHub", name)
+			cmdArgs := append([]string{"/c", "start", title, "/WAIT", nameCmd}, args...)
 			cmd = exec.Command("cmd", cmdArgs...)
 			cmd.Dir = path
 		} else {
-			// Mac/Linux Fallback
 			cmd = exec.Command("x-terminal-emulator", append([]string{"-e", nameCmd}, args...)...)
 			cmd.Dir = path
 		}
@@ -109,7 +108,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 	fmt.Fprintf(m.output, "[%s] 🚀 Project started successfully (PID: %d).\n", name, cmd.Process.Pid)
 
-	// GÖZLEMCİ (WATCHDOG) GOROUTINE
 	go func() {
 		cmd.Wait()
 
@@ -162,9 +160,18 @@ func (m *Manager) Stop(id string) error {
 
 	var err error
 	if runtime.GOOS == "windows" {
+		// 1. Standart Ağaç Katliamı (Zombi avcısı)
 		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(pid))
 		killCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		err = killCmd.Run()
+
+		// 2. KUSURSUZ TEMİZLİK: Eğer External Terminal açıldıysa, pencere başlığından vur!
+		// start komutu pencereyi PID'den koparsa bile, bu komut açık kalan CMD penceresini affetmez.
+		windowTitle := fmt.Sprintf("%s - DionyHub*", p.Name)
+		titleKillCmd := exec.Command("taskkill", "/F", "/FI", fmt.Sprintf("WINDOWTITLE eq %s", windowTitle))
+		titleKillCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		titleKillCmd.Run() // Hata verse bile devam et (Belki terminal kapalıdır)
+
 	} else {
 		err = p.Cmd.Process.Kill()
 	}
