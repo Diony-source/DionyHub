@@ -50,6 +50,11 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 		<-throttle.C
 		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
 	}
+
+	// YENİ: Linter'ın haklı olarak uyardığı hata kontrolünü geri ekliyoruz.
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
+	}
 }
 
 // YENİ: Recover fonksiyonu diskteki PID dosyasını okuyup süreci hayata döndürür
