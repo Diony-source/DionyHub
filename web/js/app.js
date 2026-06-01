@@ -7,9 +7,6 @@ let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 const MAX_LOG_LINES = 1000;
 
-let logBuffer = [];
-let logFlushInterval = null;
-
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     loadSettings();
@@ -18,10 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
-    
-    // YENİ: Havuzu her 30 milisaniyede (Saniyede ~33 kare - FPS) bir boşalt. 
-    // Bu terminalin "takılması" hissini tamamen ortadan kaldırır.
-    logFlushInterval = setInterval(flushLogBuffer, 30);
 });
 
 function formatWorkspacePath(path) {
@@ -79,8 +72,6 @@ function switchView(viewName) {
     }
 }
 
-// ... (Mevcut kodların aynen kalıyor) ...
-
 function toggleWorkspaceMode() {
     const useWs = document.getElementById('useWorkspace').checked;
     const prefix = document.getElementById('workspacePrefix');
@@ -89,7 +80,7 @@ function toggleWorkspaceMode() {
     if(useWs) {
         prefix.classList.remove('hidden');
         input.classList.remove('rounded-l-md');
-        input.classList.add('border-l-0'); // prefix varken sol borderı sil
+        input.classList.add('border-l-0');
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
         prefix.title = formattedWs; 
         prefix.innerText = formatWorkspacePath(globalWorkspace);
@@ -102,7 +93,6 @@ function toggleWorkspaceMode() {
     }
 }
 
-// YENİ: Yerel Bilgisayardan Klasör Seçme Fonksiyonu
 async function browseFolder(inputId, handleWorkspace = true) {
     try {
         const res = await fetch('/api/system/browse');
@@ -111,7 +101,6 @@ async function browseFolder(inputId, handleWorkspace = true) {
         if (data.path && data.path !== "") {
             document.getElementById(inputId).value = data.path;
             
-            // Eğer "Add Project" ekranındaysak ve tam yol seçilmişse, "Use Workspace" kilidini mantıken kapat
             if (handleWorkspace) {
                 const wsCheckbox = document.getElementById('useWorkspace');
                 if (wsCheckbox.checked) {
@@ -177,7 +166,7 @@ async function saveSettings() {
     
     const newSettings = {
         workspace: globalWorkspace,
-        log_buffer: true,
+        log_buffer: false, // Log buffer devreden çıkarıldı
         global_env: globalEnv
     };
 
@@ -759,57 +748,13 @@ function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onopen = () => appendLog("=== Connected to DionyHub Log Stream ===", "text-indigo-400");
     
-    socket.onmessage = (e) => {
-        logBuffer.push(e.data);
-    };
+    // YENİ: Havuzlama iptal edildi, loglar ANINDA ekrana yansıyacak
+    socket.onmessage = (e) => appendLog(e.data);
     
     socket.onclose = () => setTimeout(connectWebSocket, 3000);
 }
 
-function flushLogBuffer() {
-    if (logBuffer.length === 0 || !terminalOutput) return;
-
-    const fragment = document.createDocumentFragment();
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('tr-TR', { hour12: false });
-
-    logBuffer.forEach(msg => {
-        const lines = msg.split('\n');
-        lines.forEach(l => {
-            if (!l.trim()) return;
-            const lineDiv = document.createElement('div');
-            lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
-            
-            let textColor = 'text-gray-300';
-            const lowerLine = l.toLowerCase();
-            if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
-                textColor = 'text-red-400';
-            } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
-                textColor = 'text-yellow-400';
-            } else if (lowerLine.includes('starting') || lowerLine.includes('listening') || lowerLine.includes('success')) {
-                textColor = 'text-emerald-400';
-            }
-
-            lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
-            fragment.appendChild(lineDiv);
-        });
-    });
-
-    terminalOutput.appendChild(fragment);
-    
-    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
-        terminalOutput.removeChild(terminalOutput.firstElementChild);
-    }
-    
-    // YENİ: Smooth scroll komutu eklendi
-    terminalOutput.scrollTo({
-        top: terminalOutput.scrollHeight,
-        behavior: 'smooth'
-    });
-    
-    logBuffer = [];
-}
-
+// YENİ: Anında yazan saf terminal log mekanizması (Havuz olmadan)
 function appendLog(msg, forceColorClass = null) {
     if (!terminalOutput) return;
 
@@ -822,23 +767,34 @@ function appendLog(msg, forceColorClass = null) {
         if (!l.trim()) return;
         const lineDiv = document.createElement('div');
         lineDiv.className = 'font-mono text-sm mb-0.5 leading-relaxed flex';
+        
         let textColor = forceColorClass || 'text-gray-300';
+        if (!forceColorClass) {
+            const lowerLine = l.toLowerCase();
+            if (lowerLine.includes('error') || lowerLine.includes('fail') || lowerLine.includes('panic') || lowerLine.includes('exit status 1')) {
+                textColor = 'text-red-400';
+            } else if (lowerLine.includes('warn') || lowerLine.includes('warning')) {
+                textColor = 'text-yellow-400';
+            } else if (lowerLine.includes('started successfully') || lowerLine.includes('listening') || lowerLine.includes('success')) {
+                textColor = 'text-emerald-400';
+            }
+        }
+
         lineDiv.innerHTML = `<span class="text-gray-600 shrink-0 mr-3 select-none">[${timeString}]</span><span class="${textColor} break-all">${l}</span>`;
         fragment.appendChild(lineDiv);
     });
     
     terminalOutput.appendChild(fragment);
-    while (terminalOutput.childElementCount > MAX_LOG_LINES) terminalOutput.removeChild(terminalOutput.firstElementChild);
     
-    // YENİ: Smooth scroll komutu eklendi
-    terminalOutput.scrollTo({
-        top: terminalOutput.scrollHeight,
-        behavior: 'smooth'
-    });
+    while (terminalOutput.childElementCount > MAX_LOG_LINES) {
+        terminalOutput.removeChild(terminalOutput.firstElementChild);
+    }
+    
+    // Anında scroll (CSS smooth kapalı olduğu için makine gibi tık diye akar)
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
 function clearTerminal() { 
     if(terminalOutput) terminalOutput.innerHTML = ''; 
-    logBuffer = []; 
     appendLog("=== Terminal Cleared ===", "text-gray-500");
 }

@@ -61,9 +61,18 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 	var cmd *exec.Cmd
 	if interactive {
-		cmdArgs := append([]string{"/c", "start", nameCmd}, args...)
-		cmd = exec.Command("cmd", cmdArgs...)
-		cmd.Dir = path
+		if runtime.GOOS == "windows" {
+			// KUSURSUZ ÇÖZÜM: 'start' komutu YERİNE CREATE_NEW_CONSOLE (16) bayrağı kullanıyoruz.
+			// Bu sayede pencere Go'dan kopmaz, durumu doğru takip edilir ve Stop butonu pencereyi kapatabilir.
+			cmdArgs := append([]string{"/c", nameCmd}, args...)
+			cmd = exec.Command("cmd", cmdArgs...)
+			cmd.Dir = path
+			cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 16}
+		} else {
+			// Mac/Linux Fallback
+			cmd = exec.Command("x-terminal-emulator", append([]string{"-e", nameCmd}, args...)...)
+			cmd.Dir = path
+		}
 	} else {
 		cmd = exec.Command(nameCmd, args...)
 		cmd.Dir = path
@@ -77,15 +86,13 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		if err == nil {
 			go m.prefixLogger(name, stderr)
 		}
+
+		// Arka planda çalışırken konsol penceresi açılmasını engeller
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
 
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, globalEnvs...)
-
-	if !interactive {
-		// Arka planda çalışırken konsol penceresi açılmasını gizler
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
 
 	if err := cmd.Start(); err != nil {
 		return err
@@ -101,6 +108,9 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	}
 	m.mu.Unlock()
 
+	// YENİ: Arayüze projenin başladığını net bir şekilde bildir
+	fmt.Fprintf(m.output, "[%s] 🚀 Project started successfully (PID: %d).\n", name, cmd.Process.Pid)
+
 	// GÖZLEMCİ (WATCHDOG) GOROUTINE
 	go func() {
 		cmd.Wait()
@@ -114,7 +124,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		m.mu.Unlock()
 
 		if autoRestart && !intended {
-			fmt.Fprintf(m.output, "[%s] [WATCHDOG] ⚠️ Process crashed or exited unexpectedly! Restarting in 3 seconds...\n", name)
+			fmt.Fprintf(m.output, "[%s] ⚠️ Process crashed or exited unexpectedly! Restarting in 3 seconds...\n", name)
 			time.Sleep(3 * time.Second)
 
 			m.mu.RLock()
@@ -125,16 +135,18 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			m.mu.RUnlock()
 
 			if stillExists {
-				fmt.Fprintf(m.output, "[%s] [WATCHDOG] 🛡️ Initiating auto-recovery...\n", name)
+				fmt.Fprintf(m.output, "[%s] 🛡️ Initiating auto-recovery...\n", name)
 				m.Start(id, name, path, interactive, autoRestart, globalEnvs, nameCmd, args...)
 			}
+		} else if !intended {
+			// Proje watchdog kapalıyken kendi kendine durduysa logla
+			fmt.Fprintf(m.output, "[%s] ⚪ Process exited normally.\n", name)
 		}
 	}()
 
 	return nil
 }
 
-// Stop executes a robust shutdown of the process and its child tree
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
@@ -149,20 +161,18 @@ func (m *Manager) Stop(id string) error {
 
 	pid := p.Cmd.Process.Pid
 
-	// KUSURSUZ ÇÖZÜM: Process Tree Kill (Zombi İşlemleri Yok Etme)
+	// YENİ: Arayüze projenin durdurulduğunu bildir
+	fmt.Fprintf(m.output, "[%s] 🛑 Stop signal sent. Terminating process tree...\n", p.Name)
+
 	var err error
 	if runtime.GOOS == "windows" {
-		// Windows'ta 'taskkill' kullanarak tüm ağacı (/T) zorla (/F) kapatıyoruz.
-		// Bu sayede NPM arkasında kalan Node.js zombileri de tamamen yok edilir.
 		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(pid))
 		killCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		err = killCmd.Run()
 	} else {
-		// Unix/Linux Fallback
 		err = p.Cmd.Process.Kill()
 	}
 
-	// Eğer işletim sistemi komutu (taskkill) çalışmazsa standart Kill metoduna geri dön
 	if err != nil {
 		p.Cmd.Process.Kill()
 	}
@@ -205,8 +215,6 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	return cpuPercent, ram
 }
 
-// StopAll forcefully terminates all currently running processes managed by DionyHub.
-// This is critical for Graceful Shutdown to prevent orphaned background tasks.
 func (m *Manager) StopAll() {
 	m.mu.RLock()
 	var ids []string
@@ -217,7 +225,6 @@ func (m *Manager) StopAll() {
 	}
 	m.mu.RUnlock()
 
-	// Toplanan ID'leri durdur (Kilidi RUnlock yaptıktan sonra çağırıyoruz ki Deadlock olmasın)
 	for _, id := range ids {
 		m.Stop(id)
 	}
