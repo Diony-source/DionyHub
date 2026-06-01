@@ -15,15 +15,19 @@
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        
-        /* Xterm.js Scrollbar özelleştirmesi */
         .xterm-viewport::-webkit-scrollbar { width: 8px; }
         .xterm-viewport::-webkit-scrollbar-track { background: #0d1117; }
         .xterm-viewport::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        
+        /* Dinamik Grid Animasyonları */
+        #terminals-grid {
+            transition: all 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30">
 
+    <!-- SIDEBAR -->
     <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-20">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
             <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md">DionyHub</span>
@@ -51,8 +55,8 @@
         </div>
     </div>
 
+    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col bg-gray-900 relative">
-        
         <header class="h-16 bg-gray-800/80 backdrop-blur border-b border-gray-700 flex items-center justify-between px-8 z-10 sticky top-0">
             <h1 id="view-title" class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm">Active Library</h1>
             <div class="flex items-center gap-6">
@@ -67,6 +71,7 @@
             </div>
         </header>
 
+        <!-- DASHBOARD VIEW -->
         <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
             
             <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
@@ -103,315 +108,135 @@
                 </div>
             </div>
 
-            <div class="px-8 pb-8 flex-1 flex flex-col min-h-[300px]">
+            <!-- TMUX SPLIT TERMINAL ALANI -->
+            <div class="px-8 pb-8 flex-1 flex flex-col min-h-[400px]">
                 <div class="bg-[#0d1117] rounded-xl border border-gray-700 shadow-2xl flex flex-col h-full overflow-hidden relative">
-                    
                     <div class="bg-gray-800/80 px-4 py-2 border-b border-gray-700 flex justify-between items-center shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                XTERM.JS
-                            </div>
-                            <div class="h-4 w-px bg-gray-600 mx-1"></div>
-                            <div id="terminal-focus-badge" class="px-2 py-0.5 rounded text-xs font-mono bg-gray-700 text-gray-400 border border-gray-600 transition-colors">
-                                Input Focus: NONE
+                                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                TMUX ENGINE
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button onclick="clearTerminal()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors bg-gray-800 border border-gray-700 px-2 py-1 rounded">Clear</button>
+                            <button onclick="clearAllTerminals()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors bg-gray-800 border border-gray-700 px-2 py-1 rounded shadow">Clear All</button>
                         </div>
                     </div>
                     
-                    <div id="terminal-output" class="p-2 overflow-hidden flex-1 w-full bg-[#0d1117]"></div>
-
+                    <!-- Dinamik Izgara Konteyneri -->
+                    <div id="terminals-grid" class="flex-1 w-full bg-[#0d1117] grid gap-1 p-1 overflow-hidden">
+                        <!-- JS Tarafından Terminal Kutuları Buraya Basılacak -->
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden flex-col flex-1 overflow-y-auto px-8 py-8">
             <div class="max-w-3xl mx-auto w-full space-y-6">
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">
-                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
-                        Global Workspace
-                    </h2>
-                    <p class="text-sm text-gray-400 mb-4">Define a master directory. All new local projects or GitHub clones will be automatically organized inside this folder.</p>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Master Directory Path</label>
-                            <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-700 rounded-md px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors font-mono text-sm" placeholder="e.g., C:/Users/Diony/Desktop/DionyHub_Projects">
-                        </div>
-                    </div>
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">Global Workspace</h2>
+                    <input type="text" id="setting-workspace" class="w-full bg-gray-900 border border-gray-700 rounded-md px-4 py-2.5 text-white font-mono text-sm">
                 </div>
-
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                        Global Environment Variables
-                    </h2>
-                    <p class="text-sm text-gray-400 mb-4">These variables are securely injected into memory for <b>all</b> projects every time they start. They are never written to disk.</p>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Global .env Content</label>
-                        <textarea id="setting-global-env" rows="6" class="w-full bg-[#0d1117] border border-gray-700 rounded-md px-4 py-3 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors resize-y" placeholder="API_KEY=global_super_secret&#10;DB_HOST=127.0.0.1"></textarea>
-                    </div>
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-3">Global Environment Variables</h2>
+                    <textarea id="setting-global-env" rows="6" class="w-full bg-[#0d1117] border border-gray-700 rounded-md px-4 py-3 text-emerald-400 font-mono text-sm resize-y"></textarea>
                 </div>
-
                 <div class="flex justify-end">
-                    <button id="save-settings-btn" onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-md shadow-lg shadow-indigo-900/20 font-medium transition-colors border border-indigo-500/50">Save All Configurations</button>
+                    <button id="save-settings-btn" onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-md shadow-lg font-medium transition-colors border border-indigo-500/50">Save</button>
                 </div>
             </div>
         </div>
-
     </div>
 
+    <!-- MODALS -->
+    <!-- ADD MODAL -->
     <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Add New Project
-                </h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">Add New Project</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
-
             <div class="p-6 overflow-y-auto flex-1">
                 <form id="addForm" onsubmit="submitNewProject(event)" class="space-y-5">
-                    
                     <div class="flex gap-4 p-1 bg-gray-900 rounded-lg border border-gray-700">
-                        <label class="flex-1 text-center cursor-pointer relative">
-                            <input type="radio" name="sourceMode" value="local" class="peer sr-only" onchange="toggleSourceMode()" checked>
-                            <div class="py-2 text-sm font-medium text-gray-400 peer-checked:text-white peer-checked:bg-gray-800 rounded-md transition-all">Local Directory</div>
-                        </label>
-                        <label class="flex-1 text-center cursor-pointer relative">
-                            <input type="radio" name="sourceMode" value="github" class="peer sr-only" onchange="toggleSourceMode()">
-                            <div class="py-2 text-sm font-medium text-gray-400 peer-checked:text-white peer-checked:bg-gray-800 rounded-md transition-all">GitHub Clone</div>
-                        </label>
+                        <label class="flex-1 text-center cursor-pointer relative"><input type="radio" name="sourceMode" value="local" class="peer sr-only" onchange="toggleSourceMode()" checked><div class="py-2 text-sm font-medium text-gray-400 peer-checked:text-white peer-checked:bg-gray-800 rounded-md transition-all">Local Directory</div></label>
+                        <label class="flex-1 text-center cursor-pointer relative"><input type="radio" name="sourceMode" value="github" class="peer sr-only" onchange="toggleSourceMode()"><div class="py-2 text-sm font-medium text-gray-400 peer-checked:text-white peer-checked:bg-gray-800 rounded-md transition-all">GitHub Clone</div></label>
                     </div>
-
                     <div id="localFlowWrapper" class="space-y-5">
+                        <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Project Name</label><input type="text" id="projName" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white" required></div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Project Name <span class="text-rose-500">*</span></label>
-                            <input type="text" id="projName" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="My Awesome API" required>
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-end mb-1.5">
-                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Directory Path <span class="text-rose-500">*</span></label>
-                                <label class="flex items-center gap-1.5 cursor-pointer group">
-                                    <input type="checkbox" id="useWorkspace" class="rounded bg-gray-900 border-gray-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-800" checked onchange="toggleWorkspaceMode()">
-                                    <span class="text-xs text-indigo-400 group-hover:text-indigo-300 font-medium">Use Workspace</span>
-                                </label>
-                            </div>
-                            <div class="flex">
-                                <span id="workspacePrefix" class="bg-gray-700 border border-r-0 border-gray-600 text-gray-300 px-3 py-2 rounded-l-md text-sm font-mono truncate max-w-[200px]" title=""></span>
-                                <input type="text" id="projPath" class="flex-1 bg-gray-900 border border-gray-700 rounded-none px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="folder_name" required>
-                                <button type="button" onclick="browseFolder('projPath')" class="bg-gray-700 border border-l-0 border-gray-600 text-gray-300 hover:text-white px-3 py-2 rounded-r-md hover:bg-gray-600 transition-colors" title="Select Folder from PC">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                </button>
-                            </div>
+                            <div class="flex justify-between items-end mb-1.5"><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Directory Path</label><label class="flex items-center gap-1.5 cursor-pointer group"><input type="checkbox" id="useWorkspace" class="rounded bg-gray-900 border-gray-700 text-indigo-500" checked onchange="toggleWorkspaceMode()"><span class="text-xs text-indigo-400 font-medium">Use Workspace</span></label></div>
+                            <div class="flex"><span id="workspacePrefix" class="bg-gray-700 border border-r-0 border-gray-600 text-gray-300 px-3 py-2 rounded-l-md text-sm font-mono truncate max-w-[200px]"></span><input type="text" id="projPath" class="flex-1 bg-gray-900 border border-gray-700 rounded-none px-3 py-2 text-white font-mono text-sm" required><button type="button" onclick="browseFolder('projPath')" class="bg-gray-700 border border-l-0 border-gray-600 text-gray-300 px-3 py-2 rounded-r-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></button></div>
                         </div>
                     </div>
-
                     <div id="githubFlowWrapper" class="space-y-5 hidden">
-                        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-md p-3 text-xs text-indigo-200 leading-relaxed">
-                            <span class="font-semibold text-indigo-400">Notice:</span> The repository will be cloned into your <span class="font-mono text-indigo-300">Global Workspace</span>.
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Repository URL <span class="text-rose-500">*</span></label>
-                            <input type="text" id="repoUrl" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500 transition-colors" placeholder="https://github.com/user/repo.git">
-                        </div>
+                        <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Repository URL</label><input type="text" id="repoUrl" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white font-mono"></div>
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Start Command <span class="text-rose-500">*</span></label>
-                            <input type="text" id="projCmd" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500 transition-colors" placeholder="npm run dev" required>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Tag (Optional)</label>
-                            <input type="text" id="projTag" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="frontend, bot, api" autocomplete="off">
-                            <div id="tagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-32 overflow-y-auto"></div>
-                        </div>
+                        <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Start Command</label><input type="text" id="projCmd" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white font-mono" required></div>
+                        <div class="relative"><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Tag</label><input type="text" id="projTag" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white" autocomplete="off"><div id="tagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-32 overflow-y-auto"></div></div>
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                            Create Initial .env (Optional)
-                        </label>
-                        <textarea id="projInitialEnv" rows="3" class="w-full bg-[#0d1117] border border-gray-700 rounded-md px-3 py-2 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors resize-y" placeholder="PORT=3000&#10;SECRET=my_secret_key"></textarea>
-                    </div>
-
+                    <div><label class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1.5">Initial .env</label><textarea id="projInitialEnv" rows="3" class="w-full bg-[#0d1117] border border-gray-700 rounded-md px-3 py-2 text-emerald-400 font-mono text-sm"></textarea></div>
                     <div class="bg-gray-900 rounded-lg border border-gray-700 p-4 space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projInteractive" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-indigo-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-gray-200">External Terminal</div>
-                                <div class="text-xs text-gray-500">Opens process in a separate visible window</div>
-                            </div>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projAutoStart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-emerald-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-gray-200 flex items-center gap-1">Auto-Start <span class="text-emerald-400 text-xs">⚡</span></div>
-                                <div class="text-xs text-gray-500">Launch automatically when DionyHub boots</div>
-                            </div>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projAutoRestart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-amber-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-gray-200 flex items-center gap-1">Auto-Restart on Crash <span class="text-amber-400 text-xs">🛡️</span></div>
-                                <div class="text-xs text-gray-500">Restarts the project automatically if it stops unexpectedly</div>
-                            </div>
-                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="projInteractive" class="rounded bg-gray-700 border-gray-600 text-indigo-500"><span class="text-sm font-medium text-gray-200">External Terminal</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="projAutoStart" class="rounded bg-gray-700 border-gray-600 text-emerald-500"><span class="text-sm font-medium text-gray-200">Auto-Start</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="projAutoRestart" class="rounded bg-gray-700 border-gray-600 text-amber-500"><span class="text-sm font-medium text-gray-200">Auto-Restart</span></label>
                     </div>
-
-                    <div class="pt-4 flex justify-end gap-3 shrink-0">
-                        <button type="button" onclick="closeModal()" class="px-5 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-md shadow-lg shadow-indigo-900/20 font-medium transition-colors border border-indigo-500/50 flex items-center justify-center min-w-[120px]">Save Project</button>
-                    </div>
+                    <div class="pt-4 flex justify-end gap-3"><button type="button" onclick="closeModal()" class="px-5 py-2 text-sm text-gray-400">Cancel</button><button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md">Save Project</button></div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- EDIT MODAL -->
     <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700">
-                <h2 class="text-lg font-bold text-white">Edit Project Configuration</h2>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700"><h2 class="text-lg font-bold text-white">Edit Project</h2><button onclick="closeEditModal()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
             <div class="p-6">
                 <form id="editForm" onsubmit="submitEditProject(event)" class="space-y-4">
                     <input type="hidden" id="editProjId">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
-                        <input type="text" id="editProjName" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:border-indigo-500 focus:outline-none" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Directory Path</label>
-                        
-                        <div class="flex">
-                            <input type="text" id="editProjPath" class="flex-1 bg-gray-900 border border-gray-700 rounded-l-md px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none" required>
-                            <button type="button" onclick="browseFolder('editProjPath', false)" class="bg-gray-700 border border-l-0 border-gray-600 text-gray-300 hover:text-white px-3 py-2 rounded-r-md hover:bg-gray-600 transition-colors" title="Select Folder from PC">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                            </button>
-                        </div>
-                    </div>
+                    <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Project Name</label><input type="text" id="editProjName" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white" required></div>
+                    <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Directory Path</label><div class="flex"><input type="text" id="editProjPath" class="flex-1 bg-gray-900 border border-gray-700 rounded-l-md px-3 py-2 text-white font-mono text-sm" required><button type="button" onclick="browseFolder('editProjPath', false)" class="bg-gray-700 border border-l-0 border-gray-600 text-gray-300 px-3 py-2 rounded-r-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></button></div></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Start Command</label>
-                            <input type="text" id="editProjCmd" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none" required>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tag</label>
-                            <input type="text" id="editProjTag" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:border-indigo-500 focus:outline-none" autocomplete="off">
-                            <div id="editTagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-32 overflow-y-auto"></div>
-                        </div>
+                        <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Start Command</label><input type="text" id="editProjCmd" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white font-mono text-sm" required></div>
+                        <div class="relative"><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tag</label><input type="text" id="editProjTag" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white" autocomplete="off"><div id="editTagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-32 overflow-y-auto"></div></div>
                     </div>
-                    
                     <div class="flex gap-6 mt-2 bg-gray-900 p-3 rounded border border-gray-700 flex-wrap">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjInteractive" class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-indigo-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <span class="text-sm text-gray-300">External Terminal</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjAutoStart" class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-emerald-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <span class="text-sm text-gray-300">Auto-Start</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjAutoRestart" class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-amber-500 transition-colors duration-200 ease-out"></div>
-                            </div>
-                            <span class="text-sm text-gray-300">Auto-Restart</span>
-                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editProjInteractive" class="rounded bg-gray-700 border-gray-600"><span class="text-sm text-gray-300">External Terminal</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editProjAutoStart" class="rounded bg-gray-700 border-gray-600"><span class="text-sm text-gray-300">Auto-Start</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editProjAutoRestart" class="rounded bg-gray-700 border-gray-600"><span class="text-sm text-gray-300">Auto-Restart</span></label>
                     </div>
-                    
-                    <div class="pt-4 flex justify-end gap-3 border-t border-gray-700">
-                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded shadow flex items-center justify-center min-w-[100px]">Save Updates</button>
-                    </div>
+                    <div class="pt-4 flex justify-end gap-3"><button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button><button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded shadow">Save Updates</button></div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- ENV MODAL -->
     <div id="envModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-2xl mx-4 flex flex-col h-[70vh]">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded text-xs tracking-wider border border-teal-500/30">.ENV</span>
-                    Environment Variables
-                </h2>
-                <button onclick="closeEnvModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0"><h2 class="text-lg font-bold text-white">Environment Variables</h2><button onclick="closeEnvModal()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
             <form id="envForm" onsubmit="submitEnv(event)" class="flex flex-col flex-1 overflow-hidden">
                 <input type="hidden" id="envProjId">
-                <div class="p-0 flex-1 flex flex-col relative bg-[#0d1117]">
-                    <textarea id="envContent" class="absolute inset-0 w-full h-full bg-transparent text-teal-400 font-mono text-sm p-6 focus:outline-none resize-none" spellcheck="false" placeholder="# KEY=value"></textarea>
-                </div>
-                
-                <div class="px-6 py-4 border-t border-gray-700 bg-gray-800 flex justify-between items-center shrink-0">
-                    <span class="text-xs text-gray-500">Keys are saved securely in the project's local root folder.</span>
-                    <div class="flex gap-3">
-                        <button type="button" onclick="closeEnvModal()" class="px-5 py-2 text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 rounded transition-colors">Cancel</button>
-                        <button type="submit" class="bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded shadow-lg shadow-teal-900/20 font-medium transition-colors border border-teal-500/50 flex items-center justify-center gap-2 min-w-[120px]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                            Save .env
-                        </button>
-                    </div>
-                </div>
+                <div class="p-0 flex-1 flex flex-col relative bg-[#0d1117]"><textarea id="envContent" class="absolute inset-0 w-full h-full bg-transparent text-teal-400 font-mono text-sm p-6 focus:outline-none resize-none" spellcheck="false"></textarea></div>
+                <div class="px-6 py-4 border-t border-gray-700 bg-gray-800 flex justify-end gap-3 shrink-0"><button type="button" onclick="closeEnvModal()" class="px-5 py-2 text-sm bg-gray-700 text-gray-300 rounded">Cancel</button><button type="submit" class="bg-teal-600 text-white px-6 py-2 rounded">Save .env</button></div>
             </form>
         </div>
     </div>
 
+    <!-- DELETE MODAL -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-rose-900/50 shadow-2xl w-full max-w-md mx-4 transform transition-all">
             <div class="p-6">
-                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-rose-500/10 mb-4 mx-auto">
-                    <svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
-                <p class="text-sm text-gray-400 text-center mb-6">This action will remove the project from DionyHub.</p>
-                
-                <div class="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 mb-6">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" id="deleteFilesFromDisk" class="mt-1 rounded bg-gray-900 border-rose-500/50 text-rose-500 focus:ring-rose-500 focus:ring-offset-gray-800">
-                        <div>
-                            <span class="block text-sm font-semibold text-rose-400">Permanently delete files</span>
-                            <span class="block text-xs text-rose-400/70 mt-0.5">Check this to completely erase the project directory from your hard drive. This cannot be undone.</span>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="flex gap-3">
-                    <button onclick="closeDeleteModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-md transition-colors font-medium">Cancel</button>
-                    <button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-md transition-colors font-medium border border-rose-500/50 flex items-center justify-center">Delete Now</button>
-                </div>
+                <div class="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 mb-6"><label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="deleteFilesFromDisk" class="mt-1 rounded bg-gray-900 border-rose-500/50 text-rose-500"><div><span class="block text-sm font-semibold text-rose-400">Permanently delete files</span></div></label></div>
+                <div class="flex gap-3"><button onclick="closeDeleteModal()" class="flex-1 bg-gray-700 text-white py-2 rounded-md">Cancel</button><button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 text-white py-2 rounded-md">Delete Now</button></div>
             </div>
         </div>
     </div>
 
+    <!-- TOAST -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="/js/app.js"></script>
