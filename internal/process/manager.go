@@ -62,10 +62,10 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var cmd *exec.Cmd
 	if interactive {
 		if runtime.GOOS == "windows" {
-			// KUSURSUZ ÇÖZÜM: 'start /WAIT' kullanıyoruz!
-			// /WAIT: Pencere kapanana kadar beklemesini sağlar (Anında stopped olmasını engeller).
-			// name: Pencerenin başlığına (Title) projenin adını yazar.
-			cmdArgs := append([]string{"/c", "start", "/WAIT", name, nameCmd}, args...)
+			// KUSURSUZ ÇÖZÜM: 'start' komutunda başlık (Title) MUTLAKA çift tırnak içinde olmalıdır ("Title").
+			// Aksi takdirde Windows ilk kelimeyi çalıştırılacak program sanır (Hatanın sebebi buydu).
+			titleArg := fmt.Sprintf(`"%s"`, name)
+			cmdArgs := append([]string{"/c", "start", titleArg, "/WAIT", nameCmd}, args...)
 			cmd = exec.Command("cmd", cmdArgs...)
 			cmd.Dir = path
 		} else {
