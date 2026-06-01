@@ -14,6 +14,7 @@ import (
 
 	"github.com/Diony-source/DionyHub/internal/archive"
 	"github.com/Diony-source/DionyHub/internal/config"
+	"github.com/Diony-source/DionyHub/internal/osutil" // YENİ EKLENDİ
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
@@ -46,7 +47,30 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
 	mux.HandleFunc("/api/projects/backup", s.handleBackupProject)
 	mux.HandleFunc("/api/settings", s.handleSettings)
+	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder) // YENİ ROTA EKLENDİ
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
+}
+
+// handleBrowseFolder triggers the native OS folder picker dialog
+func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	path, err := osutil.PickFolder()
+	if err != nil || path == "" {
+		// Kullanıcı iptal ettiyse veya hata varsa sessizce boş dön (Hata patlatma)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"path": ""}`))
+		return
+	}
+
+	// Go ve UI için dosya yolunu standardize et
+	cleanPath := strings.ReplaceAll(path, "\\", "/")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"path": cleanPath})
 }
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +187,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 			s.projects[i].Command = updatedData.Command
 			s.projects[i].Interactive = updatedData.Interactive
 			s.projects[i].AutoStart = updatedData.AutoStart
-			s.projects[i].AutoRestart = updatedData.AutoRestart // YENİ EKLENDİ
+			s.projects[i].AutoRestart = updatedData.AutoRestart
 			s.projects[i].Tag = updatedData.Tag
 			found = true
 			break
@@ -195,7 +219,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Tag         string `json:"tag"`
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
-		AutoRestart bool   `json:"auto_restart"` // YENİ EKLENDİ
+		AutoRestart bool   `json:"auto_restart"`
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -245,7 +269,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Tag:         req.Tag,
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
-		AutoRestart: req.AutoRestart, // YENİ EKLENDİ
+		AutoRestart: req.AutoRestart,
 		Status:      "stopped",
 	}
 
@@ -277,7 +301,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Tag         string `json:"tag"`
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
-		AutoRestart bool   `json:"auto_restart"` // YENİ EKLENDİ
+		AutoRestart bool   `json:"auto_restart"`
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -344,7 +368,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Tag:         req.Tag,
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
-		AutoRestart: req.AutoRestart, // YENİ EKLENDİ
+		AutoRestart: req.AutoRestart,
 		Status:      "stopped",
 	}
 
@@ -507,7 +531,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// YENİ: p.AutoRestart parametresi Start'a eklendi
 	if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
@@ -568,7 +591,6 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		if target != nil {
 			parts := strings.Fields(target.Command)
 			if len(parts) > 0 {
-				// YENİ: p.AutoRestart eklendi
 				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
 					startedCount++
 				}

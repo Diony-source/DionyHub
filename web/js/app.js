@@ -79,6 +79,8 @@ function switchView(viewName) {
     }
 }
 
+// ... (Mevcut kodların aynen kalıyor) ...
+
 function toggleWorkspaceMode() {
     const useWs = document.getElementById('useWorkspace').checked;
     const prefix = document.getElementById('workspacePrefix');
@@ -86,19 +88,40 @@ function toggleWorkspaceMode() {
 
     if(useWs) {
         prefix.classList.remove('hidden');
+        input.classList.remove('rounded-l-md');
+        input.classList.add('border-l-0'); // prefix varken sol borderı sil
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        
         prefix.title = formattedWs; 
         prefix.innerText = formatWorkspacePath(globalWorkspace);
-        
-        input.classList.remove('rounded-md');
-        input.classList.add('rounded-r-md');
         input.placeholder = "folder_name";
     } else {
         prefix.classList.add('hidden');
-        input.classList.add('rounded-md');
-        input.classList.remove('rounded-r-md');
+        input.classList.add('rounded-l-md');
+        input.classList.remove('border-l-0');
         input.placeholder = "C:/Users/Diony/Desktop/bot";
+    }
+}
+
+// YENİ: Yerel Bilgisayardan Klasör Seçme Fonksiyonu
+async function browseFolder(inputId, handleWorkspace = true) {
+    try {
+        const res = await fetch('/api/system/browse');
+        const data = await res.json();
+        
+        if (data.path && data.path !== "") {
+            document.getElementById(inputId).value = data.path;
+            
+            // Eğer "Add Project" ekranındaysak ve tam yol seçilmişse, "Use Workspace" kilidini mantıken kapat
+            if (handleWorkspace) {
+                const wsCheckbox = document.getElementById('useWorkspace');
+                if (wsCheckbox.checked) {
+                    wsCheckbox.checked = false;
+                    toggleWorkspaceMode();
+                }
+            }
+        }
+    } catch (e) {
+        showToast("Failed to open native folder picker.", "error");
     }
 }
 
