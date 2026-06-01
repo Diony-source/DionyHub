@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -16,7 +18,26 @@ import (
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
+// YENİ: Başlangıçta 8080 portunu rehin alan zombi süreçleri acımasızca temizler
+func clearHubPort() {
+	if runtime.GOOS == "windows" {
+		psCmd := `
+		$tcp = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue
+		if ($tcp) {
+			$process = Get-Process -Id $tcp.OwningProcess -ErrorAction SilentlyContinue
+			if ($process) {
+				Stop-Process -Id $process.Id -Force
+			}
+		}`
+		cmd := exec.Command("powershell", "-NoProfile", "-Command", psCmd)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		cmd.Run() // Sessizce çalışır, bulursa öldürür, bulamazsa yola devam eder
+	}
+}
+
 func main() {
+	// 1. ADIM: Sistemi başlatmadan önce yolu (Port 8080) temizle!
+	clearHubPort()
 	broadcaster := api.NewBroadcaster()
 	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
 
