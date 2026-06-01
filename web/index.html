@@ -14,6 +14,7 @@
 </head>
 <body class="bg-gray-900 text-white h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30">
 
+    <!-- SIDEBAR -->
     <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col shadow-2xl z-20">
         <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-gray-900/50">
             <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md">DionyHub</span>
@@ -41,6 +42,7 @@
         </div>
     </div>
 
+    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col bg-gray-900 relative">
         
         <header class="h-16 bg-gray-800/80 backdrop-blur border-b border-gray-700 flex items-center justify-between px-8 z-10 sticky top-0">
@@ -57,6 +59,7 @@
             </div>
         </header>
 
+        <!-- DASHBOARD VIEW -->
         <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
             
             <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
@@ -102,11 +105,13 @@
                         </div>
                         <button onclick="clearTerminal()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Clear</button>
                     </div>
-                    <div id="terminal-output" class="p-4 overflow-y-auto flex-1 font-mono text-sm leading-relaxed text-gray-300"></div>
+                    <!-- YENİ: scroll-smooth sınıfı eklendi -->
+                    <div id="terminal-output" class="p-4 overflow-y-auto flex-1 font-mono text-sm leading-relaxed text-gray-300 scroll-smooth"></div>
                 </div>
             </div>
         </div>
 
+        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden flex-col flex-1 overflow-y-auto px-8 py-8">
             <div class="max-w-3xl mx-auto w-full space-y-6">
                 <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-xl p-6">
@@ -143,6 +148,7 @@
 
     </div>
 
+    <!-- ADD MODAL -->
     <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
@@ -261,6 +267,7 @@
         </div>
     </div>
 
+    <!-- EDIT MODAL -->
     <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700">
@@ -323,6 +330,7 @@
         </div>
     </div>
 
+    <!-- ENV MODAL -->
     <div id="envModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-2xl mx-4 flex flex-col h-[70vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-700 shrink-0">
@@ -355,6 +363,7 @@
         </div>
     </div>
 
+    <!-- DELETE CONFIRMATION MODAL -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-xl border border-rose-900/50 shadow-2xl w-full max-w-md mx-4 transform transition-all">
             <div class="p-6">
@@ -382,6 +391,7 @@
         </div>
     </div>
 
+    <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="/js/app.js"></script>

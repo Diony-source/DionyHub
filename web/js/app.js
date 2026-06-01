@@ -19,7 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
     
-    logFlushInterval = setInterval(flushLogBuffer, 200);
+    // YENİ: Havuzu her 30 milisaniyede (Saniyede ~33 kare - FPS) bir boşalt. 
+    // Bu terminalin "takılması" hissini tamamen ortadan kaldırır.
+    logFlushInterval = setInterval(flushLogBuffer, 30);
 });
 
 function formatWorkspacePath(path) {
@@ -331,7 +333,6 @@ async function loadProjects() {
         const bulkContainer = document.getElementById('bulk-actions-container');
         if (bulkContainer) {
             if (currentTagFilter !== null) {
-                // OPTİMİZE EDİLDİ: Artık '#' işareti daha şık ve tag tam girildiği harf yapısıyla yazdırılıyor
                 document.getElementById('bulk-tag-name').innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
                 document.getElementById('bulk-project-count').innerText = `${filteredProjects.length} project(s)`;
                 bulkContainer.classList.remove('hidden');
@@ -360,7 +361,6 @@ async function loadProjects() {
             tr.addEventListener('drop', handleDrop);
             tr.addEventListener('dragend', handleDragEnd);
             
-            // OPTİMİZE EDİLDİ: Katı "uppercase" silindi, hap formatına geçirildi ve şık bir # ikonu eklendi.
             const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-medium rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-bold">#</span>${p.tag}</span>` : '';
             
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
@@ -778,7 +778,11 @@ function flushLogBuffer() {
         terminalOutput.removeChild(terminalOutput.firstElementChild);
     }
     
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    // YENİ: Smooth scroll komutu eklendi
+    terminalOutput.scrollTo({
+        top: terminalOutput.scrollHeight,
+        behavior: 'smooth'
+    });
     
     logBuffer = [];
 }
@@ -802,7 +806,12 @@ function appendLog(msg, forceColorClass = null) {
     
     terminalOutput.appendChild(fragment);
     while (terminalOutput.childElementCount > MAX_LOG_LINES) terminalOutput.removeChild(terminalOutput.firstElementChild);
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    
+    // YENİ: Smooth scroll komutu eklendi
+    terminalOutput.scrollTo({
+        top: terminalOutput.scrollHeight,
+        behavior: 'smooth'
+    });
 }
 
 function clearTerminal() { 
