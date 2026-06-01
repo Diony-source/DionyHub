@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -19,7 +20,7 @@ type Process struct {
 	Name         string
 	Cmd          *exec.Cmd
 	Running      bool
-	IntendedStop bool // YENİ: Kullanıcı bilerek mi durdurdu? (Watchdog iptali için)
+	IntendedStop bool
 }
 
 type Manager struct {
@@ -50,7 +51,6 @@ func (m *Manager) prefixLogger(projectName string, r io.Reader) {
 	}
 }
 
-// YENİ: autoRestart parametresi eklendi
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	if p, exists := m.processes[id]; exists && p.Running {
@@ -83,6 +83,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	cmd.Env = append(cmd.Env, globalEnvs...)
 
 	if !interactive {
+		// Arka planda çalışırken konsol penceresi açılmasını gizler
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
 
@@ -96,7 +97,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		Name:         name,
 		Cmd:          cmd,
 		Running:      true,
-		IntendedStop: false, // İlk açılışta kasıtlı durdurma false'tur
+		IntendedStop: false,
 	}
 	m.mu.Unlock()
 
@@ -112,12 +113,10 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		}
 		m.mu.Unlock()
 
-		// Eğer otomatik başlatma açıksa ve kullanıcı KENDİSİ durdurmamışsa (Çökmüşse)
 		if autoRestart && !intended {
 			fmt.Fprintf(m.output, "[%s] [WATCHDOG] ⚠️ Process crashed or exited unexpectedly! Restarting in 3 seconds...\n", name)
 			time.Sleep(3 * time.Second)
 
-			// 3 saniye sonra hala mevcut mu kontrol et (belki o sırada silindi)
 			m.mu.RLock()
 			stillExists := false
 			if p, exists := m.processes[id]; exists && !p.Running {
@@ -135,11 +134,11 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	return nil
 }
 
+// Stop executes a robust shutdown of the process and its child tree
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
 	if exists {
-		// Watchdog'a haber ver: "Bu bir çökme değil, kullanıcı kendisi durdurdu. Yeniden başlatma!"
 		p.IntendedStop = true
 	}
 	m.mu.Unlock()
@@ -148,9 +147,24 @@ func (m *Manager) Stop(id string) error {
 		return errors.New("process is not currently running")
 	}
 
-	err := p.Cmd.Process.Kill()
+	pid := p.Cmd.Process.Pid
+
+	// KUSURSUZ ÇÖZÜM: Process Tree Kill (Zombi İşlemleri Yok Etme)
+	var err error
+	if runtime.GOOS == "windows" {
+		// Windows'ta 'taskkill' kullanarak tüm ağacı (/T) zorla (/F) kapatıyoruz.
+		// Bu sayede NPM arkasında kalan Node.js zombileri de tamamen yok edilir.
+		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(pid))
+		killCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		err = killCmd.Run()
+	} else {
+		// Unix/Linux Fallback
+		err = p.Cmd.Process.Kill()
+	}
+
+	// Eğer işletim sistemi komutu (taskkill) çalışmazsa standart Kill metoduna geri dön
 	if err != nil {
-		return err
+		p.Cmd.Process.Kill()
 	}
 
 	m.mu.Lock()

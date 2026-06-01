@@ -8,46 +8,46 @@ import (
 
 var settingsMu sync.Mutex
 
-// AppSettings represents the global configuration for DionyHub
+// AppSettings holds the global configuration for DionyHub
 type AppSettings struct {
 	Workspace string `json:"workspace"`
 	LogBuffer bool   `json:"log_buffer"`
-	GlobalEnv string `json:"global_env"` // YENİ: Evrensel Çevre Değişkenleri
+	GlobalEnv string `json:"global_env"`
 }
 
-// LoadSettings reads the global settings from the given JSON file.
+// LoadSettings retrieves settings securely from disk
 func LoadSettings(filename string) (AppSettings, error) {
 	settingsMu.Lock()
 	defer settingsMu.Unlock()
 
+	var settings AppSettings
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return AppSettings{
-				Workspace: "C:/DionyHub/apps",
-				LogBuffer: true,
-				GlobalEnv: "",
-			}, nil
+			return settings, nil
 		}
-		return AppSettings{}, err
+		return settings, err
 	}
 
-	var s AppSettings
-	if err := json.Unmarshal(data, &s); err != nil {
-		return AppSettings{}, err
-	}
-	return s, nil
+	err = json.Unmarshal(data, &settings)
+	return settings, err
 }
 
-// SaveSettings writes the global settings to the given JSON file safely.
-func SaveSettings(filename string, s AppSettings) error {
+// SaveSettings securely writes global settings using Atomic Write
+func SaveSettings(filename string, settings AppSettings) error {
 	settingsMu.Lock()
 	defer settingsMu.Unlock()
 
-	data, err := json.MarshalIndent(s, "", "  ")
+	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filename, data, 0644)
+	// ATOMIC WRITE: Sistem çökse bile ayarların bozulmasını engeller
+	tmpFile := filename + ".tmp"
+	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpFile, filename)
 }

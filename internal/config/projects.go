@@ -17,7 +17,7 @@ type Project struct {
 	Tag         string  `json:"tag"`
 	Interactive bool    `json:"interactive"`
 	AutoStart   bool    `json:"auto_start"`
-	AutoRestart bool    `json:"auto_restart"` // YENİ: Watchdog (Otomatik Yeniden Başlatma)
+	AutoRestart bool    `json:"auto_restart"`
 	Status      string  `json:"status,omitempty"`
 	Order       int     `json:"order"`
 	CPU         float64 `json:"cpu,omitempty"`
@@ -44,7 +44,7 @@ func LoadProjects(filename string) ([]Project, error) {
 	return projects, nil
 }
 
-// SaveProjects securely writes the project configurations to the JSON file
+// SaveProjects securely writes the project configurations using Atomic Write to prevent data corruption
 func SaveProjects(filename string, projects []Project) error {
 	projectsMu.Lock()
 	defer projectsMu.Unlock()
@@ -54,5 +54,12 @@ func SaveProjects(filename string, projects []Project) error {
 		return err
 	}
 
-	return os.WriteFile(filename, data, 0644)
+	// ATOMIC WRITE: Önce geçici dosyaya yaz, yazma bitince asıl dosyayla değiştir.
+	// Bu sayede tam yazma anında elektrik gitse bile asıl dosya asla bozulmaz.
+	tmpFile := filename + ".tmp"
+	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpFile, filename)
 }
