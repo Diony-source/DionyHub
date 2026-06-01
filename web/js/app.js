@@ -36,33 +36,41 @@ function getOrCreateTerminal(id, name) {
 
     const grid = document.getElementById('terminals-grid');
 
-    // Terminal dış kabuğu (Wrapper)
+    // YENİ TASARIM: Premium Terminal Kutusu (Wrapper)
     const wrapper = document.createElement('div');
     wrapper.id = `tmux-wrapper-${id}`;
-    wrapper.className = "flex flex-col border border-gray-700 bg-gray-900 rounded overflow-hidden relative group";
+    wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition-all duration-300";
 
-    // Header ve Butonlar
+    // YENİ TASARIM: Header (Mac-Style)
     const header = document.createElement('div');
-    header.className = "bg-gray-800 px-3 py-1.5 flex justify-between items-center border-b border-gray-700 z-10 shrink-0";
+    header.className = "bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-700/50 shadow-sm z-10 shrink-0";
     
-    const titleSpan = document.createElement('span');
-    titleSpan.className = `text-xs font-bold font-mono truncate ${id === 'system' ? 'text-indigo-400' : 'text-gray-300'}`;
-    titleSpan.innerText = id === 'system' ? `⚙️ ${name}` : `> ${name}`;
+    // YENİ TASARIM: Başlık ve Glowing Neon Dot
+    const titleSpan = document.createElement('div');
+    titleSpan.className = `text-xs font-bold font-mono tracking-wide flex items-center gap-2.5`;
+    const isSystem = id === 'system';
+    const dotColor = isSystem ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
+    const textColor = isSystem ? 'text-indigo-300' : 'text-gray-300';
+    
+    titleSpan.innerHTML = `
+        <div class="w-2 h-2 rounded-full ${dotColor}"></div>
+        <span class="${textColor} drop-shadow-md truncate">${name}</span>
+    `;
     
     const actionsDiv = document.createElement('div');
-    actionsDiv.className = "flex items-center gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity";
+    actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
 
-    // Tam Ekran (Maximize) Butonu
+    // Tam Ekran Butonu
     const maxBtn = document.createElement('button');
-    maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
-    maxBtn.className = "text-gray-400 hover:text-white p-0.5 rounded transition-colors";
+    maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
+    maxBtn.className = "text-gray-400 hover:text-white hover:bg-gray-700/80 p-1.5 rounded-lg transition-colors";
     maxBtn.title = "Toggle Fullscreen";
     maxBtn.onclick = () => toggleMaximizeTerminal(id);
     
     // Temizle Butonu
     const clearBtn = document.createElement('button');
     clearBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
-    clearBtn.className = "text-gray-400 hover:text-rose-400 p-0.5 rounded transition-colors";
+    clearBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
@@ -71,18 +79,18 @@ function getOrCreateTerminal(id, name) {
     header.appendChild(titleSpan);
     header.appendChild(actionsDiv);
 
-    // Xterm.js Konteyneri
+    // Xterm.js Konteyneri (İç arka plan daha koyu)
     const termContainer = document.createElement('div');
     termContainer.id = `tmux-term-${id}`;
-    termContainer.className = "flex-1 w-full bg-[#0d1117] p-1.5 overflow-hidden";
+    termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden";
 
     wrapper.appendChild(header);
     wrapper.appendChild(termContainer);
     grid.appendChild(wrapper);
 
-    // Xterm.js Başlatma
+    // Xterm.js Başlatma (Arka plan rengi konteyner ile uyumlu)
     const term = new Terminal({
-        theme: { background: '#0d1117', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' },
+        theme: { background: '#0a0d14', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' },
         fontFamily: 'Consolas, "Courier New", monospace',
         fontSize: 13, cursorBlink: true, scrollback: 3000, convertEol: true
     });
@@ -100,7 +108,6 @@ function getOrCreateTerminal(id, name) {
 
     terminalPool[id] = termInstance;
 
-    // Her terminal için Kendi Cooked Mode (Satır) okuyucusu
     if (id !== 'system') {
         term.onData(data => {
             for (let i = 0; i < data.length; i++) {
@@ -110,13 +117,11 @@ function getOrCreateTerminal(id, name) {
                 if (code === 13 || code === 10) { 
                     term.write('\r\n');
                     const payload = termInstance.currentLine + '\r\n';
-                    
                     fetch('/api/projects/input', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: id, data: payload })
                     }).catch(err => console.error("Send failed:", err));
-                    
                     termInstance.currentLine = ""; 
                 } else if (code === 127 || code === 8) { 
                     if (termInstance.currentLine.length > 0) {
@@ -131,7 +136,7 @@ function getOrCreateTerminal(id, name) {
         });
     }
 
-    if (id === 'system') term.writeln('\x1b[35m=== DionyHub Hub Engine Connected ===\x1b[0m');
+    if (id === 'system') term.writeln('\x1b[35m=== DionyHub Engine Connected ===\x1b[0m');
     
     updateGridCSS();
     return termInstance;
@@ -142,18 +147,19 @@ function updateGridCSS() {
     const activeIds = Object.keys(terminalPool);
     const count = activeIds.length;
 
-    // Tüm wrapper'ları önce görünür yap
+    // YENİ: Izgara Aralığı (Nefes Alma Payı)
+    grid.style.display = 'grid';
+    grid.style.gap = '16px'; 
+
     activeIds.forEach(id => terminalPool[id].container.classList.remove('hidden'));
 
     if (maximizedTerminalId && terminalPool[maximizedTerminalId]) {
-        // Tam Ekran Modu: Diğerlerini Gizle
         activeIds.forEach(id => {
             if (id !== maximizedTerminalId) terminalPool[id].container.classList.add('hidden');
         });
         grid.style.gridTemplateColumns = `1fr`;
         grid.style.gridTemplateRows = `1fr`;
     } else {
-        // Izgara (Grid) Modu: Proje sayısına göre otomatik böl
         if (count === 1) {
             grid.style.gridTemplateColumns = `1fr`;
             grid.style.gridTemplateRows = `1fr`;
@@ -164,13 +170,11 @@ function updateGridCSS() {
             grid.style.gridTemplateColumns = `1fr 1fr`;
             grid.style.gridTemplateRows = `1fr 1fr`;
         } else {
-            // 4'ten fazlaysa oto sığdır
             grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(400px, 1fr))`;
             grid.style.gridTemplateRows = `repeat(auto-fit, minmax(250px, 1fr))`;
         }
     }
 
-    // Grid CSS güncellendiğinde DOM boyutunun oturması için çok kısa bekle ve Fit çağır
     setTimeout(refreshAllTerminalFits, 50);
 }
 
