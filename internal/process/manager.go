@@ -1,7 +1,6 @@
 package process
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -18,23 +17,26 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
+// Process represents a managed background or interactive project execution.
 type Process struct {
 	ID           string
 	Name         string
 	Path         string
 	Cmd          *exec.Cmd
-	Stdin        io.WriteCloser // YENİ: Sürece klavyeden veri (Keystroke) göndermek için veri borusu
+	Stdin        io.WriteCloser // Pipe to send keystrokes to the running process
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
 }
 
+// Manager handles the lifecycle, logging, and I/O routing of all processes.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
 	output    io.Writer
 }
 
+// NewManager initializes a new process manager with the given output stream.
 func NewManager(output io.Writer) *Manager {
 	return &Manager{
 		processes: make(map[string]*Process),
@@ -42,21 +44,48 @@ func NewManager(output io.Writer) *Manager {
 	}
 }
 
+// prefixLogger continuously reads raw bytes from a stream and prepends the project name.
+// It explicitly avoids line-buffering (bufio.Scanner) to support interactive prompts (fmt.Print).
 func (m *Manager) prefixLogger(projectName string, r io.Reader) {
-	scanner := bufio.NewScanner(r)
-	throttle := time.NewTicker(10 * time.Millisecond)
-	defer throttle.Stop()
+	buf := make([]byte, 4096)
+	needsPrefix := true
 
-	for scanner.Scan() {
-		<-throttle.C
-		fmt.Fprintf(m.output, "[%s] %s\n", projectName, scanner.Text())
-	}
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			var out strings.Builder
+			for i := 0; i < n; i++ {
+				// Insert prefix at the beginning of a line
+				if needsPrefix {
+					// Use a subtle gray ANSI color for the prefix to separate it from actual logs
+					out.WriteString(fmt.Sprintf("\x1b[90m[%s]\x1b[0m ", projectName))
+					needsPrefix = false
+				}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(m.output, "[%s] [SYSTEM LOG ERROR] %v\n", projectName, err)
+				b := buf[i]
+				out.WriteByte(b)
+
+				// If we encounter a newline, the NEXT character should get a prefix
+				if b == '\n' {
+					needsPrefix = true
+				}
+			}
+
+			// Write the built chunk directly to the MultiWriter (Console + WebSocket)
+			fmt.Fprint(m.output, out.String())
+		}
+
+		if err != nil {
+			// Ignore standard EOF or closed file descriptor errors upon intentional stop
+			if err != io.EOF && !errors.Is(err, os.ErrClosed) && !strings.Contains(err.Error(), "file already closed") {
+				fmt.Fprintf(m.output, "\n\x1b[90m[%s] [SYSTEM LOG ERROR]\x1b[0m %v\n", projectName, err)
+			}
+			break
+		}
 	}
 }
 
+// Recover checks if a process was left running from a previous hub execution.
 func (m *Manager) Recover(id, name, path string) bool {
 	pidFile := filepath.Join(path, ".diony_hub.pid")
 	data, err := os.ReadFile(pidFile)
@@ -108,7 +137,7 @@ func (m *Manager) Recover(id, name, path string) bool {
 	return true
 }
 
-// YENİ: Arayüzdeki terminalden yazılan yazıları doğrudan arka plandaki sürecin içine enjekte eder
+// WriteInput pipes keystrokes directly into the standard input of the running process.
 func (m *Manager) WriteInput(id string, input string) error {
 	m.mu.RLock()
 	p, exists := m.processes[id]
@@ -118,8 +147,6 @@ func (m *Manager) WriteInput(id string, input string) error {
 		return errors.New("process is not running")
 	}
 
-	// Sadece arka planda (Hidden) çalışan ve yeni başlatılan projelerin Stdin borusu vardır.
-	// (External Terminal ile açılan veya Recover edilen süreçlerin konsolları ayrıdır).
 	if p.Stdin == nil {
 		return errors.New("this process does not accept internal terminal inputs (might be external console or recovered)")
 	}
@@ -128,6 +155,7 @@ func (m *Manager) WriteInput(id string, input string) error {
 	return err
 }
 
+// Start launches a new project process, attaching loggers and tracking its PID.
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	if p, exists := m.processes[id]; exists && p.Running {
@@ -137,7 +165,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	m.mu.Unlock()
 
 	var cmd *exec.Cmd
-	var stdinPipe io.WriteCloser // YENİ
+	var stdinPipe io.WriteCloser
 
 	if interactive {
 		if runtime.GOOS == "windows" {
@@ -163,7 +191,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			go m.prefixLogger(name, stderr)
 		}
 
-		// YENİ: Terminal veri giriş borusunu aç
 		stdinPipe, _ = cmd.StdinPipe()
 
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -186,7 +213,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		Name:         name,
 		Path:         path,
 		Cmd:          cmd,
-		Stdin:        stdinPipe, // YENİ: Boruyu kaydet
+		Stdin:        stdinPipe,
 		Running:      true,
 		IntendedStop: false,
 	}
@@ -230,6 +257,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	return nil
 }
 
+// Stop gracefully or forcefully terminates a running process.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
@@ -279,6 +307,7 @@ func (m *Manager) Stop(id string) error {
 	return err
 }
 
+// IsRunning safely checks the execution state of a managed process.
 func (m *Manager) IsRunning(id string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -286,6 +315,7 @@ func (m *Manager) IsRunning(id string) bool {
 	return exists && p.Running
 }
 
+// GetStats calculates and returns current CPU and RAM usage for a process.
 func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
@@ -317,6 +347,7 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	return cpuPercent, ram
 }
 
+// StopAll iterates through all active processes and issues a termination signal.
 func (m *Manager) StopAll() {
 	m.mu.RLock()
 	var ids []string
