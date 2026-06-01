@@ -9,7 +9,7 @@ let globalWorkspace = "C:/DionyHub/apps";
 // Xterm.js Değişkenleri
 let term;
 let fitAddon;
-let activeTerminalProjectId = null; // Şu an terminalde klavyesi bağlı olan proje ID'si
+let activeTerminalProjectId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     initTerminal();
@@ -42,8 +42,8 @@ function initTerminal() {
         fontFamily: 'Consolas, "Courier New", monospace',
         fontSize: 13,
         cursorBlink: true,
-        scrollback: 5000, // 5000 satıra kadar hafızada tutar (DOM şişmez)
-        convertEol: true // Backend'den gelen \n'leri otomatik \r\n yapar
+        scrollback: 5000,
+        convertEol: true
     });
 
     fitAddon = new FitAddon.FitAddon();
@@ -57,44 +57,46 @@ function initTerminal() {
         fitAddon.fit();
     });
 
-    // GERÇEK TERMİNAL SİMÜLASYONU (Cooked Mode)
-    // Kullanıcının yazdıklarını Enter'a basana kadar burada biriktiriyoruz
+    // GERÇEK TERMİNAL SİMÜLASYONU (Cooked Mode - Windows Uyumlu \r\n)
     let currentLine = "";
 
     term.onData(data => {
         if (!activeTerminalProjectId) return;
 
-        const code = data.charCodeAt(0);
-        
-        if (code === 13) { 
-            // ENTER TUŞU: Ekranda alt satıra geç
-            term.write('\r\n');
+        // Kopyala/Yapıştır durumunda birden fazla karakter gelebilir diye döngüye alıyoruz
+        for (let i = 0; i < data.length; i++) {
+            const char = data[i];
+            const code = char.charCodeAt(0);
             
-            // Biriken satırı ve Enter (\n) karakterini tek paket halinde Go'ya yolla
-            const payload = currentLine + '\n';
-            
-            fetch('/api/projects/input', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: activeTerminalProjectId,
-                    data: payload
-                })
-            }).catch(err => console.error("Failed to send keystroke:", err));
-            
-            // Satır gönderildikten sonra hafızayı temizle
-            currentLine = ""; 
-            
-        } else if (code === 127) { 
-            // BACKSPACE (SİLME) TUŞU
-            if (currentLine.length > 0) {
-                currentLine = currentLine.slice(0, -1);
-                term.write('\b \b');
+            if (code === 13 || code === 10) { 
+                // ENTER TUŞU: Ekranda alt satıra geç
+                term.write('\r\n');
+                
+                // Windows fmt.Scan uyumluluğu için \r\n (CRLF) ekleyip gönderiyoruz!
+                const payload = currentLine + '\r\n';
+                
+                fetch('/api/projects/input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: activeTerminalProjectId,
+                        data: payload
+                    })
+                }).catch(err => console.error("Failed to send keystroke:", err));
+                
+                currentLine = ""; 
+                
+            } else if (code === 127 || code === 8) { 
+                // BACKSPACE (SİLME) TUŞU
+                if (currentLine.length > 0) {
+                    currentLine = currentLine.slice(0, -1);
+                    term.write('\b \b');
+                }
+            } else {
+                // NORMAL HARFLER
+                currentLine += char;
+                term.write(char);
             }
-        } else {
-            // NORMAL HARFLER: Sadece ekrana yaz ve hafızada biriktir (Henüz Backend'e yollama!)
-            currentLine += data;
-            term.write(data);
         }
     });
 
@@ -106,14 +108,12 @@ function initTerminal() {
 function focusTerminal(projectId, projectName) {
     activeTerminalProjectId = projectId;
     
-    // UI Güncellemesi
     const badge = document.getElementById('terminal-focus-badge');
     if (badge) {
         badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]";
         badge.innerText = `Focus: ${projectName}`;
     }
 
-    // Satırı vurgula
     document.querySelectorAll('#project-list tr').forEach(tr => {
         tr.classList.remove('ring-1', 'ring-indigo-500', 'bg-gray-800/50');
     });
@@ -135,7 +135,6 @@ function connectWebSocket() {
     
     socket.onmessage = (e) => {
         if (term) {
-            // Xterm.js doğrudan ANSI ve metinleri kabul eder
             term.write(e.data);
         }
     };
@@ -191,7 +190,6 @@ function switchView(viewName) {
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left";
         
-        // Tab değiştiğinde terminali yeniden boyutlandır ki buga girmesin
         setTimeout(() => { if (fitAddon) fitAddon.fit(); }, 100);
     } else if (viewName === 'settings') {
         dashboardView.classList.add('hidden');
@@ -492,13 +490,12 @@ async function loadProjects() {
 
         filteredProjects.forEach(p => {
             const tr = document.createElement('tr');
-            // Satıra tıklanınca terminali bu projeye odaklar
             tr.className = `border-b border-gray-700/50 hover:bg-gray-750 transition-colors group cursor-pointer ${activeTerminalProjectId === p.id ? 'ring-1 ring-indigo-500 bg-gray-800/50' : 'bg-gray-800/20'}`;
             tr.setAttribute('draggable', 'true');
             tr.dataset.id = p.id;
             
             tr.addEventListener('click', (e) => {
-                // Eğer butona basıldıysa odaklama yapma
+                // Eğer butonlara tıklanmışsa terminal odağını tetikleme
                 if (e.target.closest('button')) return;
                 focusTerminal(p.id, p.name);
             });
@@ -545,6 +542,12 @@ async function loadProjects() {
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
+                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-700 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Export as .zip Archive">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </button>
+                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit .env Variables">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </button>
                             <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors" title="Edit Project">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
@@ -728,7 +731,7 @@ async function updateStatuses() {
 }
 
 async function startProject(id, name, btn) { 
-    focusTerminal(id, name); // Başlatınca terminali direkt odaklar
+    focusTerminal(id, name);
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
