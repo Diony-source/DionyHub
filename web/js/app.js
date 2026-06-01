@@ -6,7 +6,6 @@ let cachedProjects = [];
 
 let globalWorkspace = "C:/DionyHub/apps";
 
-// Xterm.js Değişkenleri
 let term;
 let fitAddon;
 let activeTerminalProjectId = null;
@@ -60,7 +59,6 @@ function initTerminal() {
         fitAddon.fit();
     });
 
-    // GERÇEK TERMİNAL (COOKED MODE): Sadece Enter'a basıldığında veriyi gönderir
     let currentLine = "";
 
     term.onData(data => {
@@ -71,9 +69,8 @@ function initTerminal() {
             const code = char.charCodeAt(0);
             
             if (code === 13 || code === 10) { 
-                // ENTER TUŞU
                 term.write('\r\n');
-                const payload = currentLine + '\n';
+                const payload = currentLine + '\r\n';
                 
                 fetch('/api/projects/input', {
                     method: 'POST',
@@ -87,13 +84,11 @@ function initTerminal() {
                 currentLine = ""; 
                 
             } else if (code === 127 || code === 8) { 
-                // BACKSPACE (SİLME) TUŞU
                 if (currentLine.length > 0) {
                     currentLine = currentLine.slice(0, -1);
                     term.write('\b \b');
                 }
             } else {
-                // NORMAL KARAKTERLER (Sadece ekrana yaz, biriktir)
                 currentLine += char;
                 term.write(char);
             }
@@ -129,12 +124,28 @@ function clearTerminal() {
     if (term) term.clear(); 
 }
 
+// YENİ: JSON Multiplexer Uyumluluğu
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     
     socket.onmessage = (e) => {
         if (term) {
-            term.write(e.data);
+            try {
+                // Backend'den gelen JSON verisini ayrıştırıyoruz
+                const msg = JSON.parse(e.data);
+                
+                // Sistem logu ise turkuaz renkle yazdır
+                if (msg.id === 'system') {
+                    term.write('\x1b[36m' + msg.data + '\x1b[0m');
+                } 
+                // Eğer odaklandığımız proje ise VEYA henüz bir projeye odaklanmamışsak normal yazdır
+                else if (msg.id === activeTerminalProjectId || !activeTerminalProjectId) {
+                    term.write(msg.data);
+                }
+            } catch (err) {
+                // Herhangi bir şekilde JSON olmayan bir veri kaçarsa onu da bas
+                term.write(e.data);
+            }
         }
     };
     
@@ -303,14 +314,13 @@ async function loadSettings() {
             const settings = await response.json();
             globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
             document.getElementById('setting-workspace').value = globalWorkspace;
+            
             if (settings.global_env) {
                 document.getElementById('setting-global-env').value = settings.global_env;
             }
             toggleWorkspaceMode(); 
         }
-    } catch (e) {
-        console.error("Failed to load settings:", e);
-    }
+    } catch (e) {}
 }
 
 async function saveSettings() {
@@ -459,9 +469,7 @@ async function loadProjects() {
             tbody.appendChild(tr);
         });
         updateStatuses();
-    } catch (error) {
-        showToast("Cannot connect to server.", "error");
-    }
+    } catch (error) {}
 }
 
 async function updateStatuses() {

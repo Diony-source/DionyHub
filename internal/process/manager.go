@@ -1,6 +1,7 @@
 package process
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,75 +18,88 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// Process represents a managed background or interactive project execution.
 type Process struct {
 	ID           string
 	Name         string
 	Path         string
 	Cmd          *exec.Cmd
-	Stdin        io.WriteCloser // Pipe to send keystrokes to the running process
+	Stdin        io.WriteCloser
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
 }
 
-// Manager handles the lifecycle, logging, and I/O routing of all processes.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
-	output    io.Writer
+	console   io.Writer // Fiziksel CMD terminaline ham ve renkli çıktı için
+	ws        io.Writer // Arayüze (Frontend) JSON paketli veri gönderimi için
 }
 
-// NewManager initializes a new process manager with the given output stream.
-func NewManager(output io.Writer) *Manager {
+func NewManager(console io.Writer, ws io.Writer) *Manager {
 	return &Manager{
 		processes: make(map[string]*Process),
-		output:    output,
+		console:   console,
+		ws:        ws,
 	}
 }
 
-// prefixLogger continuously reads raw bytes from a stream and prepends the project name.
-// It explicitly avoids line-buffering (bufio.Scanner) to support interactive prompts (fmt.Print).
-func (m *Manager) prefixLogger(projectName string, r io.Reader) {
+// sysLog, sistem bildirimlerini hem konsola hem de JSON formatında arayüze dağıtır
+func (m *Manager) sysLog(id, name, message string) {
+	fmt.Fprintf(m.console, "\x1b[90m[%s]\x1b[0m %s\n", name, message)
+
+	type WSLog struct {
+		ID   string `json:"id"`
+		Data string `json:"data"`
+	}
+	wsMsg, _ := json.Marshal(WSLog{ID: id, Data: message + "\n"})
+	m.ws.Write(wsMsg)
+}
+
+// prefixLogger, projeden akan veriyi byte-byte okur; WS'ye JSON, Konsola ham metin gönderir
+func (m *Manager) prefixLogger(id, name string, r io.Reader) {
 	buf := make([]byte, 4096)
 	needsPrefix := true
+
+	type WSLog struct {
+		ID   string `json:"id"`
+		Data string `json:"data"`
+	}
 
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
+			chunk := buf[:n]
+
+			// 1. Arayüze (WebSocket) etiketli JSON gönderimi
+			wsMsg, _ := json.Marshal(WSLog{ID: id, Data: string(chunk)})
+			m.ws.Write(wsMsg)
+
+			// 2. İşletim Sistemi Konsoluna (CMD) renkli prefix ile gönderim
 			var out strings.Builder
 			for i := 0; i < n; i++ {
-				// Insert prefix at the beginning of a line
 				if needsPrefix {
-					// Use a subtle gray ANSI color for the prefix to separate it from actual logs
-					out.WriteString(fmt.Sprintf("\x1b[90m[%s]\x1b[0m ", projectName))
+					out.WriteString(fmt.Sprintf("\x1b[90m[%s]\x1b[0m ", name))
 					needsPrefix = false
 				}
-
-				b := buf[i]
+				b := chunk[i]
 				out.WriteByte(b)
-
-				// If we encounter a newline, the NEXT character should get a prefix
 				if b == '\n' {
 					needsPrefix = true
 				}
 			}
-
-			// Write the built chunk directly to the MultiWriter (Console + WebSocket)
-			fmt.Fprint(m.output, out.String())
+			fmt.Fprint(m.console, out.String())
 		}
 
 		if err != nil {
-			// Ignore standard EOF or closed file descriptor errors upon intentional stop
 			if err != io.EOF && !errors.Is(err, os.ErrClosed) && !strings.Contains(err.Error(), "file already closed") {
-				fmt.Fprintf(m.output, "\n\x1b[90m[%s] [SYSTEM LOG ERROR]\x1b[0m %v\n", projectName, err)
+				m.sysLog(id, name, fmt.Sprintf("\x1b[31m[SYSTEM LOG ERROR] %v\x1b[0m", err))
 			}
 			break
 		}
 	}
 }
 
-// Recover checks if a process was left running from a previous hub execution.
 func (m *Manager) Recover(id, name, path string) bool {
 	pidFile := filepath.Join(path, ".diony_hub.pid")
 	data, err := os.ReadFile(pidFile)
@@ -115,7 +129,7 @@ func (m *Manager) Recover(id, name, path string) bool {
 	}
 	m.mu.Unlock()
 
-	fmt.Fprintf(m.output, "[%s] 🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m\n", name, pid)
+	m.sysLog(id, name, fmt.Sprintf("🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m", pid))
 
 	go func() {
 		for {
@@ -128,7 +142,7 @@ func (m *Manager) Recover(id, name, path string) bool {
 				}
 				m.mu.Unlock()
 				os.Remove(pidFile)
-				fmt.Fprintf(m.output, "[%s] ⚪ Recovered process exited.\n", name)
+				m.sysLog(id, name, "⚪ Recovered process exited.")
 				break
 			}
 		}
@@ -137,7 +151,6 @@ func (m *Manager) Recover(id, name, path string) bool {
 	return true
 }
 
-// WriteInput pipes keystrokes directly into the standard input of the running process.
 func (m *Manager) WriteInput(id string, input string) error {
 	m.mu.RLock()
 	p, exists := m.processes[id]
@@ -148,14 +161,13 @@ func (m *Manager) WriteInput(id string, input string) error {
 	}
 
 	if p.Stdin == nil {
-		return errors.New("this process does not accept internal terminal inputs (might be external console or recovered)")
+		return errors.New("this process does not accept internal terminal inputs")
 	}
 
 	_, err := io.WriteString(p.Stdin, input)
 	return err
 }
 
-// Start launches a new project process, attaching loggers and tracking its PID.
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
 	m.mu.Lock()
 	if p, exists := m.processes[id]; exists && p.Running {
@@ -183,16 +195,15 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 		stdout, err := cmd.StdoutPipe()
 		if err == nil {
-			go m.prefixLogger(name, stdout)
+			go m.prefixLogger(id, name, stdout)
 		}
 
 		stderr, err := cmd.StderrPipe()
 		if err == nil {
-			go m.prefixLogger(name, stderr)
+			go m.prefixLogger(id, name, stderr)
 		}
 
 		stdinPipe, _ = cmd.StdinPipe()
-
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	}
 
@@ -219,7 +230,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	}
 	m.mu.Unlock()
 
-	fmt.Fprintf(m.output, "[%s] 🚀 \x1b[32mProject started successfully (PID: %d).\x1b[0m\n", name, pid)
+	m.sysLog(id, name, fmt.Sprintf("🚀 \x1b[32mProject started successfully (PID: %d).\x1b[0m", pid))
 
 	go func() {
 		cmd.Wait()
@@ -235,7 +246,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		os.Remove(pidFile)
 
 		if autoRestart && !intended {
-			fmt.Fprintf(m.output, "[%s] ⚠️ \x1b[33mProcess crashed! Restarting in 3 seconds...\x1b[0m\n", name)
+			m.sysLog(id, name, "⚠️ \x1b[33mProcess crashed! Restarting in 3 seconds...\x1b[0m")
 			time.Sleep(3 * time.Second)
 
 			m.mu.RLock()
@@ -246,18 +257,17 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			m.mu.RUnlock()
 
 			if stillExists {
-				fmt.Fprintf(m.output, "[%s] 🛡️ Initiating auto-recovery...\n", name)
+				m.sysLog(id, name, "🛡️ Initiating auto-recovery...")
 				m.Start(id, name, path, interactive, autoRestart, globalEnvs, nameCmd, args...)
 			}
 		} else if !intended {
-			fmt.Fprintf(m.output, "[%s] ⚪ Process exited normally.\n", name)
+			m.sysLog(id, name, "⚪ Process exited normally.")
 		}
 	}()
 
 	return nil
 }
 
-// Stop gracefully or forcefully terminates a running process.
 func (m *Manager) Stop(id string) error {
 	m.mu.Lock()
 	p, exists := m.processes[id]
@@ -279,7 +289,7 @@ func (m *Manager) Stop(id string) error {
 		return errors.New("cannot determine process ID to kill")
 	}
 
-	fmt.Fprintf(m.output, "[%s] 🛑 Stop signal sent. Terminating process tree...\n", p.Name)
+	m.sysLog(id, p.Name, "🛑 Stop signal sent. Terminating process tree...")
 
 	var err error
 	if runtime.GOOS == "windows" {
@@ -307,7 +317,6 @@ func (m *Manager) Stop(id string) error {
 	return err
 }
 
-// IsRunning safely checks the execution state of a managed process.
 func (m *Manager) IsRunning(id string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -315,7 +324,6 @@ func (m *Manager) IsRunning(id string) bool {
 	return exists && p.Running
 }
 
-// GetStats calculates and returns current CPU and RAM usage for a process.
 func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
@@ -347,7 +355,6 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 	return cpuPercent, ram
 }
 
-// StopAll iterates through all active processes and issues a termination signal.
 func (m *Manager) StopAll() {
 	m.mu.RLock()
 	var ids []string

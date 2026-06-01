@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -18,7 +19,6 @@ import (
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
-// YENİ: Başlangıçta 8080 portunu rehin alan zombi süreçleri acımasızca temizler
 func clearHubPort() {
 	if runtime.GOOS == "windows" {
 		psCmd := `
@@ -31,15 +31,33 @@ func clearHubPort() {
 		}`
 		cmd := exec.Command("powershell", "-NoProfile", "-Command", psCmd)
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		cmd.Run() // Sessizce çalışır, bulursa öldürür, bulamazsa yola devam eder
+		cmd.Run()
 	}
 }
 
+// YENİ: Sistem loglarını da WebSocket üzerinden JSON paketi olarak fırlatan kılıf
+type SystemLogWrapper struct {
+	ws io.Writer
+}
+
+func (s *SystemLogWrapper) Write(p []byte) (n int, err error) {
+	type WSLog struct {
+		ID   string `json:"id"`
+		Data string `json:"data"`
+	}
+	wsMsg, _ := json.Marshal(WSLog{ID: "system", Data: string(p)})
+	s.ws.Write(wsMsg)
+	return len(p), nil
+}
+
 func main() {
-	// 1. ADIM: Sistemi başlatmadan önce yolu (Port 8080) temizle!
 	clearHubPort()
+
 	broadcaster := api.NewBroadcaster()
-	multiWriter := io.MultiWriter(os.Stdout, broadcaster)
+	sysWrapper := &SystemLogWrapper{ws: broadcaster}
+
+	// CMD konsolu raw logları alır, WS ise JSON sarılı logları alır
+	multiWriter := io.MultiWriter(os.Stdout, sysWrapper)
 
 	log.SetOutput(multiWriter)
 	log.SetFlags(0)
@@ -47,14 +65,13 @@ func main() {
 	log.Println("[SYSTEM] Starting DionyHub Command Center...")
 
 	projects, _ := config.LoadProjects("config.json")
-	procManager := process.NewManager(multiWriter)
+
+	// YENİ: Manager yapısına konsol ve websocket bağlantılarını ayrıştırarak veriyoruz
+	procManager := process.NewManager(os.Stdout, broadcaster)
 
 	for _, p := range projects {
-
-		// YENİ 1: ÖNCE PROJEYİ KURTARMAYI DENE (PID PERSISTENCE)
 		recovered := procManager.Recover(p.ID, p.Name, p.Path)
 
-		// YENİ 2: SADECE KURTARILAMADIYSA VE AUTO-START AÇIKSA SIFIRDAN BAŞLAT
 		if !recovered && p.AutoStart {
 			parts := strings.Fields(p.Command)
 			if len(parts) > 0 {
