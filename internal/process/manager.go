@@ -79,9 +79,8 @@ func (w *RotatingLogWriter) rotate() {
 	os.Rename(w.logPath, archivePath)
 
 	w.size = 0
-	w.open() // Hemen yeni log dosyasını açıp okumaya devam et
+	w.open()
 
-	// Diski dondurmamak için zipleme işlemini arka planda (goroutine) yap
 	go func(src string) {
 		zipPath := src + ".zip"
 		zipFile, err := os.Create(zipPath)
@@ -99,7 +98,7 @@ func (w *RotatingLogWriter) rotate() {
 			if err == nil {
 				io.Copy(writer, f)
 				f.Close()
-				os.Remove(src) // Zipleme bitince ham .log arşiv dosyasını sil
+				os.Remove(src)
 			}
 		}
 	}(archivePath)
@@ -120,7 +119,7 @@ type Process struct {
 	Path         string
 	Cmd          *exec.Cmd
 	Stdin        io.WriteCloser
-	LogWriter    *RotatingLogWriter // YENİ: Sürece özel disk yazıcısı
+	LogWriter    *RotatingLogWriter
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
@@ -152,7 +151,6 @@ func (m *Manager) sysLog(id, name, message string) {
 	m.ws.Write(wsMsg)
 }
 
-// prefixLogger now simultaneously writes to WebSocket, Console, and the Project's Log File.
 func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer) {
 	buf := make([]byte, 4096)
 	needsPrefix := true
@@ -167,16 +165,13 @@ func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer
 		if n > 0 {
 			chunk := buf[:n]
 
-			// 1. WebSocket (Frontend JSON)
 			wsMsg, _ := json.Marshal(WSLog{ID: id, Data: string(chunk)})
 			m.ws.Write(wsMsg)
 
-			// 2. Disk Persistence (Kayıp Loglar - Raw format)
 			if logWriter != nil {
 				logWriter.Write(chunk)
 			}
 
-			// 3. System Console (CMD Prefix)
 			var out strings.Builder
 			for i := 0; i < n; i++ {
 				if needsPrefix {
@@ -265,6 +260,11 @@ func (m *Manager) WriteInput(id string, input string) error {
 		return errors.New("this process does not accept internal terminal inputs")
 	}
 
+	// YENİ: Arayüzden gelen kullanıcı girdisini ve tuşları log dosyasına kopyala
+	if p.LogWriter != nil {
+		p.LogWriter.Write([]byte(input))
+	}
+
 	_, err := io.WriteString(p.Stdin, input)
 	return err
 }
@@ -282,12 +282,10 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var logWriter *RotatingLogWriter
 
 	if !interactive {
-		// YENİ: Projenin log klasörünü oluştur ve log dosyasını hazırla
 		logDir := filepath.Join(path, "logs")
 		os.MkdirAll(logDir, 0755)
 		logPath := filepath.Join(logDir, "dionyhub.log")
 
-		// 10 MB sınırıyla rotating logger başlat
 		logWriter, _ = NewRotatingLogWriter(logPath, 10)
 	}
 
@@ -340,7 +338,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		Path:         path,
 		Cmd:          cmd,
 		Stdin:        stdinPipe,
-		LogWriter:    logWriter, // LogWriter referansını sakla ki stop edildiğinde kapanabilsin
+		LogWriter:    logWriter,
 		Running:      true,
 		IntendedStop: false,
 	}
@@ -357,7 +355,6 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			p.Running = false
 			intended = p.IntendedStop
 
-			// Süreç bittiğinde dosya akışını güvenle kapat
 			if p.LogWriter != nil {
 				p.LogWriter.Close()
 			}
