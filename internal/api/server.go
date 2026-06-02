@@ -50,6 +50,42 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
+
+	// YENİ: Sunucu rotaları kaydederken WebSocket Metrik Motorunu da başlatır
+	go s.startMetricsPusher()
+}
+
+// YENİ: HTTP DDOS'u engelleyen ve veriyi akıcı şekilde WS'den yollayan motor
+func (s *Server) startMetricsPusher() {
+	for {
+		time.Sleep(2 * time.Second)
+		s.mu.RLock()
+
+		var stats []map[string]interface{}
+		for _, p := range s.projects {
+			if s.manager.IsRunning(p.ID) {
+				cpu, ram, uptime := s.manager.GetStats(p.ID)
+				stats = append(stats, map[string]interface{}{
+					"id": p.ID, "status": "running", "cpu": cpu, "ram": ram, "uptime": uptime,
+				})
+			} else {
+				stats = append(stats, map[string]interface{}{
+					"id": p.ID, "status": "stopped",
+				})
+			}
+		}
+		s.mu.RUnlock()
+
+		payload, _ := json.Marshal(stats)
+
+		type WSLog struct {
+			ID   string `json:"id"`
+			Data string `json:"data"`
+		}
+
+		wsMsg, _ := json.Marshal(WSLog{ID: "metrics", Data: string(payload)})
+		s.broadcaster.Write(wsMsg)
+	}
 }
 
 func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +138,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// AUDIT LOG
 		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[35mSystem Settings\x1b[0m -> Global configuration updated successfully.")
 
 		w.WriteHeader(http.StatusOK)
@@ -126,7 +161,8 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 
 		if s.manager.IsRunning(p.ID) {
 			liveProjects[i].Status = "running"
-			cpu, ram := s.manager.GetStats(p.ID)
+			// Güncellenen GetStats fonksiyonuna uyum (uptime yok sayılır)
+			cpu, ram, _ := s.manager.GetStats(p.ID)
 			liveProjects[i].CPU = cpu
 			liveProjects[i].RAM = ram
 		} else {
@@ -205,7 +241,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[34mProject Edited\x1b[0m -> Configurations updated for '%s'", updatedData.Name)
 
 	w.WriteHeader(http.StatusOK)
@@ -289,7 +324,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mProject Added\x1b[0m -> '%s' mapped to local directory (%s)", newProj.Name, newProj.Path)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -350,7 +384,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG - Başlangıç
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mClone Initiated\x1b[0m -> Downloading repository: %s", repoName)
 
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
@@ -395,7 +428,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG - Bitiş
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mRepo Cloned\x1b[0m -> '%s' successfully configured in workspace.", newProj.Name)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -459,7 +491,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG
 	actionMsg := "Removed from dashboard"
 	if removeFiles {
 		actionMsg = "Permanently deleted from disk"
@@ -616,7 +647,6 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// AUDIT LOG
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk START for %d projects", startedCount)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -643,7 +673,6 @@ func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// AUDIT LOG
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk STOP for %d projects", stoppedCount)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -707,7 +736,6 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// AUDIT LOG
 		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[36mEnvironment Variables\x1b[0m -> Secure .env configuration modified for '%s'", targetName)
 
 		w.WriteHeader(http.StatusOK)
@@ -768,7 +796,6 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// AUDIT LOG
 	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mBackup Created\x1b[0m -> '%s' successfully archived as %s", targetProject.Name, zipFileName)
 
 	w.Header().Set("Content-Type", "application/json")

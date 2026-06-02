@@ -5,9 +5,6 @@ let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 
-// ==========================================
-// TMUX ENGINE (BÖLÜNMÜŞ TERMİNAL HAVUZU)
-// ==========================================
 const terminalPool = {}; 
 let maximizedTerminalId = null;
 
@@ -15,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
     loadProjects();
     loadSettings();
-    setInterval(updateStatuses, 2000);
+    // YENİ: setInterval(updateStatuses, 2000) tamamen SİLİNDİ! Performans roketlendi.
     connectWebSocket();
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
@@ -52,14 +49,12 @@ function getOrCreateTerminal(id, name) {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
 
-    // YENİ: Arama Kutusu (Görünmez Başlar)
     const searchInput = document.createElement('input');
     searchInput.type = "text";
     searchInput.id = `search-input-${id}`;
     searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 focus:border-indigo-500 focus:outline-none transition-all";
     searchInput.placeholder = "Find in logs...";
 
-    // YENİ: Arama Butonu (Büyüteç)
     const searchBtn = document.createElement('button');
     searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
@@ -75,7 +70,6 @@ function getOrCreateTerminal(id, name) {
         }
     };
 
-    // YENİ: İndirme (Export) Butonu
     const exportBtn = document.createElement('button');
     exportBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
     exportBtn.className = "text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors";
@@ -94,7 +88,6 @@ function getOrCreateTerminal(id, name) {
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
-    // Butonları Div'e Dizme Sırası
     actionsDiv.appendChild(searchInput);
     actionsDiv.appendChild(searchBtn);
     actionsDiv.appendChild(exportBtn);
@@ -121,7 +114,6 @@ function getOrCreateTerminal(id, name) {
     const fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     
-    // YENİ: Search Eklentisinin Aktif Edilmesi
     const searchAddon = new SearchAddon.SearchAddon();
     term.loadAddon(searchAddon);
 
@@ -137,7 +129,6 @@ function getOrCreateTerminal(id, name) {
 
     terminalPool[id] = termInstance;
 
-    // Arama Mantığı (Kutuda yazı değiştikçe veya Enter'a bastıkça arar)
     searchInput.addEventListener('input', (e) => {
         if(e.target.value) {
             searchAddon.findNext(e.target.value, { decorations: true });
@@ -184,7 +175,6 @@ function getOrCreateTerminal(id, name) {
     return termInstance;
 }
 
-// YENİ: Ekranda Görünen Logları .txt Olarak Bilgisayara İndirme Mantığı
 function exportTerminalLogs(id, name) {
     const term = terminalPool[id].term;
     term.selectAll();
@@ -201,7 +191,6 @@ function exportTerminalLogs(id, name) {
     const a = document.createElement('a');
     a.href = url;
     
-    // Güvenli dosya adı oluşturma
     const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const timestamp = new Date().getTime();
     a.download = `${safeName}_logs_${timestamp}.txt`;
@@ -280,6 +269,43 @@ function connectWebSocket() {
         try {
             const msg = JSON.parse(e.data);
             
+            // YENİ: Go'dan Gelen Sessiz Metrik Push İşleyicisi
+            if (msg.id === 'metrics') {
+                const statsArray = JSON.parse(msg.data);
+                statsArray.forEach(stat => {
+                    const badge = document.getElementById('status-' + stat.id);
+                    const statsDiv = document.getElementById('stats-' + stat.id);
+                    if (!badge) return;
+
+                    if (stat.status === 'running') {
+                        badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-medium shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+                        badge.innerText = 'Running';
+                        
+                        if (statsDiv) {
+                            // Uptime (Çalışma Süresi) Formatlama
+                            const hrs = Math.floor(stat.uptime / 3600);
+                            const mins = Math.floor((stat.uptime % 3600) / 60);
+                            const secs = stat.uptime % 60;
+                            const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
+                            
+                            statsDiv.innerHTML = `<span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span><span class="text-amber-400 font-semibold mt-0.5">UP: ${uptimeStr}</span>`;
+                        }
+                        
+                        // Arka planda başlayan projenin terminalini aç
+                        if (!terminalPool[stat.id]) {
+                            const p = cachedProjects.find(x => x.id === stat.id);
+                            if(p) getOrCreateTerminal(p.id, p.name);
+                        }
+                    } else {
+                        badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-medium';
+                        badge.innerText = 'Stopped';
+                        if (statsDiv) statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
+                    }
+                });
+                return; // Metrikler terminale metin olarak yazılmaz!
+            }
+
+            // Normal Log İşleyicisi
             let projName = "Unknown";
             if (msg.id === 'system') projName = "DionyHub System Logs";
             else {
@@ -313,6 +339,11 @@ function connectWebSocket() {
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
+
+    // YENİ: Zeki Toast Limitleyici (Ekranda maksimum 3 bildirim bırakır)
+    while (container.childElementCount >= 3) {
+        container.removeChild(container.firstChild);
+    }
 
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400';
@@ -537,6 +568,8 @@ async function loadProjects() {
             `;
             tbody.appendChild(tr);
         });
+        
+        // Tablo ilk yüklendiğinde bir kez durumu çekmek için
         updateStatuses();
     } catch (error) {}
 }
@@ -547,25 +580,6 @@ async function updateStatuses() {
         if (!response.ok) return;
         const projects = await response.json();
         cachedProjects = projects; 
-
-        projects.forEach(p => {
-            const badge = document.getElementById('status-' + p.id);
-            const stats = document.getElementById('stats-' + p.id);
-            if (!badge) return;
-
-            if (p.status === 'running') {
-                badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-medium shadow-[0_0_10px_rgba(16,185,129,0.2)]';
-                badge.innerText = 'Running';
-                if (stats && p.cpu !== undefined) {
-                    stats.innerHTML = `<span class="text-indigo-400">CPU: ${p.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${p.ram.toFixed(1)} MB</span>`;
-                }
-                if (!terminalPool[p.id]) getOrCreateTerminal(p.id, p.name);
-            } else {
-                badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-medium';
-                badge.innerText = 'Stopped';
-                if (stats) stats.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
-            }
-        });
     } catch (e) {}
 }
 
@@ -580,7 +594,6 @@ async function startProject(id, name, btn) {
         } else {
             showToast("Project started", "success");
         }
-        updateStatuses(); 
     } catch (e) {
         showToast("Network error", "error");
     } finally {
@@ -603,7 +616,6 @@ async function restartProject(id, name, btn) {
             showToast("Project restarted successfully", "success");
             getOrCreateTerminal(id, name);
         }
-        updateStatuses(); 
     } catch (e) {
         showToast("Network error during restart", "error");
     } finally {
@@ -621,7 +633,6 @@ async function stopProject(id, btn) {
         } else {
             showToast("Project stopped", "success");
         }
-        updateStatuses(); 
     } catch (e) {
         showToast("Network error", "error");
     } finally {
@@ -763,7 +774,7 @@ async function executeBulkAction(action) {
     try {
         const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(idsToProcess) });
         const data = await res.json();
-        if (res.ok) { showToast(data.message, "success"); updateStatuses(); } else { showToast(data.error, "error"); }
+        if (res.ok) { showToast(data.message, "success"); } else { showToast(data.error, "error"); }
     } catch (e) { showToast("Network error", "error"); }
 }
 

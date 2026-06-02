@@ -119,6 +119,7 @@ type Process struct {
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
+	StartTime    time.Time // YENİ: Uptime hesaplaması için başlangıç anı
 }
 
 type Manager struct {
@@ -136,7 +137,6 @@ func NewManager(console io.Writer, ws io.Writer) *Manager {
 	}
 }
 
-// YENİ: sysLog artık veriyi hem projeye hem de Sistem Loglarına (Audit) çoğaltır!
 func (m *Manager) sysLog(id, name, message string) {
 	fmt.Fprintf(m.console, "\x1b[90m[%s]\x1b[0m %s\n", name, message)
 
@@ -145,11 +145,9 @@ func (m *Manager) sysLog(id, name, message string) {
 		Data string `json:"data"`
 	}
 
-	// 1. Kendi terminaline yolla
 	wsMsgProj, _ := json.Marshal(WSLog{ID: id, Data: message + "\n"})
 	m.ws.Write(wsMsgProj)
 
-	// 2. AUDIT KOPYASI: Sistem loguna yolla
 	sysAuditMsg := fmt.Sprintf("\x1b[36m[AUDIT]\x1b[0m \x1b[33m%s\x1b[0m -> %s\n", name, message)
 	wsMsgSys, _ := json.Marshal(WSLog{ID: "system", Data: sysAuditMsg})
 	m.ws.Write(wsMsgSys)
@@ -226,6 +224,7 @@ func (m *Manager) Recover(id, name, path string) bool {
 		Path:         path,
 		RecoveredPID: pid,
 		Running:      true,
+		StartTime:    time.Now(), // Kurtarıldığı anı referans alıyoruz
 	}
 	m.mu.Unlock()
 
@@ -344,6 +343,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		LogWriter:    logWriter,
 		Running:      true,
 		IntendedStop: false,
+		StartTime:    time.Now(), // YENİ: Başlangıç zamanı kaydedildi
 	}
 	m.mu.Unlock()
 
@@ -448,13 +448,14 @@ func (m *Manager) IsRunning(id string) bool {
 	return exists && p.Running
 }
 
-func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
+// YENİ: Uptime verisi eklendi
+func (m *Manager) GetStats(id string) (cpu float64, ram float64, uptime int64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
 	m.mu.RUnlock()
 
 	if !exists || !p.Running {
-		return 0, 0
+		return 0, 0, 0
 	}
 
 	var pid int
@@ -466,7 +467,7 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		return 0, 0
+		return 0, 0, int64(time.Since(p.StartTime).Seconds())
 	}
 
 	cpuPercent, _ := proc.CPUPercent()
@@ -476,7 +477,7 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64) {
 		ram = float64(memInfo.RSS) / (1024 * 1024)
 	}
 
-	return cpuPercent, ram
+	return cpuPercent, ram, int64(time.Since(p.StartTime).Seconds())
 }
 
 func (m *Manager) StopAll() {
