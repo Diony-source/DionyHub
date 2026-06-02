@@ -14,7 +14,7 @@ import (
 
 	"github.com/Diony-source/DionyHub/internal/archive"
 	"github.com/Diony-source/DionyHub/internal/config"
-	"github.com/Diony-source/DionyHub/internal/osutil" // YENİ EKLENDİ
+	"github.com/Diony-source/DionyHub/internal/osutil"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
@@ -52,7 +52,6 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
 }
 
-// handleBrowseFolder triggers the native OS folder picker dialog
 func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -61,13 +60,11 @@ func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
 
 	path, err := osutil.PickFolder()
 	if err != nil || path == "" {
-		// Kullanıcı iptal ettiyse veya hata varsa sessizce boş dön (Hata patlatma)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"path": ""}`))
 		return
 	}
 
-	// Go ve UI için dosya yolunu standardize et
 	cleanPath := strings.ReplaceAll(path, "\\", "/")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -100,10 +97,13 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		newSettings.GlobalEnv = strings.TrimSpace(newSettings.GlobalEnv)
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
-			log.Printf("[API] Failed to save settings: %v", err)
+			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mSystem Error\x1b[0m -> Failed to save settings: %v", err)
 			http.Error(w, `{"error": "Failed to save configuration to disk"}`, http.StatusInternalServerError)
 			return
 		}
+
+		// AUDIT LOG
+		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[35mSystem Settings\x1b[0m -> Global configuration updated successfully.")
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"message": "Settings saved successfully"}`))
@@ -204,6 +204,10 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to save configuration"}`, http.StatusInternalServerError)
 		return
 	}
+
+	// AUDIT LOG
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[34mProject Edited\x1b[0m -> Configurations updated for '%s'", updatedData.Name)
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -258,7 +262,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(cleanPath, ".env")
 		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
-			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
+			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to create initial .env file for %s", req.Name)
 		}
 	}
 
@@ -284,6 +288,9 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to save project configuration"}`, http.StatusInternalServerError)
 		return
 	}
+
+	// AUDIT LOG
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mProject Added\x1b[0m -> '%s' mapped to local directory (%s)", newProj.Name, newProj.Path)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -343,6 +350,9 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// AUDIT LOG - Başlangıç
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mClone Initiated\x1b[0m -> Downloading repository: %s", repoName)
+
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
 	output, err := cmd.CombinedOutput()
 
@@ -350,6 +360,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		errMsg := strings.TrimSpace(string(output))
 		errMsg = strings.ReplaceAll(errMsg, "\n", " | ")
 		errMsg = strings.ReplaceAll(errMsg, "\"", "'")
+		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mClone Failed\x1b[0m -> Process failed for %s", repoName)
 		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, errMsg), http.StatusInternalServerError)
 		return
 	}
@@ -357,7 +368,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(destPath, ".env")
 		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
-			log.Printf("[API] WARNING: Failed to create initial .env file at %s: %v", envPath, err)
+			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to create initial .env file at %s", envPath)
 		}
 	}
 
@@ -383,6 +394,9 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Repository cloned but failed to save configuration"}`, http.StatusInternalServerError)
 		return
 	}
+
+	// AUDIT LOG - Bitiş
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mRepo Cloned\x1b[0m -> '%s' successfully configured in workspace.", newProj.Name)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -431,7 +445,7 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	if removeFiles && projectToDelete != nil {
 		if err := os.RemoveAll(projectToDelete.Path); err != nil {
-			log.Printf("[API] Warning: Failed to forcefully remove directory %s: %v", projectToDelete.Path, err)
+			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to forcefully remove directory %s: %v", projectToDelete.Path, err)
 		}
 	}
 
@@ -444,6 +458,13 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to save configuration after deletion"}`, http.StatusInternalServerError)
 		return
 	}
+
+	// AUDIT LOG
+	actionMsg := "Removed from dashboard"
+	if removeFiles {
+		actionMsg = "Permanently deleted from disk"
+	}
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mProject Deleted\x1b[0m -> '%s' (%s)", projectToDelete.Name, actionMsg)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -516,11 +537,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, err := config.LoadSettings("app_config.json")
-	if err != nil {
-		log.Printf("[API] Warning: Failed to load global settings before start: %v", err)
-	}
-
+	settings, _ := config.LoadSettings("app_config.json")
 	var globalEnvs []string
 	if settings.GlobalEnv != "" {
 		lines := strings.Split(settings.GlobalEnv, "\n")
@@ -599,6 +616,9 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// AUDIT LOG
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk START for %d projects", startedCount)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully started %d project(s)", startedCount)})
@@ -623,6 +643,9 @@ func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// AUDIT LOG
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk STOP for %d projects", stoppedCount)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully stopped %d project(s)", stoppedCount)})
@@ -637,9 +660,11 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 	s.mu.RLock()
 	var targetPath string
+	var targetName string
 	for _, p := range s.projects {
 		if p.ID == id {
 			targetPath = p.Path
+			targetName = p.Name
 			break
 		}
 	}
@@ -681,6 +706,9 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error": "Failed to write .env file"}`, http.StatusInternalServerError)
 			return
 		}
+
+		// AUDIT LOG
+		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[36mEnvironment Variables\x1b[0m -> Secure .env configuration modified for '%s'", targetName)
 
 		w.WriteHeader(http.StatusOK)
 		return
@@ -735,12 +763,13 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	targetZipPath := filepath.Join(backupDir, zipFileName)
 
 	if err := archive.ZipDirectory(targetProject.Path, targetZipPath); err != nil {
-		log.Printf("[API] Backup failed for %s: %v", targetProject.Name, err)
+		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mBackup Failed\x1b[0m -> Error processing archive for %s: %v", targetProject.Name, err)
 		http.Error(w, `{"error": "Failed to create zip archive"}`, http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("[API] Project %s successfully backed up to %s", targetProject.Name, targetZipPath)
+	// AUDIT LOG
+	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mBackup Created\x1b[0m -> '%s' successfully archived as %s", targetProject.Name, zipFileName)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -748,7 +777,6 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleProjectInput receives keystrokes from the web terminal and pipes them to the running process
 func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
