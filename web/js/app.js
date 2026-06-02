@@ -5,11 +5,12 @@ let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 
-// YENİ: Canlı Sparkline Grafikleri İçin Geçmiş Veri Tutucu
-const statsHistory = {}; // { id: [12, 14, 8, 45, 12...] }
-
+const statsHistory = {}; 
 const terminalPool = {}; 
 let maximizedTerminalId = null;
+
+let cmdSelectedIndex = 0;
+let currentCmdActions = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
@@ -20,13 +21,11 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
 
-    // YENİ: Sağ tık menüsünü ve Komut Paletini dışarıya tıklayınca kapatma
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#contextMenu')) hideContextMenu();
         if (e.target.id === 'cmdPalette') closeCmdPalette();
     });
 
-    // YENİ: Global Kısayol Dinleyicisi (Ctrl+K veya Cmd+K)
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
@@ -38,26 +37,45 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    document.getElementById('cmdInput').addEventListener('input', handleCmdSearch);
+    const cmdInput = document.getElementById('cmdInput');
+    cmdInput.addEventListener('input', handleCmdSearch);
+    
+    cmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentCmdActions.length > 0) {
+                cmdSelectedIndex = (cmdSelectedIndex + 1) % currentCmdActions.length;
+                updateCmdSelection();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentCmdActions.length > 0) {
+                cmdSelectedIndex = (cmdSelectedIndex - 1 + currentCmdActions.length) % currentCmdActions.length;
+                updateCmdSelection();
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentCmdActions[cmdSelectedIndex]) {
+                closeCmdPalette();
+                currentCmdActions[cmdSelectedIndex].action();
+            }
+        }
+    });
 });
 
-window.addEventListener('resize', () => {
-    setTimeout(refreshAllTerminalFits, 50);
-});
+window.addEventListener('resize', () => { setTimeout(refreshAllTerminalFits, 50); });
 
 // ==========================================
 // YENİ NESİL (NEXT-GEN) UI ÖZELLİKLERİ
 // ==========================================
 
-// 1. Canlı Sparkline (CPU Bar Grafiği) Çizici
 function drawSparkline(id, cpuVal) {
-    if(!statsHistory[id]) statsHistory[id] = Array(20).fill(0); // Son 20 veriyi tut
+    if(!statsHistory[id]) statsHistory[id] = Array(20).fill(0); 
     statsHistory[id].push(cpuVal);
     if(statsHistory[id].length > 20) statsHistory[id].shift();
     
     let barsHtml = statsHistory[id].map((val, idx) => {
-        let heightPercent = Math.max(5, Math.min(100, val)); // En az %5, en fazla %100 yükseklik
-        // Son barlara doğru opaklığı artırarak hareket hissi ver
+        let heightPercent = Math.max(5, Math.min(100, val)); 
         let opacity = 0.2 + (idx / 20) * 0.8; 
         let colorClass = val > 80 ? 'bg-rose-500' : (val > 50 ? 'bg-amber-400' : 'bg-indigo-500');
         return `<div class="w-1 ${colorClass} rounded-t-sm spark-bar" style="height: ${heightPercent}%; opacity: ${opacity};"></div>`;
@@ -66,11 +84,12 @@ function drawSparkline(id, cpuVal) {
     return `<div class="flex items-end gap-[2px] h-6 w-32 ml-3 border-b border-gray-700/50 pb-px">${barsHtml}</div>`;
 }
 
-// 2. Custom Context Menu (Özel Sağ Tık)
 function showContextMenu(e, pId, pName, status) {
     e.preventDefault();
+    closeCmdPalette(); 
+    
     const menu = document.getElementById('contextMenu');
-    menu.innerHTML = ''; // İçeriği temizle
+    menu.innerHTML = ''; 
 
     const isRunning = status === 'running';
 
@@ -89,19 +108,26 @@ function showContextMenu(e, pId, pName, status) {
     items.forEach(item => {
         if (!item.show) return;
         if (item.label === 'divider') {
-            menu.innerHTML += `<div class="h-px bg-gray-700/50 my-1 mx-2"></div>`;
+            const divider = document.createElement('div');
+            divider.className = 'h-px bg-gray-700/50 my-1 mx-2';
+            menu.appendChild(divider);
             return;
         }
         
         const btn = document.createElement('button');
         btn.className = `w-full text-left px-4 py-2 hover:bg-gray-700/50 transition-colors flex items-center gap-3 group`;
         btn.innerHTML = `<svg class="w-4 h-4 ${item.color} group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg> <span class="group-hover:text-white transition-colors">${item.label}</span>`;
-        btn.onclick = () => { hideContextMenu(); item.action(); };
+        
+        btn.addEventListener('mousedown', (ev) => { 
+            ev.preventDefault();
+            ev.stopPropagation();
+            hideContextMenu(); 
+            item.action(); 
+        });
         menu.appendChild(btn);
     });
 
     menu.classList.remove('hidden');
-    // Yay (Spring) efektiyle açılma
     requestAnimationFrame(() => {
         menu.style.left = `${e.pageX}px`;
         menu.style.top = `${e.pageY}px`;
@@ -114,19 +140,20 @@ function hideContextMenu() {
     const menu = document.getElementById('contextMenu');
     menu.classList.remove('scale-100', 'opacity-100');
     menu.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => menu.classList.add('hidden'), 200); // Animasyon süresi bekle
+    setTimeout(() => menu.classList.add('hidden'), 200); 
 }
 
-// 3. Command Palette (Ctrl+K)
 function toggleCmdPalette() {
     const pal = document.getElementById('cmdPalette');
     const box = document.getElementById('cmdPaletteBox');
     const input = document.getElementById('cmdInput');
     
+    hideContextMenu(); 
+
     if (pal.classList.contains('hidden')) {
-        pal.classList.remove('hidden');
+        pal.classList.replace('hidden', 'flex');
         input.value = '';
-        handleCmdSearch({target: {value: ''}}); // Boş listeyi doldur
+        handleCmdSearch({target: {value: ''}}); 
         requestAnimationFrame(() => {
             pal.classList.remove('opacity-0');
             box.classList.remove('scale-95');
@@ -142,41 +169,81 @@ function closeCmdPalette() {
     const box = document.getElementById('cmdPaletteBox');
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
-    setTimeout(() => pal.classList.add('hidden'), 200);
+    setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
 function handleCmdSearch(e) {
-    const query = e.target.value.toLowerCase();
-    const resultsDiv = document.getElementById('cmdResults');
-    resultsDiv.innerHTML = '';
-
-    const actions = [
-        { name: "Settings > Open Configurations", icon: "⚙️", action: () => { switchView('settings'); closeCmdPalette(); } },
-        { name: "Dashboard > View Projects", icon: "📊", action: () => { switchView('dashboard'); closeCmdPalette(); } },
-        { name: "Project > Add New", icon: "➕", action: () => { openModal(); closeCmdPalette(); } },
-        { name: "Terminal > Clear All", icon: "🧹", action: () => { clearAllTerminals(); closeCmdPalette(); } }
+    const query = e.target.value.toLowerCase().replace(/\s+/g, '');
+    
+    const allActions = [
+        { name: "Settings > Open Configurations", searchKey: "settingsopenconfigurations", icon: "⚙️", action: () => { switchView('settings'); } },
+        { name: "Dashboard > View Projects", searchKey: "dashboardviewprojects", icon: "📊", action: () => { switchView('dashboard'); } },
+        { name: "Project > Add New", searchKey: "projectaddnew", icon: "➕", action: () => { openModal(); } },
+        { name: "Terminal > Clear All", searchKey: "terminalclearall", icon: "🧹", action: () => { clearAllTerminals(); } }
     ];
 
     cachedProjects.forEach(p => {
-        actions.push({ name: `Start > ${p.name}`, icon: "▶️", action: () => { startProject(p.id, p.name, null); closeCmdPalette(); }});
-        actions.push({ name: `Stop > ${p.name}`, icon: "⏹️", action: () => { stopProject(p.id, null); closeCmdPalette(); }});
-        actions.push({ name: `Edit > ${p.name}`, icon: "✏️", action: () => { openEditModal(p.id); closeCmdPalette(); }});
+        allActions.push({ name: `Start Project: ${p.name}`, searchKey: `startproject${p.name.toLowerCase()}`, icon: "▶️", action: () => { startProject(p.id, p.name, null); }});
+        allActions.push({ name: `Stop Project: ${p.name}`, searchKey: `stopproject${p.name.toLowerCase()}`, icon: "⏹️", action: () => { stopProject(p.id, null); }});
+        allActions.push({ name: `Edit Project: ${p.name}`, searchKey: `editproject${p.name.toLowerCase()}`, icon: "✏️", action: () => { openEditModal(p.id); }});
     });
 
-    const filtered = actions.filter(a => a.name.toLowerCase().includes(query));
+    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 15);
+    cmdSelectedIndex = 0;
+    renderCmdResults();
+}
 
-    if (filtered.length === 0) {
-        resultsDiv.innerHTML = `<div class="px-4 py-3 text-gray-500 text-sm text-center">No matching commands found.</div>`;
+function updateCmdSelection() {
+    const resultsDiv = document.getElementById('cmdResults');
+    const allBtns = resultsDiv.querySelectorAll('.cmd-item');
+    
+    allBtns.forEach((btn, idx) => {
+        const iconSpan = btn.querySelector('.cmd-icon');
+        if (idx === cmdSelectedIndex) {
+            btn.classList.add('bg-indigo-500/20', 'text-white');
+            btn.classList.remove('text-gray-300', 'hover:bg-gray-800');
+            iconSpan.classList.add('scale-110');
+            btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+            btn.classList.remove('bg-indigo-500/20', 'text-white');
+            btn.classList.add('text-gray-300', 'hover:bg-gray-800');
+            iconSpan.classList.remove('scale-110');
+        }
+    });
+}
+
+function renderCmdResults() {
+    const resultsDiv = document.getElementById('cmdResults');
+    resultsDiv.innerHTML = '';
+
+    if (currentCmdActions.length === 0) {
+        resultsDiv.innerHTML = `<div class="px-4 py-3 text-gray-500 text-sm text-center font-bold">No matching commands found.</div>`;
         return;
     }
 
-    filtered.slice(0, 10).forEach((a, idx) => {
+    currentCmdActions.forEach((a, idx) => {
         const btn = document.createElement('button');
-        btn.className = `w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 hover:bg-indigo-500/20 text-gray-300 hover:text-white transition-colors group ${idx===0 && query!=='' ? 'bg-indigo-500/10 text-white' : ''}`;
-        btn.innerHTML = `<span class="text-lg opacity-70 group-hover:scale-110 transition-transform">${a.icon}</span> <span class="font-mono text-sm">${a.name.replace(new RegExp(query, 'gi'), match => `<span class="text-indigo-400 font-bold">${match}</span>`)}</span>`;
-        btn.onclick = a.action;
+        const isActive = idx === cmdSelectedIndex;
+        
+        btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 transition-colors group ${isActive ? 'bg-indigo-500/20 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
+        btn.innerHTML = `<span class="cmd-icon text-lg opacity-70 transition-transform ${isActive ? 'scale-110' : ''}">${a.icon}</span> <span class="font-mono text-sm font-bold tracking-wide">${a.name}</span>`;
+        
+        btn.addEventListener('mouseenter', () => {
+            cmdSelectedIndex = idx;
+            updateCmdSelection();
+        });
+        
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeCmdPalette();
+            a.action();
+        });
+        
         resultsDiv.appendChild(btn);
     });
+    
+    updateCmdSelection();
 }
 
 // ==========================================
@@ -208,13 +275,13 @@ function getOrCreateTerminal(id, name) {
 
     const searchInput = document.createElement('input');
     searchInput.type = "text"; searchInput.id = `search-input-${id}`;
-    searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 focus:border-indigo-500 focus:outline-none transition-all shadow-inner";
+    searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 neon-focus shadow-inner";
     searchInput.placeholder = "Find in logs...";
 
     const searchBtn = document.createElement('button');
     searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
-    searchBtn.title = "Search Logs";
+    searchBtn.title = "Search Logs (Ctrl+F)";
     searchBtn.onclick = () => {
         if (searchInput.classList.contains('hidden')) { searchInput.classList.remove('hidden'); searchInput.focus(); } 
         else { searchInput.classList.add('hidden'); searchInput.value = ''; if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); }
@@ -247,7 +314,6 @@ function getOrCreateTerminal(id, name) {
 
     wrapper.appendChild(header); wrapper.appendChild(termContainer); grid.appendChild(wrapper);
 
-    // Spring (Yay) animasyonuyla kutunun belirmesi
     requestAnimationFrame(() => {
         wrapper.classList.remove('scale-95', 'opacity-0');
         wrapper.classList.add('scale-100', 'opacity-100');
@@ -264,6 +330,17 @@ function getOrCreateTerminal(id, name) {
 
     const termInstance = { term: term, fitAddon: fitAddon, searchAddon: searchAddon, container: wrapper, currentLine: "" };
     terminalPool[id] = termInstance;
+
+    // YENİ: Gerçek (Native) Ctrl+F Engellemesi ve Terminal Aramasının Açılması
+    term.attachCustomKeyEventHandler((e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.type === 'keydown') {
+            e.preventDefault();
+            searchInput.classList.remove('hidden');
+            searchInput.focus();
+            return false;
+        }
+        return true;
+    });
 
     searchInput.addEventListener('input', (e) => { if(e.target.value) searchAddon.findNext(e.target.value, { decorations: true }); });
     searchInput.addEventListener('keydown', (e) => {
@@ -342,7 +419,6 @@ function connectWebSocket() {
                         if (statsDiv) {
                             const hrs = Math.floor(stat.uptime / 3600); const mins = Math.floor((stat.uptime % 3600) / 60); const secs = stat.uptime % 60;
                             const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
-                            // Sparkline Grafiğini Çiz ve Ekle
                             const sparkHtml = drawSparkline(stat.id, stat.cpu);
                             statsDiv.innerHTML = `<div class="flex flex-col gap-0.5"><div class="flex gap-2"><span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span></div><span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span></div> ${sparkHtml}`;
                         }
@@ -372,7 +448,6 @@ function connectWebSocket() {
         setTimeout(connectWebSocket, 3000);
     };
 }
-
 
 // ==========================================
 // UTILITIES & UI HELPERS
@@ -404,7 +479,7 @@ function formatWorkspacePath(path) {
 }
 
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
-    if (!btn) return originalContent;
+    if (!btn || !(btn instanceof Element)) return originalContent;
     if (isLoading) {
         const currentContent = btn.innerHTML;
         btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
@@ -442,6 +517,24 @@ function switchView(viewName) {
 // SYSTEM SETTINGS & FOLDERS
 // ==========================================
 
+// YENİ: Kayan Sekme (Sliding Tab) Mantığı
+function toggleSourceMode() {
+    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+    const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
+    const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
+    const slider = document.getElementById('tab-slider');
+
+    if (mode === 'local') {
+        slider.style.transform = 'translateX(0)';
+        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden');
+        projName.required = true; projPath.required = true; repoUrl.required = false;
+    } else {
+        slider.style.transform = 'translateX(100%)';
+        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden');
+        projName.required = false; projPath.required = false; repoUrl.required = true;
+    }
+}
+
 function toggleWorkspaceMode() {
     const useWs = document.getElementById('useWorkspace').checked;
     const prefix = document.getElementById('workspacePrefix'); const input = document.getElementById('projPath');
@@ -463,20 +556,6 @@ async function browseFolder(inputId, handleWorkspace = true) {
             if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
         }
     } catch (e) { showToast("Failed to open native folder picker.", "error"); }
-}
-
-function toggleSourceMode() {
-    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
-    const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
-
-    if (mode === 'local') {
-        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden');
-        projName.required = true; projPath.required = true; repoUrl.required = false;
-    } else {
-        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden');
-        projName.required = false; projPath.required = false; repoUrl.required = true;
-    }
 }
 
 async function loadSettings() {
@@ -539,11 +618,9 @@ async function loadProjects() {
 
         filteredProjects.forEach(p => {
             const tr = document.createElement('tr');
-            // Hover animasyonu eklendi
             tr.className = `border-b border-gray-800/60 hover:bg-gray-800/40 transition-colors group cursor-pointer bg-[#0f111a]/30`;
             tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
             
-            // YENİ: Native Sağ Tık Menüsü Eventi
             tr.addEventListener('contextmenu', (e) => {
                 const status = cachedProjects.find(x => x.id === p.id)?.status || 'stopped';
                 showContextMenu(e, p.id, p.name, status);
@@ -577,7 +654,7 @@ async function loadProjects() {
                             <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
                             <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
                             <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-rose-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
                     </div>
                 </td>
@@ -602,10 +679,8 @@ async function startProject(id, name, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) {
-            const data = await res.json();
-            showToast(data.error || "Failed to start", "error");
-        } else { showToast("Project started", "success"); }
+        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
+        else { showToast("Project started", "success"); }
     } catch (e) { showToast("Network error", "error"); } 
     finally { toggleButtonLoading(btn, false, originalHTML); }
 }
@@ -627,10 +702,8 @@ async function stopProject(id, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) {
-            const data = await res.json();
-            if (!data.error.includes("not currently running")) showToast(data.error || "Failed to stop", "error");
-        } else { showToast("Project stopped", "success"); }
+        if (!res.ok) { const data = await res.json(); if (!data.error.includes("not currently running")) showToast(data.error || "Failed to stop", "error"); } 
+        else { showToast("Project stopped", "success"); }
     } catch (e) { showToast("Network error", "error"); } 
     finally { toggleButtonLoading(btn, false, originalHTML); }
 }

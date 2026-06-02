@@ -1,9 +1,8 @@
 /* DionyHub - Global Styles & Animations */
 
 /* ==========================================
-   BUTON FİZİĞİ
+   BUTON FİZİĞİ (Rapid Trigger)
 ========================================== */
-/* Rapid Trigger hissi veren keskin ve hızlı buton geçişleri */
 .btn-action {
     transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
 }
@@ -15,57 +14,36 @@
 /* ==========================================
    SCROLLBAR (KAYDIRMA ÇUBUĞU) ÖZELLEŞTİRMESİ
 ========================================== */
-/* Global Scrollbar */
-::-webkit-scrollbar { 
-    width: 6px; 
-    height: 6px; 
-}
-::-webkit-scrollbar-track { 
-    background: transparent; 
-}
-::-webkit-scrollbar-thumb { 
-    background: #374151; 
-    border-radius: 3px; 
-}
-::-webkit-scrollbar-thumb:hover { 
-    background: #4b5563; 
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
-/* Xterm.js Scrollbar Override (Terminal İçi) */
-.xterm-viewport::-webkit-scrollbar { 
-    width: 8px; 
-}
-.xterm-viewport::-webkit-scrollbar-track { 
-    background: transparent; 
-}
-.xterm-viewport::-webkit-scrollbar-thumb { 
-    background: #374151; 
-    border-radius: 4px; 
-    border: 2px solid #0a0d14; 
-}
-.xterm-viewport::-webkit-scrollbar-thumb:hover { 
-    background: #4b5563; 
-}
+.xterm-viewport::-webkit-scrollbar { width: 8px; }
+.xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+.xterm-viewport::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; border: 2px solid #0a0d14; }
+.xterm-viewport::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
 /* ==========================================
    ANİMASYONLAR VE GEÇİŞLER (SPRING PHYSICS)
 ========================================== */
-/* Dinamik TMUX Grid Animasyonları */
 #terminals-grid { 
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }
 
-/* Modal Yay (Spring) Animasyonu - Açılış */
 .modal-enter { 
     animation: springScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
 }
+
+/* HTML'den kurtarılan gecikme (Delay) class'ları */
+.anim-delay-1 { animation-delay: 0.1s; }
+.anim-delay-2 { animation-delay: 0.2s; }
 
 @keyframes springScale {
     0% { transform: scale(0.95); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* CPU Canlı Sparkline Çubuk Animasyonu */
 .spark-bar { 
     transition: height 0.3s ease-in-out; 
 }
