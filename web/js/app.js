@@ -9,11 +9,10 @@ let globalWorkspace = "C:/DionyHub/apps";
 // ==========================================
 // TMUX ENGINE (BÖLÜNMÜŞ TERMİNAL HAVUZU)
 // ==========================================
-const terminalPool = {}; // { id: { term, fitAddon, container, currentLine } }
+const terminalPool = {}; 
 let maximizedTerminalId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Açılışta sabit "Sistem Log" terminalini üret
     getOrCreateTerminal("system", "DionyHub System Logs");
     
     loadProjects();
@@ -25,27 +24,22 @@ document.addEventListener("DOMContentLoaded", () => {
     switchView('dashboard');
 });
 
-// Arayüzü pencere boyutuna göre otomatik ayarlar
 window.addEventListener('resize', () => {
     setTimeout(refreshAllTerminalFits, 50);
 });
 
-// Dinamik Terminal Yaratıcı
 function getOrCreateTerminal(id, name) {
     if (terminalPool[id]) return terminalPool[id];
 
     const grid = document.getElementById('terminals-grid');
 
-    // YENİ TASARIM: Premium Terminal Kutusu (Wrapper)
     const wrapper = document.createElement('div');
     wrapper.id = `tmux-wrapper-${id}`;
     wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition-all duration-300";
 
-    // YENİ TASARIM: Header (Mac-Style)
     const header = document.createElement('div');
     header.className = "bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-700/50 shadow-sm z-10 shrink-0";
     
-    // YENİ TASARIM: Başlık ve Glowing Neon Dot
     const titleSpan = document.createElement('div');
     titleSpan.className = `text-xs font-bold font-mono tracking-wide flex items-center gap-2.5`;
     const isSystem = id === 'system';
@@ -60,14 +54,12 @@ function getOrCreateTerminal(id, name) {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
 
-    // Tam Ekran Butonu
     const maxBtn = document.createElement('button');
     maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
     maxBtn.className = "text-gray-400 hover:text-white hover:bg-gray-700/80 p-1.5 rounded-lg transition-colors";
     maxBtn.title = "Toggle Fullscreen";
     maxBtn.onclick = () => toggleMaximizeTerminal(id);
     
-    // Temizle Butonu
     const clearBtn = document.createElement('button');
     clearBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
     clearBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
@@ -79,7 +71,6 @@ function getOrCreateTerminal(id, name) {
     header.appendChild(titleSpan);
     header.appendChild(actionsDiv);
 
-    // Xterm.js Konteyneri (İç arka plan daha koyu)
     const termContainer = document.createElement('div');
     termContainer.id = `tmux-term-${id}`;
     termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden";
@@ -88,7 +79,6 @@ function getOrCreateTerminal(id, name) {
     wrapper.appendChild(termContainer);
     grid.appendChild(wrapper);
 
-    // Xterm.js Başlatma (Arka plan rengi konteyner ile uyumlu)
     const term = new Terminal({
         theme: { background: '#0a0d14', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' },
         fontFamily: 'Consolas, "Courier New", monospace',
@@ -147,7 +137,6 @@ function updateGridCSS() {
     const activeIds = Object.keys(terminalPool);
     const count = activeIds.length;
 
-    // YENİ: Izgara Aralığı (Nefes Alma Payı)
     grid.style.display = 'grid';
     grid.style.gap = '16px'; 
 
@@ -188,9 +177,9 @@ function refreshAllTerminalFits() {
 
 function toggleMaximizeTerminal(id) {
     if (maximizedTerminalId === id) {
-        maximizedTerminalId = null; // Restore (Eski Haline Dön)
+        maximizedTerminalId = null; 
     } else {
-        maximizedTerminalId = id; // Maximize (Tam Ekran)
+        maximizedTerminalId = id; 
     }
     updateGridCSS();
     if(maximizedTerminalId) { terminalPool[id].term.focus(); }
@@ -209,7 +198,6 @@ function connectWebSocket() {
         try {
             const msg = JSON.parse(e.data);
             
-            // Eğer JSON içindeki ID'nin terminali yoksa, OTOMATİK YARAT!
             let projName = "Unknown";
             if (msg.id === 'system') projName = "DionyHub System Logs";
             else {
@@ -225,7 +213,6 @@ function connectWebSocket() {
                 termInstance.term.write(msg.data);
             }
         } catch (err) {
-            // Eğer JSON parse hatası varsa (Beklenmeyen bir veri) sistem loguna düşür
             if(terminalPool['system']) terminalPool['system'].term.write(e.data);
         }
     };
@@ -296,15 +283,15 @@ function switchView(viewName) {
         dashboardView.classList.remove('hidden'); settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library"; addBtn.classList.remove('hidden');
 
-        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white font-medium shadow-inner transition-colors";
-        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium text-left";
+        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all";
+        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium text-left mt-2";
         setTimeout(refreshAllTerminalFits, 100);
     } else if (viewName === 'settings') {
         dashboardView.classList.add('hidden'); settingsView.classList.remove('hidden');
         viewTitle.innerText = "System Settings"; addBtn.classList.add('hidden');
 
-        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-700/30 hover:text-white rounded-md transition-colors border border-transparent font-medium";
-        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-gray-700/50 border border-gray-600 text-white rounded-md transition-colors font-medium text-left shadow-inner";
+        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium";
+        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all mt-2";
     }
 }
 
@@ -418,7 +405,7 @@ async function loadProjects() {
 
         filteredProjects.forEach(p => {
             const tr = document.createElement('tr');
-            tr.className = `border-b border-gray-700/50 hover:bg-gray-750 transition-colors group cursor-pointer bg-gray-800/20`;
+            tr.className = `border-b border-gray-800/60 hover:bg-gray-800/40 transition-colors group cursor-pointer bg-[#0f111a]/30`;
             tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
             
             tr.addEventListener('dragstart', handleDragStart); tr.addEventListener('dragover', handleDragOver);
@@ -432,23 +419,23 @@ async function loadProjects() {
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
-                    <div class="h-8 w-8 rounded bg-gray-700 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors shrink-0">${p.name.charAt(0).toUpperCase()}</div>
+                    <div class="h-8 w-8 rounded bg-gray-800 flex items-center justify-center text-indigo-400 font-bold group-hover:bg-indigo-500/20 transition-colors shrink-0">${p.name.charAt(0).toUpperCase()}</div>
                     <div class="flex flex-col"><div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
                 </td>
                 <td class="p-5 text-sm text-gray-400 font-mono text-xs truncate max-w-xs" title="${p.path}">${p.path}</td>
-                <td class="p-5"><span id="status-${p.id}" class="px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium">Loading...</span></td>
+                <td class="p-5"><span id="status-${p.id}" class="px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-medium">Loading...</span></td>
                 <td class="p-5"><div id="stats-${p.id}" class="text-xs text-gray-500 font-mono flex flex-col gap-1"><span>CPU: --</span><span>RAM: --</span></div></td>
                 <td class="p-5">
                     <div class="flex items-center justify-end gap-3 whitespace-nowrap">
-                        <div class="flex items-center gap-2 border-r border-gray-700 pr-3">
+                        <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
                             <button onclick="startProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Start</button>
                             <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded shadow-lg text-xs font-medium text-center">Stop</button>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-700 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
-                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
-                            <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
+                            <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white p-1.5 rounded transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
                     </div>
                 </td>
@@ -477,10 +464,9 @@ async function updateStatuses() {
                 if (stats && p.cpu !== undefined) {
                     stats.innerHTML = `<span class="text-indigo-400">CPU: ${p.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${p.ram.toFixed(1)} MB</span>`;
                 }
-                // Proje çalışıyorsa ve henüz terminali açılmamışsa sessizce UI arkasında oluştur!
                 if (!terminalPool[p.id]) getOrCreateTerminal(p.id, p.name);
             } else {
-                badge.className = 'px-3 py-1 bg-gray-600/30 text-gray-400 text-xs rounded-full border border-gray-500/30 font-medium';
+                badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-medium';
                 badge.innerText = 'Stopped';
                 if (stats) stats.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
             }
@@ -489,7 +475,7 @@ async function updateStatuses() {
 }
 
 async function startProject(id, name, btn) { 
-    getOrCreateTerminal(id, name); // Butona basılınca hemen terminali yarat
+    getOrCreateTerminal(id, name); 
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
@@ -602,18 +588,18 @@ function toggleBoard() {
 
 function setFilter(tag) {
     currentTagFilter = tag; loadProjects();
-    document.querySelectorAll('.tag-filter-btn').forEach(btn => { btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); btn.classList.add('text-gray-400', 'hover:bg-gray-700/30'); });
+    document.querySelectorAll('.tag-filter-btn').forEach(btn => { btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); btn.classList.add('text-gray-400', 'hover:bg-gray-800/50'); });
     const activeId = tag === null ? 'btn-filter-all' : `btn-filter-${tag}`;
     const activeBtn = document.getElementById(activeId);
-    if (activeBtn) { activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-700/30'); }
+    if (activeBtn) { activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-800/50'); }
 }
 
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0));
     availableTags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
     const tagList = document.getElementById('tag-list'); if (!tagList) return;
-    tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${currentTagFilter === null ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-700/30'}">All Projects</button>`;
-    availableTags.forEach(tag => { const isActive = currentTagFilter === tag; tagList.innerHTML += `<button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${isActive ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-700/30'}"># ${tag}</button>`; });
+    tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${currentTagFilter === null ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'}">All Projects</button>`;
+    availableTags.forEach(tag => { const isActive = currentTagFilter === tag; tagList.innerHTML += `<button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${isActive ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'}"># ${tag}</button>`; });
 }
 
 function initTagAutocomplete(inputId, dropdownId) {
@@ -685,8 +671,19 @@ async function submitEditProject(event) {
     } catch (e) { showToast("Server error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
-function openDeleteModal(id) { projectToDelete = id; document.getElementById('deleteModal').classList.replace('hidden', 'flex'); }
-function closeDeleteModal() { document.getElementById('deleteModal').classList.replace('flex', 'hidden'); }
+// YENİ EKLENDİ: Silme penceresi açıldığında Switch'i kapatır (güvenlik)
+function openDeleteModal(id) { 
+    projectToDelete = id; 
+    document.getElementById('deleteFilesFromDisk').checked = false; 
+    document.getElementById('deleteModal').classList.replace('hidden', 'flex'); 
+}
+
+// YENİ EKLENDİ: Silme penceresi kapandığında Switch'i kapatır (güvenlik)
+function closeDeleteModal() { 
+    document.getElementById('deleteModal').classList.replace('flex', 'hidden'); 
+    document.getElementById('deleteFilesFromDisk').checked = false; 
+    projectToDelete = null;
+}
 
 async function executeDelete() { 
     const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); const deleteFiles = document.getElementById('deleteFilesFromDisk').checked;

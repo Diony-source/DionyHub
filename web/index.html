@@ -27,7 +27,6 @@
 </head>
 <body class="bg-[#0f111a] text-gray-200 h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30">
 
-    <!-- SIDEBAR -->
     <div class="w-64 bg-[#161b22] border-r border-gray-800/60 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.2)] z-20">
         <div class="h-16 flex items-center px-6 border-b border-gray-800/60 bg-[#161b22]/50">
             <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md">DionyHub</span>
@@ -55,7 +54,6 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col bg-[#0f111a] relative">
         <header class="h-16 bg-[#161b22]/80 backdrop-blur-md border-b border-gray-800/60 flex items-center justify-between px-8 z-10 sticky top-0">
             <h1 id="view-title" class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm">Active Library</h1>
@@ -71,7 +69,6 @@
             </div>
         </header>
 
-        <!-- DASHBOARD VIEW -->
         <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
             
             <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
@@ -108,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- TMUX SPLIT TERMINAL ALANI (PREMIUM UI) -->
             <div class="px-8 pb-8 flex-1 flex flex-col min-h-[400px]">
                 <div class="bg-gradient-to-br from-[#161b22] to-[#0f111a] rounded-2xl border border-gray-700/40 shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col h-full overflow-hidden relative">
                     
@@ -127,15 +123,12 @@
                         </div>
                     </div>
                     
-                    <!-- Dinamik Izgara Konteyneri -->
                     <div id="terminals-grid" class="flex-1 w-full p-4 overflow-hidden relative">
-                        <!-- JS Tarafından Terminal Kutuları Buraya Basılacak -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
-        <!-- SETTINGS VIEW -->
         <div id="settings-view" class="hidden flex-col flex-1 overflow-y-auto px-8 py-8">
             <div class="max-w-3xl mx-auto w-full space-y-6">
                 <div class="bg-[#161b22] rounded-xl border border-gray-800/60 shadow-xl p-6">
@@ -153,8 +146,6 @@
         </div>
     </div>
 
-    <!-- MODALS -->
-    <!-- ADD MODAL -->
     <div id="addModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#161b22] rounded-2xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0">
@@ -193,7 +184,6 @@
         </div>
     </div>
 
-    <!-- EDIT MODAL -->
     <div id="editModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#161b22] rounded-2xl border border-gray-700 shadow-2xl w-full max-w-xl mx-4 transform transition-all">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800"><h2 class="text-lg font-bold text-white">Edit Project</h2><button onclick="closeEditModal()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
@@ -217,7 +207,6 @@
         </div>
     </div>
 
-    <!-- ENV MODAL -->
     <div id="envModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#161b22] rounded-2xl border border-gray-700 shadow-2xl w-full max-w-2xl mx-4 flex flex-col h-[70vh]">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0"><h2 class="text-lg font-bold text-white">Environment Variables</h2><button onclick="closeEnvModal()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
@@ -229,18 +218,32 @@
         </div>
     </div>
 
-    <!-- DELETE MODAL -->
     <div id="deleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#161b22] rounded-2xl border border-rose-900/50 shadow-2xl w-full max-w-md mx-4 transform transition-all">
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
-                <div class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 mb-6"><label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="deleteFilesFromDisk" class="mt-1 rounded bg-gray-900 border-rose-500/50 text-rose-500 focus:ring-rose-500"><div><span class="block text-sm font-semibold text-rose-400">Permanently delete files</span></div></label></div>
-                <div class="flex gap-3"><button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">Cancel</button><button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg transition-colors">Delete Now</button></div>
+                
+                <div class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 mb-6">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="deleteFilesFromDisk" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-200 after:ease-out peer-checked:bg-rose-600 transition-colors duration-200 ease-out border border-gray-700 peer-checked:border-rose-500"></div>
+                        </div>
+                        <div>
+                            <span class="block text-sm font-semibold text-rose-400 group-hover:text-rose-300 transition-colors">Permanently delete files</span>
+                            <span class="block text-xs text-rose-400/60 mt-0.5">Warning: This action cannot be undone.</span>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">Cancel</button>
+                    <button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg transition-colors">Delete Now</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- TOAST -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="/js/app.js"></script>
