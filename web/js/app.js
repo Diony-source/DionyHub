@@ -25,7 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
 
+    // Tıklama Olayları Ana Dinleyicisi
     document.addEventListener('click', (e) => {
+        // Eğer tıklanan yer sağ tık menüsünün kendisi DEĞİLSE, menüyü kapat.
         if (!e.target.closest('#contextMenu')) {
             hideContextMenu();
         }
@@ -34,12 +36,13 @@ document.addEventListener("DOMContentLoaded", () => {
             closeCmdPalette();
         }
         
-        // Boşa tıklayınca seçimleri iptal etme
+        // Boşa tıklayınca seçimleri iptal etme (Çoklu seçim mantığı)
         const isOutsideClick = !e.target.closest('tr') && 
                                !e.target.closest('#bulk-actions-container') && 
                                !e.target.closest('.btn-action') && 
                                !e.target.closest('.tag-filter-btn') && 
-                               !e.target.closest('.cursor-pointer');
+                               !e.target.closest('.cursor-pointer') &&
+                               !e.target.closest('#contextMenu');
                                
         if (isOutsideClick && selectedProjectIds.size > 0) {
             selectedProjectIds.clear();
@@ -48,6 +51,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Eğer tablo dışında bir yere sağ tıklanırsa, açık olan sağ tık menüsünü kapat
+    document.addEventListener('contextmenu', (e) => {
+        if (!e.target.closest('#project-list tr')) {
+            hideContextMenu();
+        }
+    });
+
+    // Klavye Kısayolları (Ctrl+K ve Escape)
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
@@ -91,28 +102,26 @@ window.addEventListener('resize', () => {
     setTimeout(refreshAllTerminalFits, 50); 
 });
 
+
 // ==========================================
-// YENİ NESİL (NEXT-GEN) UI ÖZELLİKLERİ
+// SAĞ TIK MENÜSÜ (CONTEXT MENU) DÜZELTMELERİ
 // ==========================================
 
-function drawSparkline(id, cpuVal) {
-    if (!statsHistory[id]) {
-        statsHistory[id] = Array(20).fill(0);
-    }
+function hideContextMenu() {
+    const menu = document.getElementById('contextMenu');
+    if (!menu) return;
     
-    statsHistory[id].push(cpuVal);
-    if (statsHistory[id].length > 20) {
-        statsHistory[id].shift();
-    }
+    // Animasyonla kaybolması için sınıfları ayarlıyoruz
+    menu.classList.remove('scale-100', 'opacity-100');
+    menu.classList.add('scale-95', 'opacity-0');
     
-    let barsHtml = statsHistory[id].map((val, idx) => {
-        let heightPercent = Math.max(5, Math.min(100, val)); 
-        let opacity = 0.2 + (idx / 20) * 0.8; 
-        let colorClass = val > 80 ? 'bg-rose-500' : (val > 50 ? 'bg-amber-400' : 'bg-indigo-500');
-        return `<div class="w-1 ${colorClass} rounded-t-sm spark-bar" style="height: ${heightPercent}%; opacity: ${opacity};"></div>`;
-    }).join('');
-    
-    return `<div class="flex items-end gap-[2px] h-6 w-32 ml-3 border-b border-gray-700/50 pb-px">${barsHtml}</div>`;
+    // Görünmezken tıklamaları yakalamaması için pointer-events kapatıyoruz
+    menu.style.pointerEvents = 'none';
+
+    // Tailwind CSS sınıf çakışmasını önlemek için doğrudan style.display = 'none' yapıyoruz
+    setTimeout(() => {
+        menu.style.display = 'none';
+    }, 200); 
 }
 
 function showContextMenu(e, pId, pName, status) {
@@ -167,25 +176,46 @@ function showContextMenu(e, pId, pName, status) {
         menu.appendChild(btn);
     });
 
-    menu.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        menu.style.left = `${e.pageX}px`;
-        menu.style.top = `${e.pageY}px`;
-        menu.classList.remove('scale-95', 'opacity-0');
-        menu.classList.add('scale-100', 'opacity-100');
-    });
+    // Tailwind sınıf çakışmasını ezmek için doğrudan stili flex yapıyoruz
+    menu.style.display = 'flex';
+    menu.style.flexDirection = 'column';
+    menu.style.pointerEvents = 'auto';
+    
+    // Animasyon reflow
+    void menu.offsetWidth;
+    
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+    
+    menu.classList.remove('scale-95', 'opacity-0');
+    menu.classList.add('scale-100', 'opacity-100');
 }
 
-function hideContextMenu() {
-    const menu = document.getElementById('contextMenu');
-    if (!menu) return;
+
+// ==========================================
+// YARDIMCI GÖRSELLER (GRAFİKLER)
+// ==========================================
+
+function drawSparkline(id, cpuVal) {
+    if (!statsHistory[id]) {
+        statsHistory[id] = Array(20).fill(0);
+    }
     
-    menu.classList.remove('scale-100', 'opacity-100');
-    menu.classList.add('scale-95', 'opacity-0');
+    statsHistory[id].push(cpuVal);
     
-    setTimeout(() => {
-        menu.classList.add('hidden');
-    }, 200); 
+    if (statsHistory[id].length > 20) {
+        statsHistory[id].shift();
+    }
+    
+    let barsHtml = statsHistory[id].map((val, idx) => {
+        let heightPercent = Math.max(5, Math.min(100, val)); 
+        let opacity = 0.2 + (idx / 20) * 0.8; 
+        let colorClass = val > 80 ? 'bg-rose-500' : (val > 50 ? 'bg-amber-400' : 'bg-indigo-500');
+        
+        return `<div class="w-1 ${colorClass} rounded-t-sm spark-bar" style="height: ${heightPercent}%; opacity: ${opacity};"></div>`;
+    }).join('');
+    
+    return `<div class="flex items-end gap-[2px] h-6 w-32 ml-3 border-b border-gray-700/50 pb-px">${barsHtml}</div>`;
 }
 
 // ==========================================
@@ -202,8 +232,10 @@ function toggleCmdPalette() {
     hideContextMenu(); 
     
     if (pal.classList.contains('hidden')) {
-        pal.classList.replace('hidden', 'flex');
+        pal.classList.remove('hidden');
+        pal.classList.add('flex');
         input.value = '';
+        
         handleCmdSearch({target: {value: ''}}); 
         
         requestAnimationFrame(() => {
@@ -226,7 +258,8 @@ function closeCmdPalette() {
     box.classList.add('scale-95');
     
     setTimeout(() => {
-        pal.classList.replace('flex', 'hidden');
+        pal.classList.remove('flex');
+        pal.classList.add('hidden');
     }, 200);
 }
 
@@ -802,13 +835,19 @@ function updateBulkActionBar(filteredCount) {
     if (selectedProjectIds.size > 0) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Selected Items`;
         count.innerText = `${selectedProjectIds.size} project(s)`;
-        container.classList.replace('hidden', 'flex');
+        
+        // Güvenli Görünürlük (Eski replace bug'ını engelleyen kod)
+        container.classList.remove('hidden');
+        container.classList.add('flex');
     } else if (currentTagFilter !== null) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
         count.innerText = `${filteredCount} project(s)`;
-        container.classList.replace('hidden', 'flex');
+        
+        container.classList.remove('hidden');
+        container.classList.add('flex');
     } else {
-        container.classList.replace('flex', 'hidden');
+        container.classList.remove('flex');
+        container.classList.add('hidden');
     }
 }
 
@@ -927,12 +966,18 @@ function renderProjects() {
                 }
                 lastSelectedIdx = index;
             } else if (e.shiftKey && lastSelectedIdx !== -1) {
+                // ŞİFT TIKLAMADA METİN SEÇİMİNİ İPTAL EDEN GÜVENLİK KALKANI:
+                e.preventDefault();
                 document.getSelection().removeAllRanges();
+                
                 const start = Math.min(lastSelectedIdx, index);
                 const end = Math.max(lastSelectedIdx, index);
+                
                 for (let i = start; i <= end; i++) {
                     const iterId = filteredProjects[i].id || filteredProjects[i].ID;
-                    selectedProjectIds.add(iterId);
+                    if(iterId) {
+                        selectedProjectIds.add(iterId);
+                    }
                 }
             } else {
                 selectedProjectIds.clear();
@@ -963,7 +1008,9 @@ function renderProjects() {
 
         tr.innerHTML = `
             <td class="p-5 font-bold text-gray-200 flex items-center gap-4">
-                <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                </div>
                 <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${firstLetter}</div>
                 <div class="flex flex-col"><div class="flex items-center">${pName} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
             </td>
@@ -1049,14 +1096,23 @@ function initTagAutocomplete(inputId, dropdownId) {
 }
 
 function openModal() { 
-    document.getElementById('addModal').classList.replace('hidden', 'flex'); 
+    const m = document.getElementById('addModal');
+    if(m) {
+        m.classList.remove('hidden'); 
+        m.classList.add('flex');
+    }
     toggleSourceMode();
     toggleWorkspaceMode();
 }
 
 function closeModal() { 
-    document.getElementById('addModal').classList.replace('flex', 'hidden'); 
-    document.getElementById('addForm').reset();
+    const m = document.getElementById('addModal');
+    if(m) {
+        m.classList.remove('flex'); 
+        m.classList.add('hidden');
+    }
+    const form = document.getElementById('addForm');
+    if(form) form.reset();
 }
 
 function openEditModal(id) { 
@@ -1064,18 +1120,28 @@ function openEditModal(id) {
 }
 
 function closeEditModal() { 
-    document.getElementById('editModal').classList.add('hidden'); 
+    const m = document.getElementById('editModal');
+    if(m) {
+        m.classList.remove('flex');
+        m.classList.add('hidden'); 
+    }
 }
 
 function openDeleteModal(id) { 
     projectToDelete = id; 
     const dm = document.getElementById('deleteModal'); 
-    if(dm) dm.classList.replace('hidden', 'flex'); 
+    if(dm) {
+        dm.classList.remove('hidden');
+        dm.classList.add('flex'); 
+    }
 }
 
 function closeDeleteModal() { 
     const dm = document.getElementById('deleteModal'); 
-    if(dm) dm.classList.replace('flex', 'hidden'); 
+    if(dm) {
+        dm.classList.remove('flex');
+        dm.classList.add('hidden'); 
+    }
     const cb = document.getElementById('deleteFilesFromDisk');
     if(cb) cb.checked = false;
 }
@@ -1102,12 +1168,18 @@ function confirmBulkDelete() {
     if(checkbox) checkbox.checked = false;
     
     const modal = document.getElementById('bulkDeleteModal');
-    if(modal) modal.classList.replace('hidden', 'flex');
+    if(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 }
 
 function closeBulkDeleteModal() { 
     const m = document.getElementById('bulkDeleteModal'); 
-    if(m) m.classList.replace('flex', 'hidden'); 
+    if(m) {
+        m.classList.remove('flex');
+        m.classList.add('hidden'); 
+    }
     
     const c = document.getElementById('bulkDeleteFilesFromDisk'); 
     if(c) c.checked = false; 
@@ -1281,7 +1353,10 @@ function openEditModalWindow(id) {
     if (resCheck) resCheck.checked = p.auto_restart !== undefined ? p.auto_restart : (p.AutoRestart || false);
     
     const m = document.getElementById('editModal');
-    if(m) m.classList.replace('hidden', 'flex');
+    if(m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+    }
 }
 
 async function submitEditProject(e) {
@@ -1560,7 +1635,10 @@ async function openEnvModal(id) {
 
 function closeEnvModal() {
     const em = document.getElementById('envModal');
-    if(em) em.classList.add('hidden');
+    if(em) {
+        em.classList.remove('flex');
+        em.classList.add('hidden');
+    }
     
     const ef = document.getElementById('envForm');
     if(ef) ef.reset();
