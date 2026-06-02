@@ -1,6 +1,7 @@
 package process
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,12 +19,108 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
+// RotatingLogWriter manages appending to a log file and automatically archiving it (zipping) when it reaches max size.
+type RotatingLogWriter struct {
+	mu       sync.Mutex
+	logPath  string
+	maxBytes int64
+	file     *os.File
+	size     int64
+}
+
+// NewRotatingLogWriter initializes a new rotating log file with a specific MB limit.
+func NewRotatingLogWriter(logPath string, maxMB int) (*RotatingLogWriter, error) {
+	rlw := &RotatingLogWriter{
+		logPath:  logPath,
+		maxBytes: int64(maxMB) * 1024 * 1024,
+	}
+	err := rlw.open()
+	return rlw, err
+}
+
+func (w *RotatingLogWriter) open() error {
+	info, err := os.Stat(w.logPath)
+	if err == nil {
+		w.size = info.Size()
+	}
+	f, err := os.OpenFile(w.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	w.file = f
+	return nil
+}
+
+// Write appends data to the log. If the limit is reached, it triggers a rotation.
+func (w *RotatingLogWriter) Write(p []byte) (n int, err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.size+int64(len(p)) > w.maxBytes {
+		w.rotate()
+	}
+
+	if w.file != nil {
+		n, err = w.file.Write(p)
+		w.size += int64(n)
+		return n, err
+	}
+	return 0, errors.New("log file is not open")
+}
+
+// rotate closes the current log, renames it, opens a fresh one, and asynchronously zips the old file.
+func (w *RotatingLogWriter) rotate() {
+	if w.file != nil {
+		w.file.Close()
+	}
+
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	archivePath := w.logPath + "." + timestamp + ".log"
+	os.Rename(w.logPath, archivePath)
+
+	w.size = 0
+	w.open() // Hemen yeni log dosyasını açıp okumaya devam et
+
+	// Diski dondurmamak için zipleme işlemini arka planda (goroutine) yap
+	go func(src string) {
+		zipPath := src + ".zip"
+		zipFile, err := os.Create(zipPath)
+		if err != nil {
+			return
+		}
+		defer zipFile.Close()
+
+		archive := zip.NewWriter(zipFile)
+		defer archive.Close()
+
+		writer, err := archive.Create(filepath.Base(src))
+		if err == nil {
+			f, err := os.Open(src)
+			if err == nil {
+				io.Copy(writer, f)
+				f.Close()
+				os.Remove(src) // Zipleme bitince ham .log arşiv dosyasını sil
+			}
+		}
+	}(archivePath)
+}
+
+func (w *RotatingLogWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.file != nil {
+		return w.file.Close()
+	}
+	return nil
+}
+
 type Process struct {
 	ID           string
 	Name         string
 	Path         string
 	Cmd          *exec.Cmd
 	Stdin        io.WriteCloser
+	LogWriter    *RotatingLogWriter // YENİ: Sürece özel disk yazıcısı
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
@@ -32,8 +129,8 @@ type Process struct {
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
-	console   io.Writer // Fiziksel CMD terminaline ham ve renkli çıktı için
-	ws        io.Writer // Arayüze (Frontend) JSON paketli veri gönderimi için
+	console   io.Writer
+	ws        io.Writer
 }
 
 func NewManager(console io.Writer, ws io.Writer) *Manager {
@@ -44,7 +141,6 @@ func NewManager(console io.Writer, ws io.Writer) *Manager {
 	}
 }
 
-// sysLog, sistem bildirimlerini hem konsola hem de JSON formatında arayüze dağıtır
 func (m *Manager) sysLog(id, name, message string) {
 	fmt.Fprintf(m.console, "\x1b[90m[%s]\x1b[0m %s\n", name, message)
 
@@ -56,8 +152,8 @@ func (m *Manager) sysLog(id, name, message string) {
 	m.ws.Write(wsMsg)
 }
 
-// prefixLogger, projeden akan veriyi byte-byte okur; WS'ye JSON, Konsola ham metin gönderir
-func (m *Manager) prefixLogger(id, name string, r io.Reader) {
+// prefixLogger now simultaneously writes to WebSocket, Console, and the Project's Log File.
+func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer) {
 	buf := make([]byte, 4096)
 	needsPrefix := true
 
@@ -71,11 +167,16 @@ func (m *Manager) prefixLogger(id, name string, r io.Reader) {
 		if n > 0 {
 			chunk := buf[:n]
 
-			// 1. Arayüze (WebSocket) etiketli JSON gönderimi
+			// 1. WebSocket (Frontend JSON)
 			wsMsg, _ := json.Marshal(WSLog{ID: id, Data: string(chunk)})
 			m.ws.Write(wsMsg)
 
-			// 2. İşletim Sistemi Konsoluna (CMD) renkli prefix ile gönderim
+			// 2. Disk Persistence (Kayıp Loglar - Raw format)
+			if logWriter != nil {
+				logWriter.Write(chunk)
+			}
+
+			// 3. System Console (CMD Prefix)
 			var out strings.Builder
 			for i := 0; i < n; i++ {
 				if needsPrefix {
@@ -178,6 +279,17 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 	var cmd *exec.Cmd
 	var stdinPipe io.WriteCloser
+	var logWriter *RotatingLogWriter
+
+	if !interactive {
+		// YENİ: Projenin log klasörünü oluştur ve log dosyasını hazırla
+		logDir := filepath.Join(path, "logs")
+		os.MkdirAll(logDir, 0755)
+		logPath := filepath.Join(logDir, "dionyhub.log")
+
+		// 10 MB sınırıyla rotating logger başlat
+		logWriter, _ = NewRotatingLogWriter(logPath, 10)
+	}
 
 	if interactive {
 		if runtime.GOOS == "windows" {
@@ -195,12 +307,12 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 		stdout, err := cmd.StdoutPipe()
 		if err == nil {
-			go m.prefixLogger(id, name, stdout)
+			go m.prefixLogger(id, name, stdout, logWriter)
 		}
 
 		stderr, err := cmd.StderrPipe()
 		if err == nil {
-			go m.prefixLogger(id, name, stderr)
+			go m.prefixLogger(id, name, stderr, logWriter)
 		}
 
 		stdinPipe, _ = cmd.StdinPipe()
@@ -211,6 +323,9 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	cmd.Env = append(cmd.Env, globalEnvs...)
 
 	if err := cmd.Start(); err != nil {
+		if logWriter != nil {
+			logWriter.Close()
+		}
 		return err
 	}
 
@@ -225,6 +340,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		Path:         path,
 		Cmd:          cmd,
 		Stdin:        stdinPipe,
+		LogWriter:    logWriter, // LogWriter referansını sakla ki stop edildiğinde kapanabilsin
 		Running:      true,
 		IntendedStop: false,
 	}
@@ -240,6 +356,11 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		if p, exists := m.processes[id]; exists {
 			p.Running = false
 			intended = p.IntendedStop
+
+			// Süreç bittiğinde dosya akışını güvenle kapat
+			if p.LogWriter != nil {
+				p.LogWriter.Close()
+			}
 		}
 		m.mu.Unlock()
 
@@ -310,6 +431,9 @@ func (m *Manager) Stop(id string) error {
 
 	m.mu.Lock()
 	p.Running = false
+	if p.LogWriter != nil {
+		p.LogWriter.Close()
+	}
 	m.mu.Unlock()
 
 	os.Remove(filepath.Join(p.Path, ".diony_hub.pid"))
