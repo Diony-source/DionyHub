@@ -19,7 +19,6 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// RotatingLogWriter manages appending to a log file and automatically archiving it (zipping) when it reaches max size.
 type RotatingLogWriter struct {
 	mu       sync.Mutex
 	logPath  string
@@ -28,7 +27,6 @@ type RotatingLogWriter struct {
 	size     int64
 }
 
-// NewRotatingLogWriter initializes a new rotating log file with a specific MB limit.
 func NewRotatingLogWriter(logPath string, maxMB int) (*RotatingLogWriter, error) {
 	rlw := &RotatingLogWriter{
 		logPath:  logPath,
@@ -51,7 +49,6 @@ func (w *RotatingLogWriter) open() error {
 	return nil
 }
 
-// Write appends data to the log. If the limit is reached, it triggers a rotation.
 func (w *RotatingLogWriter) Write(p []byte) (n int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -68,7 +65,6 @@ func (w *RotatingLogWriter) Write(p []byte) (n int, err error) {
 	return 0, errors.New("log file is not open")
 }
 
-// rotate closes the current log, renames it, opens a fresh one, and asynchronously zips the old file.
 func (w *RotatingLogWriter) rotate() {
 	if w.file != nil {
 		w.file.Close()
@@ -140,6 +136,7 @@ func NewManager(console io.Writer, ws io.Writer) *Manager {
 	}
 }
 
+// YENİ: sysLog artık veriyi hem projeye hem de Sistem Loglarına (Audit) çoğaltır!
 func (m *Manager) sysLog(id, name, message string) {
 	fmt.Fprintf(m.console, "\x1b[90m[%s]\x1b[0m %s\n", name, message)
 
@@ -147,8 +144,15 @@ func (m *Manager) sysLog(id, name, message string) {
 		ID   string `json:"id"`
 		Data string `json:"data"`
 	}
-	wsMsg, _ := json.Marshal(WSLog{ID: id, Data: message + "\n"})
-	m.ws.Write(wsMsg)
+
+	// 1. Kendi terminaline yolla
+	wsMsgProj, _ := json.Marshal(WSLog{ID: id, Data: message + "\n"})
+	m.ws.Write(wsMsgProj)
+
+	// 2. AUDIT KOPYASI: Sistem loguna yolla
+	sysAuditMsg := fmt.Sprintf("\x1b[36m[AUDIT]\x1b[0m \x1b[33m%s\x1b[0m -> %s\n", name, message)
+	wsMsgSys, _ := json.Marshal(WSLog{ID: "system", Data: sysAuditMsg})
+	m.ws.Write(wsMsgSys)
 }
 
 func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer) {
@@ -260,7 +264,6 @@ func (m *Manager) WriteInput(id string, input string) error {
 		return errors.New("this process does not accept internal terminal inputs")
 	}
 
-	// YENİ: Arayüzden gelen kullanıcı girdisini ve tuşları log dosyasına kopyala
 	if p.LogWriter != nil {
 		p.LogWriter.Write([]byte(input))
 	}
