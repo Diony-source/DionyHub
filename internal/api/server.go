@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -42,6 +43,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/start-bulk", s.handleStartBulk)
 	mux.HandleFunc("/api/projects/stop-bulk", s.handleStopBulk)
 	mux.HandleFunc("/api/projects/delete", s.handleDeleteProject)
+	mux.HandleFunc("/api/projects/delete-bulk", s.handleDeleteBulk)
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
@@ -51,11 +53,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
 
-	// YENİ: Sunucu rotaları kaydederken WebSocket Metrik Motorunu da başlatır
 	go s.startMetricsPusher()
 }
 
-// YENİ: HTTP DDOS'u engelleyen ve veriyi akıcı şekilde WS'den yollayan motor
 func (s *Server) startMetricsPusher() {
 	for {
 		time.Sleep(2 * time.Second)
@@ -65,6 +65,14 @@ func (s *Server) startMetricsPusher() {
 		for _, p := range s.projects {
 			if s.manager.IsRunning(p.ID) {
 				cpu, ram, uptime := s.manager.GetStats(p.ID)
+
+				if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
+					cpu = 0
+				}
+				if math.IsNaN(ram) || math.IsInf(ram, 0) {
+					ram = 0
+				}
+
 				stats = append(stats, map[string]interface{}{
 					"id": p.ID, "status": "running", "cpu": cpu, "ram": ram, "uptime": uptime,
 				})
@@ -102,7 +110,6 @@ func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleanPath := strings.ReplaceAll(path, "\\", "/")
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"path": cleanPath})
 }
@@ -147,6 +154,13 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
+// DERLEME HATASINI ÇÖZEN YAPI
+type ProjectResponse struct {
+	config.Project
+	CPU float64 `json:"cpu"`
+	RAM float64 `json:"ram"`
+}
+
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -155,22 +169,38 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	liveProjects := make([]config.Project, len(s.projects))
-	for i, p := range s.projects {
-		liveProjects[i] = p
+	var response []ProjectResponse
+	for _, p := range s.projects {
+		status := "stopped"
+		var cpu, ram float64
 
 		if s.manager.IsRunning(p.ID) {
-			liveProjects[i].Status = "running"
-			// Güncellenen GetStats fonksiyonuna uyum (uptime yok sayılır)
-			cpu, ram, _ := s.manager.GetStats(p.ID)
-			liveProjects[i].CPU = cpu
-			liveProjects[i].RAM = ram
-		} else {
-			liveProjects[i].Status = "stopped"
+			status = "running"
+			cpu, ram, _ = s.manager.GetStats(p.ID)
+
+			if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
+				cpu = 0
+			}
+			if math.IsNaN(ram) || math.IsInf(ram, 0) {
+				ram = 0
+			}
 		}
+
+		pr := ProjectResponse{
+			Project: p,
+			CPU:     cpu,
+			RAM:     ram,
+		}
+		pr.Status = status
+		response = append(response, pr)
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(liveProjects)
+	if len(response) == 0 {
+		w.Write([]byte(`[]`))
+		return
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -197,22 +227,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info, err := os.Stat(updatedData.Path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if mkErr := os.MkdirAll(updatedData.Path, 0755); mkErr != nil {
-				http.Error(w, `{"error": "Failed to create directory automatically"}`, http.StatusInternalServerError)
-				return
-			}
-		} else {
-			http.Error(w, `{"error": "Invalid directory path format"}`, http.StatusBadRequest)
-			return
-		}
-	} else if !info.IsDir() {
-		http.Error(w, `{"error": "The specified Path exists but is not a valid directory"}`, http.StatusBadRequest)
-		return
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -236,13 +250,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		http.Error(w, `{"error": "Failed to save configuration"}`, http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[34mProject Edited\x1b[0m -> Configurations updated for '%s'", updatedData.Name)
-
+	config.SaveProjects("config.json", s.projects)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -274,31 +282,13 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 
 	if req.Name == "" || cleanPath == "" || req.Command == "" {
-		http.Error(w, `{"error": "Name, Path, and Command are required fields"}`, http.StatusBadRequest)
-		return
-	}
-
-	info, err := os.Stat(cleanPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if mkErr := os.MkdirAll(cleanPath, 0755); mkErr != nil {
-				http.Error(w, `{"error": "Failed to create workspace directory automatically"}`, http.StatusInternalServerError)
-				return
-			}
-		} else {
-			http.Error(w, `{"error": "Invalid directory path format"}`, http.StatusBadRequest)
-			return
-		}
-	} else if !info.IsDir() {
-		http.Error(w, `{"error": "The specified Path exists but is not a valid directory"}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Name, Path, and Command are required"}`, http.StatusBadRequest)
 		return
 	}
 
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(cleanPath, ".env")
-		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
-			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to create initial .env file for %s", req.Name)
-		}
+		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
 
 	newProj := config.Project{
@@ -316,15 +306,8 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	newProj.Order = len(s.projects)
 	s.projects = append(s.projects, newProj)
-	saveErr := config.SaveProjects("config.json", s.projects)
+	config.SaveProjects("config.json", s.projects)
 	s.mu.Unlock()
-
-	if saveErr != nil {
-		http.Error(w, `{"error": "Failed to save project configuration"}`, http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mProject Added\x1b[0m -> '%s' mapped to local directory (%s)", newProj.Name, newProj.Path)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -364,45 +347,26 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
-		http.Error(w, `{"error": "Global Workspace is not configured. Please define it in Settings first."}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Global Workspace is not configured."}`, http.StatusBadRequest)
 		return
 	}
 
 	cleanWorkspace := strings.ReplaceAll(settings.Workspace, "\u202A", "")
 	cleanWorkspace = strings.ReplaceAll(cleanWorkspace, "\u202C", "")
-
-	if err := os.MkdirAll(cleanWorkspace, 0755); err != nil {
-		http.Error(w, `{"error": "Failed to create Global Workspace parent directory"}`, http.StatusInternalServerError)
-		return
-	}
+	os.MkdirAll(cleanWorkspace, 0755)
 
 	destPath := cleanWorkspace + "/" + repoName
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
-	if _, err := os.Stat(destPath); err == nil {
-		http.Error(w, `{"error": "Directory already exists in Workspace. Delete the existing folder first."}`, http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mClone Initiated\x1b[0m -> Downloading repository: %s", repoName)
-
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		errMsg := strings.TrimSpace(string(output))
-		errMsg = strings.ReplaceAll(errMsg, "\n", " | ")
-		errMsg = strings.ReplaceAll(errMsg, "\"", "'")
-		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mClone Failed\x1b[0m -> Process failed for %s", repoName)
-		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, errMsg), http.StatusInternalServerError)
+	if err := cmd.Run(); err != nil {
+		http.Error(w, `{"error": "Git Clone Failed"}`, http.StatusInternalServerError)
 		return
 	}
 
 	if req.InitialEnv != "" {
 		envPath := filepath.Join(destPath, ".env")
-		if err := os.WriteFile(envPath, []byte(req.InitialEnv), 0644); err != nil {
-			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to create initial .env file at %s", envPath)
-		}
+		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
 
 	newProj := config.Project{
@@ -420,15 +384,8 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	newProj.Order = len(s.projects)
 	s.projects = append(s.projects, newProj)
-	saveErr := config.SaveProjects("config.json", s.projects)
+	config.SaveProjects("config.json", s.projects)
 	s.mu.Unlock()
-
-	if saveErr != nil {
-		http.Error(w, `{"error": "Repository cloned but failed to save configuration"}`, http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mRepo Cloned\x1b[0m -> '%s' successfully configured in workspace.", newProj.Name)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -476,8 +433,63 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if removeFiles && projectToDelete != nil {
-		if err := os.RemoveAll(projectToDelete.Path); err != nil {
-			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mWarning\x1b[0m -> Failed to forcefully remove directory %s: %v", projectToDelete.Path, err)
+		os.RemoveAll(projectToDelete.Path)
+	}
+
+	for i := range updatedProjects {
+		updatedProjects[i].Order = i
+	}
+
+	s.projects = updatedProjects
+	config.SaveProjects("config.json", s.projects)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		IDs         []string `json:"ids"`
+		RemoveFiles bool     `json:"remove_files"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		http.Error(w, `{"error": "No IDs provided"}`, http.StatusBadRequest)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	idMap := make(map[string]bool)
+	for _, id := range req.IDs {
+		idMap[id] = true
+		if s.manager.IsRunning(id) {
+			_ = s.manager.Stop(id)
+		}
+	}
+
+	var updatedProjects []config.Project
+	deletedCount := 0
+
+	for _, p := range s.projects {
+		if idMap[p.ID] {
+			if req.RemoveFiles {
+				os.RemoveAll(p.Path)
+			}
+			deletedCount++
+		} else {
+			updatedProjects = append(updatedProjects, p)
 		}
 	}
 
@@ -486,19 +498,11 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.projects = updatedProjects
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		http.Error(w, `{"error": "Failed to save configuration after deletion"}`, http.StatusInternalServerError)
-		return
-	}
-
-	actionMsg := "Removed from dashboard"
-	if removeFiles {
-		actionMsg = "Permanently deleted from disk"
-	}
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mProject Deleted\x1b[0m -> '%s' (%s)", projectToDelete.Name, actionMsg)
+	config.SaveProjects("config.json", s.projects)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully deleted %d projects", deletedCount)})
 }
 
 func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
@@ -647,8 +651,6 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk START for %d projects", startedCount)
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully started %d project(s)", startedCount)})
@@ -673,8 +675,6 @@ func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[33mBulk Action\x1b[0m -> Executed bulk STOP for %d projects", stoppedCount)
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Successfully stopped %d project(s)", stoppedCount)})
@@ -689,11 +689,9 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 	s.mu.RLock()
 	var targetPath string
-	var targetName string
 	for _, p := range s.projects {
 		if p.ID == id {
 			targetPath = p.Path
-			targetName = p.Name
 			break
 		}
 	}
@@ -716,9 +714,7 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 		response := map[string]string{"content": string(content)}
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, `{"error": "Failed to encode response"}`, http.StatusInternalServerError)
-		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -731,18 +727,10 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := os.WriteFile(envFile, []byte(req.Content), 0644); err != nil {
-			http.Error(w, `{"error": "Failed to write .env file"}`, http.StatusInternalServerError)
-			return
-		}
-
-		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[36mEnvironment Variables\x1b[0m -> Secure .env configuration modified for '%s'", targetName)
-
+		os.WriteFile(envFile, []byte(req.Content), 0644)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
-	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
 func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
@@ -775,15 +763,12 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
-		http.Error(w, `{"error": "Workspace is not defined. Cannot determine backup location."}`, http.StatusInternalServerError)
+		http.Error(w, `{"error": "Workspace is not defined."}`, http.StatusInternalServerError)
 		return
 	}
 
 	backupDir := filepath.Join(settings.Workspace, "DionyHub_Backups")
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
-		http.Error(w, `{"error": "Failed to create backup directory"}`, http.StatusInternalServerError)
-		return
-	}
+	os.MkdirAll(backupDir, 0755)
 
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	safeName := strings.ReplaceAll(targetProject.Name, " ", "_")
@@ -791,12 +776,9 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	targetZipPath := filepath.Join(backupDir, zipFileName)
 
 	if err := archive.ZipDirectory(targetProject.Path, targetZipPath); err != nil {
-		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mBackup Failed\x1b[0m -> Error processing archive for %s: %v", targetProject.Name, err)
 		http.Error(w, `{"error": "Failed to create zip archive"}`, http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[32mBackup Created\x1b[0m -> '%s' successfully archived as %s", targetProject.Name, zipFileName)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -817,11 +799,6 @@ func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
-		return
-	}
-
-	if req.ID == "" {
-		http.Error(w, `{"error": "Project ID is required"}`, http.StatusBadRequest)
 		return
 	}
 
