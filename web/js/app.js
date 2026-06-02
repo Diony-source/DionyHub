@@ -52,6 +52,36 @@ function getOrCreateTerminal(id, name) {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
 
+    // YENİ: Arama Kutusu (Görünmez Başlar)
+    const searchInput = document.createElement('input');
+    searchInput.type = "text";
+    searchInput.id = `search-input-${id}`;
+    searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 focus:border-indigo-500 focus:outline-none transition-all";
+    searchInput.placeholder = "Find in logs...";
+
+    // YENİ: Arama Butonu (Büyüteç)
+    const searchBtn = document.createElement('button');
+    searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
+    searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
+    searchBtn.title = "Search Logs";
+    searchBtn.onclick = () => {
+        if (searchInput.classList.contains('hidden')) {
+            searchInput.classList.remove('hidden');
+            searchInput.focus();
+        } else {
+            searchInput.classList.add('hidden');
+            searchInput.value = '';
+            if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations();
+        }
+    };
+
+    // YENİ: İndirme (Export) Butonu
+    const exportBtn = document.createElement('button');
+    exportBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
+    exportBtn.className = "text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors";
+    exportBtn.title = "Export Logs to .txt";
+    exportBtn.onclick = () => exportTerminalLogs(id, name);
+
     const maxBtn = document.createElement('button');
     maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
     maxBtn.className = "text-gray-400 hover:text-white hover:bg-gray-700/80 p-1.5 rounded-lg transition-colors";
@@ -64,8 +94,13 @@ function getOrCreateTerminal(id, name) {
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
+    // Butonları Div'e Dizme Sırası
+    actionsDiv.appendChild(searchInput);
+    actionsDiv.appendChild(searchBtn);
+    actionsDiv.appendChild(exportBtn);
     actionsDiv.appendChild(maxBtn);
     actionsDiv.appendChild(clearBtn);
+
     header.appendChild(titleSpan);
     header.appendChild(actionsDiv);
 
@@ -80,21 +115,40 @@ function getOrCreateTerminal(id, name) {
     const term = new Terminal({
         theme: { background: '#0a0d14', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' },
         fontFamily: 'Consolas, "Courier New", monospace',
-        fontSize: 13, cursorBlink: true, scrollback: 3000, convertEol: true
+        fontSize: 13, cursorBlink: true, scrollback: 5000, convertEol: true
     });
 
     const fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
+    
+    // YENİ: Search Eklentisinin Aktif Edilmesi
+    const searchAddon = new SearchAddon.SearchAddon();
+    term.loadAddon(searchAddon);
+
     term.open(termContainer);
 
     const termInstance = {
         term: term,
         fitAddon: fitAddon,
+        searchAddon: searchAddon,
         container: wrapper,
         currentLine: ""
     };
 
     terminalPool[id] = termInstance;
+
+    // Arama Mantığı (Kutuda yazı değiştikçe veya Enter'a bastıkça arar)
+    searchInput.addEventListener('input', (e) => {
+        if(e.target.value) {
+            searchAddon.findNext(e.target.value, { decorations: true });
+        }
+    });
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) searchAddon.findPrevious(e.target.value, { decorations: true });
+            else searchAddon.findNext(e.target.value, { decorations: true });
+        }
+    });
 
     if (id !== 'system') {
         term.onData(data => {
@@ -128,6 +182,36 @@ function getOrCreateTerminal(id, name) {
     
     updateGridCSS();
     return termInstance;
+}
+
+// YENİ: Ekranda Görünen Logları .txt Olarak Bilgisayara İndirme Mantığı
+function exportTerminalLogs(id, name) {
+    const term = terminalPool[id].term;
+    term.selectAll();
+    const text = term.getSelection();
+    term.clearSelection();
+
+    if (!text || text.trim() === "") {
+        showToast("Terminal is empty. Nothing to export.", "error");
+        return;
+    }
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    // Güvenli dosya adı oluşturma
+    const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const timestamp = new Date().getTime();
+    a.download = `${safeName}_logs_${timestamp}.txt`;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast(`${name} logs exported successfully!`, "success");
 }
 
 function updateGridCSS() {
@@ -399,7 +483,6 @@ async function loadProjects() {
             }
         }
 
-        // YENİ: Premium Empty State (Boş Durum Ekranı)
         if (filteredProjects.length === 0) { 
             tbody.innerHTML = `
                 <tr>
@@ -427,7 +510,6 @@ async function loadProjects() {
             const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md" title="Auto-Start Enabled">⚡</span>` : '';
             const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md" title="Auto-Restart Enabled">🛡️</span>` : '';
 
-            // YENİ: Arayüze "Restart" Butonunun Eklenmesi
             tr.innerHTML = `
                 <td class="p-5 font-medium text-gray-200 flex items-center gap-3">
                     <div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
@@ -506,14 +588,11 @@ async function startProject(id, name, btn) {
     }
 }
 
-// YENİ: Zeki Restart Fonksiyonu
 async function restartProject(id, name, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         showToast("Restart sequence initiated...", "success");
         await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
-        
-        // Portların boşa çıkması için 1.5 saniye Graceful bekleme
         await new Promise(resolve => setTimeout(resolve, 1500));
         
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
@@ -565,9 +644,7 @@ async function backupProject(id, btn) {
     finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
-// YENİ: ENV Şifre Gizleme Mekanizması
 let isEnvBlurred = true;
-
 function toggleEnvBlur() {
     const el = document.getElementById('envContent');
     const icon = document.getElementById('envEyeIcon');
@@ -575,11 +652,9 @@ function toggleEnvBlur() {
     
     if (isEnvBlurred) {
         el.classList.add('blur-sm');
-        // Kapalı Göz İkonu
         icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
     } else {
         el.classList.remove('blur-sm');
-        // Açık Göz İkonu
         icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
     }
 }
@@ -591,7 +666,6 @@ async function openEnvModal(id) {
     const textArea = document.getElementById('envContent');
     textArea.value = "Loading...";
     
-    // Pencere her açıldığında güvenliği (Blur) geri aç
     isEnvBlurred = false; 
     toggleEnvBlur();
 

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
     <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-search/lib/xterm-addon-search.js"></script>
 
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -234,6 +235,7 @@
         <div class="bg-[#161b22] rounded-2xl border border-rose-900/50 shadow-2xl w-full max-w-md mx-4 transform transition-all">
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
+                
                 <div class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 mb-6">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <div class="relative flex items-center shrink-0">
@@ -246,7 +248,11 @@
                         </div>
                     </label>
                 </div>
-                <div class="flex gap-3"><button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">Cancel</button><button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg transition-colors">Delete Now</button></div>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">Cancel</button>
+                    <button id="confirmDeleteBtn" onclick="executeDelete()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg transition-colors">Delete Now</button>
+                </div>
             </div>
         </div>
     </div>
