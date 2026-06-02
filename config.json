@@ -1,20 +1,38 @@
-{
-  "projects": [
-    {
-      "id": "1",
-      "name": "Noteapp",
-      "path": "C:/Users/Diony/Desktop/noteapp",
-      "command": "go run main.go",
-      "interactive": true,
-      "status": "stopped"
-    },
-    {
-      "id": "2",
-      "name": "focus_timer",
-      "path": "C:/Users/Diony/Desktop/focus_timer",
-      "command": "go run main.go",
-      "interactive": false,
-      "status": "stopped"
-    }
-  ]
-}
+[
+  {
+    "id": "1780433833526",
+    "name": "noteapp",
+    "path": "C:/Users/Diony/Desktop/noteapp",
+    "command": "go run main.go",
+    "tag": "asdasd",
+    "interactive": false,
+    "auto_start": false,
+    "auto_restart": false,
+    "status": "stopped",
+    "order": 0
+  },
+  {
+    "id": "1780438098902",
+    "name": "env_test",
+    "path": "C:/Users/Diony/Desktop/env_test",
+    "command": "go run main.go",
+    "tag": "asdasd",
+    "interactive": false,
+    "auto_start": false,
+    "auto_restart": false,
+    "status": "stopped",
+    "order": 1
+  },
+  {
+    "id": "1780438115066",
+    "name": "filereader",
+    "path": "C:/Users/Diony/Desktop/filereader",
+    "command": "go run main.go",
+    "tag": "",
+    "interactive": false,
+    "auto_start": false,
+    "auto_restart": false,
+    "status": "stopped",
+    "order": 2
+  }
+]
