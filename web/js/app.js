@@ -65,10 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.addEventListener('resize', () => { setTimeout(refreshAllTerminalFits, 50); });
 
-// ==========================================
-// YENİ NESİL (NEXT-GEN) UI ÖZELLİKLERİ
-// ==========================================
-
 function drawSparkline(id, cpuVal) {
     if(!statsHistory[id]) statsHistory[id] = Array(20).fill(0); 
     statsHistory[id].push(cpuVal);
@@ -188,7 +184,7 @@ function handleCmdSearch(e) {
         allActions.push({ name: `Edit Project: ${p.name}`, searchKey: `editproject${p.name.toLowerCase()}`, icon: "✏️", action: () => { openEditModal(p.id); }});
     });
 
-    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 15);
+    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 10);
     cmdSelectedIndex = 0;
     renderCmdResults();
 }
@@ -233,7 +229,7 @@ function renderCmdResults() {
             updateCmdSelection();
         });
         
-        btn.addEventListener('mousedown', (e) => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             closeCmdPalette();
@@ -281,7 +277,7 @@ function getOrCreateTerminal(id, name) {
     const searchBtn = document.createElement('button');
     searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
-    searchBtn.title = "Search Logs (Ctrl+F)";
+    searchBtn.title = "Search Logs";
     searchBtn.onclick = () => {
         if (searchInput.classList.contains('hidden')) { searchInput.classList.remove('hidden'); searchInput.focus(); } 
         else { searchInput.classList.add('hidden'); searchInput.value = ''; if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); }
@@ -331,13 +327,9 @@ function getOrCreateTerminal(id, name) {
     const termInstance = { term: term, fitAddon: fitAddon, searchAddon: searchAddon, container: wrapper, currentLine: "" };
     terminalPool[id] = termInstance;
 
-    // YENİ: Gerçek (Native) Ctrl+F Engellemesi ve Terminal Aramasının Açılması
     term.attachCustomKeyEventHandler((e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.type === 'keydown') {
-            e.preventDefault();
-            searchInput.classList.remove('hidden');
-            searchInput.focus();
-            return false;
+            e.preventDefault(); searchInput.classList.remove('hidden'); searchInput.focus(); return false;
         }
         return true;
     });
@@ -393,9 +385,7 @@ function updateGridCSS() {
 }
 
 function refreshAllTerminalFits() { Object.values(terminalPool).forEach(instance => { if (!instance.container.classList.contains('hidden')) { try { instance.fitAddon.fit(); } catch(e) {} } }); }
-
 function toggleMaximizeTerminal(id) { maximizedTerminalId = (maximizedTerminalId === id) ? null : id; updateGridCSS(); if(maximizedTerminalId) { terminalPool[id].term.focus(); } }
-
 function clearAllTerminals() { Object.values(terminalPool).forEach(instance => { instance.term.clear(); }); }
 
 function connectWebSocket() {
@@ -497,296 +487,89 @@ function switchView(viewName) {
     const navDashboard = document.getElementById('nav-dashboard'); const navSettings = document.getElementById('nav-settings');
 
     if (viewName === 'dashboard') {
-        if (!dashboardView.classList.contains('hidden')) toggleBoard();
         dashboardView.classList.remove('hidden'); settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library"; addBtn.classList.remove('hidden');
-
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all shadow-inner";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium text-left mt-2 group";
         setTimeout(refreshAllTerminalFits, 100);
     } else if (viewName === 'settings') {
         dashboardView.classList.add('hidden'); settingsView.classList.remove('hidden');
         viewTitle.innerText = "System Settings"; addBtn.classList.add('hidden');
-
         navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium";
         navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all mt-2 shadow-inner";
     }
 }
 
-// ==========================================
-// SYSTEM SETTINGS & FOLDERS
-// ==========================================
-
-// YENİ: Kayan Sekme (Sliding Tab) Mantığı
-function toggleSourceMode() {
-    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
-    const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
-    const slider = document.getElementById('tab-slider');
-
-    if (mode === 'local') {
-        slider.style.transform = 'translateX(0)';
-        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden');
-        projName.required = true; projPath.required = true; repoUrl.required = false;
-    } else {
-        slider.style.transform = 'translateX(100%)';
-        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden');
-        projName.required = false; projPath.required = false; repoUrl.required = true;
-    }
-}
-
-function toggleWorkspaceMode() {
-    const useWs = document.getElementById('useWorkspace').checked;
-    const prefix = document.getElementById('workspacePrefix'); const input = document.getElementById('projPath');
-    if(useWs) {
-        prefix.classList.remove('hidden'); input.classList.remove('rounded-l-lg'); input.classList.add('border-l-0');
-        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        prefix.title = formattedWs; prefix.innerText = formatWorkspacePath(globalWorkspace); input.placeholder = "folder_name";
-    } else {
-        prefix.classList.add('hidden'); input.classList.add('rounded-l-lg'); input.classList.remove('border-l-0');
-        input.placeholder = "C:/Users/Diony/Desktop/bot";
-    }
-}
-
-async function browseFolder(inputId, handleWorkspace = true) {
-    try {
-        const res = await fetch('/api/system/browse'); const data = await res.json();
-        if (data.path && data.path !== "") {
-            document.getElementById(inputId).value = data.path;
-            if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
-        }
-    } catch (e) { showToast("Failed to open native folder picker.", "error"); }
-}
-
-async function loadSettings() {
-    try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-            const settings = await response.json();
-            globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
-            document.getElementById('setting-workspace').value = globalWorkspace;
-            if (settings.global_env) document.getElementById('setting-global-env').value = settings.global_env;
-            toggleWorkspaceMode(); 
-        }
-    } catch (e) {}
-}
-
-async function saveSettings() {
-    const btn = document.getElementById('save-settings-btn'); const originalHTML = toggleButtonLoading(btn, true);
-    globalWorkspace = document.getElementById('setting-workspace').value;
-    const globalEnv = document.getElementById('setting-global-env').value;
-    try {
-        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, log_buffer: false, global_env: globalEnv }) });
-        if (response.ok) { showToast("System settings applied.", "success"); toggleWorkspaceMode(); } 
-        else { const err = await response.json(); showToast(err.error, "error"); }
-    } catch (e) { showToast("Server error.", "error"); } 
-    finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-// ==========================================
-// CORE PROJECT OPERATIONS
-// ==========================================
-
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
         if (!response.ok) throw new Error("API error");
-        
-        const projects = await response.json();
-        cachedProjects = projects;
-        renderSidebarTags(projects);
-
-        const tbody = document.getElementById('project-list');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        const filteredProjects = currentTagFilter ? projects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : projects;
-        const bulkContainer = document.getElementById('bulk-actions-container');
-        
-        if (bulkContainer) {
-            if (currentTagFilter !== null) {
-                document.getElementById('bulk-tag-name').innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
-                document.getElementById('bulk-project-count').innerText = `${filteredProjects.length} project(s)`;
-                bulkContainer.classList.remove('hidden'); bulkContainer.classList.add('flex');
-            } else { bulkContainer.classList.add('hidden'); bulkContainer.classList.remove('flex'); }
-        }
-
-        if (filteredProjects.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="5" class="p-16 text-center border-b border-transparent"><div class="flex flex-col items-center justify-center opacity-40 hover:opacity-70 transition-opacity"><svg class="w-16 h-16 text-indigo-400 mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><span class="text-lg font-black text-gray-300 tracking-widest uppercase">No Projects Found</span><span class="text-sm text-gray-500 mt-2 font-medium">Your command center is empty. Click 'Add Project' to begin.</span></div></td></tr>`; 
-            return; 
-        }
-
-        filteredProjects.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.className = `border-b border-gray-800/60 hover:bg-gray-800/40 transition-colors group cursor-pointer bg-[#0f111a]/30`;
-            tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
-            
-            tr.addEventListener('contextmenu', (e) => {
-                const status = cachedProjects.find(x => x.id === p.id)?.status || 'stopped';
-                showContextMenu(e, p.id, p.name, status);
-            });
-
-            tr.addEventListener('dragstart', handleDragStart); tr.addEventListener('dragover', handleDragOver);
-            tr.addEventListener('dragenter', handleDragEnter); tr.addEventListener('dragleave', handleDragLeave);
-            tr.addEventListener('drop', handleDrop); tr.addEventListener('dragend', handleDragEnd);
-            
-            const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
-            const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
-            const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
-
-            tr.innerHTML = `
-                <td class="p-5 font-bold text-gray-200 flex items-center gap-4">
-                    <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
-                    <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${p.name.charAt(0).toUpperCase()}</div>
-                    <div class="flex flex-col"><div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
-                </td>
-                <td class="p-5 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
-                <td class="p-5"><span id="status-${p.id}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
-                <td class="p-5 w-48"><div id="stats-${p.id}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
-                <td class="p-5">
-                    <div class="flex items-center justify-end gap-3 whitespace-nowrap opacity-40 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
-                            <button onclick="startProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)] text-xs font-bold text-center transition-colors">Start</button>
-                            <button onclick="restartProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-blue-600/90 hover:bg-blue-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(59,130,246,0.2)] text-xs font-bold text-center transition-colors">Restart</button>
-                            <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
-                            <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
-                            <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                            <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                        </div>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        
-    } catch (error) {}
-}
-
-async function updateStatuses() {
-    try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) return;
-        const projects = await response.json();
-        cachedProjects = projects; 
-    } catch (e) {}
-}
-
-async function startProject(id, name, btn) { 
-    getOrCreateTerminal(id, name); 
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
-        else { showToast("Project started", "success"); }
-    } catch (e) { showToast("Network error", "error"); } 
-    finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function restartProject(id, name, btn) {
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        showToast("Restart sequence initiated...", "success");
-        await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to restart", "error"); } 
-        else { showToast("Project restarted successfully", "success"); getOrCreateTerminal(id, name); }
-    } catch (e) { showToast("Network error during restart", "error"); } 
-    finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function stopProject(id, btn) { 
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); if (!data.error.includes("not currently running")) showToast(data.error || "Failed to stop", "error"); } 
-        else { showToast("Project stopped", "success"); }
-    } catch (e) { showToast("Network error", "error"); } 
-    finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-// ==========================================
-// BACKUP & ENV MANAGEMENT
-// ==========================================
-
-async function backupProject(id, btn) {
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
-        const data = await res.json();
-        if (res.ok) showToast(data.message, "success"); else showToast(data.error || "Backup failed", "error");
-    } catch (e) { showToast("Network error during backup", "error"); } 
-    finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-let isEnvBlurred = true;
-function toggleEnvBlur() {
-    const el = document.getElementById('envContent'); const icon = document.getElementById('envEyeIcon');
-    isEnvBlurred = !isEnvBlurred;
-    if (isEnvBlurred) {
-        el.classList.add('blur-sm');
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
-    } else {
-        el.classList.remove('blur-sm');
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+        cachedProjects = await response.json();
+        renderSidebarTags(cachedProjects);
+        renderProjects();
+    } catch (e) {
+        console.error("Projeler yüklenemedi:", e);
     }
 }
 
-async function openEnvModal(id) {
-    const project = cachedProjects.find(p => p.id === id); if (!project) return;
-    document.getElementById('envProjId').value = project.id;
-    const textArea = document.getElementById('envContent'); textArea.value = "Loading...";
-    isEnvBlurred = false; toggleEnvBlur();
+function renderProjects() {
+    const tbody = document.getElementById('project-list');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-    const modal = document.getElementById('envModal');
-    modal.classList.remove('hidden'); modal.classList.add('flex');
+    const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
 
-    try {
-        const res = await fetch(`/api/projects/env?id=${id}`);
-        if (res.ok) { const data = await res.json(); textArea.value = data.content; } 
-        else { textArea.value = ""; showToast("Failed to load .env.", "error"); }
-    } catch (err) { textArea.value = ""; showToast("Network error", "error"); }
+    if (filteredProjects.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="5" class="p-16 text-center border-b border-transparent"><div class="flex flex-col items-center justify-center opacity-40 hover:opacity-70 transition-opacity"><svg class="w-16 h-16 text-indigo-400 mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><span class="text-lg font-black text-gray-300 tracking-widest uppercase">No Projects Found</span><span class="text-sm text-gray-500 mt-2 font-medium">Your command center is empty. Click 'Add Project' to begin.</span></div></td></tr>`; 
+        return; 
+    }
+
+    filteredProjects.forEach((p, index) => {
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-gray-800/60 hover:bg-gray-800/40 transition-colors group cursor-pointer bg-[#0f111a]/30`;
+        tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
+
+        tr.addEventListener('contextmenu', (e) => {
+            const status = cachedProjects.find(x => x.id === p.id)?.status || 'stopped';
+            showContextMenu(e, p.id, p.name, status);
+        });
+
+        tr.addEventListener('dragstart', handleDragStart); tr.addEventListener('dragover', handleDragOver);
+        tr.addEventListener('dragenter', handleDragEnter); tr.addEventListener('dragleave', handleDragLeave);
+        tr.addEventListener('drop', handleDrop); tr.addEventListener('dragend', handleDragEnd);
+        
+        const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
+        const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
+        const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
+
+        tr.innerHTML = `
+            <td class="p-5 font-bold text-gray-200 flex items-center gap-4">
+                <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${p.name.charAt(0).toUpperCase()}</div>
+                <div class="flex flex-col"><div class="flex items-center">${p.name} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
+            </td>
+            <td class="p-5 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
+            <td class="p-5"><span id="status-${p.id}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
+            <td class="p-5 w-48"><div id="stats-${p.id}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
+            <td class="p-5">
+                <div class="flex items-center justify-end gap-3 whitespace-nowrap opacity-40 group-hover:opacity-100 transition-opacity duration-300">
+                    <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
+                        <button onclick="startProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)] text-xs font-bold text-center transition-colors">Start</button>
+                        <button onclick="restartProject('${p.id}', '${p.name}', this)" class="btn-action w-16 bg-blue-600/90 hover:bg-blue-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(59,130,246,0.2)] text-xs font-bold text-center transition-colors">Restart</button>
+                        <button onclick="stopProject('${p.id}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="backupProject('${p.id}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+                        <button onclick="openEnvModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
+                        <button onclick="openEditModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                        <button onclick="openDeleteModal('${p.id}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    </div>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
-
-function closeEnvModal() { document.getElementById('envModal').classList.add('hidden'); document.getElementById('envForm').reset(); }
-
-async function submitEnv(e) {
-    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
-    const id = document.getElementById('envProjId').value; const content = document.getElementById('envContent').value;
-    try {
-        const res = await fetch(`/api/projects/env?id=${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: content }) });
-        if (res.ok) { closeEnvModal(); showToast(".env saved securely!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
-    } catch (err) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-// ==========================================
-// DRAG & DROP AND TAG FILTERS
-// ==========================================
-
-function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
-function handleDragOver(e) { e.preventDefault(); return false; }
-function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
-function handleDragLeave() { this.classList.remove('border-t-2', 'border-indigo-500'); }
-function handleDrop(e) {
-    e.stopPropagation(); this.classList.remove('border-t-2', 'border-indigo-500');
-    if (draggedRow !== this) {
-        const tbody = document.getElementById('project-list'); const rows = Array.from(tbody.children);
-        const draggedIndex = rows.indexOf(draggedRow); const droppedIndex = rows.indexOf(this);
-        if (draggedIndex < droppedIndex) this.parentNode.insertBefore(draggedRow, this.nextSibling);
-        else this.parentNode.insertBefore(draggedRow, this); saveNewOrder();
-    } return false;
-}
-function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
-async function saveNewOrder() {
-    const tbody = document.getElementById('project-list'); const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
-    const res = await fetch('/api/projects/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrderIDs) });
-    if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
-}
-
-function toggleBoard() { const list = document.getElementById('tag-list'); const chevron = document.getElementById('board-chevron'); if(list) list.classList.toggle('hidden'); if(chevron) chevron.classList.toggle('rotate-180'); }
 
 function setFilter(tag) {
     currentTagFilter = tag; loadProjects();
@@ -816,22 +599,67 @@ function initTagAutocomplete(inputId, dropdownId) {
     }
 }
 
-async function executeBulkAction(action) {
-    if (!currentTagFilter) return; 
-    const filteredProjects = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase());
-    const idsToProcess = filteredProjects.map(p => p.id);
-    if (idsToProcess.length === 0) { showToast("No projects found in this tag.", "error"); return; }
-    const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';
-    showToast(`${action === 'start' ? 'Starting' : 'Stopping'} ${idsToProcess.length} projects...`, "success");
-    try {
-        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(idsToProcess) });
-        const data = await res.json(); if (res.ok) { showToast(data.message, "success"); } else { showToast(data.error, "error"); }
-    } catch (e) { showToast("Network error", "error"); }
+function toggleWorkspaceMode() {
+    const useWs = document.getElementById('useWorkspace').checked;
+    const prefix = document.getElementById('workspacePrefix'); const input = document.getElementById('projPath');
+    if(useWs) {
+        prefix.classList.remove('hidden'); input.classList.remove('rounded-l-lg'); input.classList.add('border-l-0');
+        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+        prefix.title = formattedWs; prefix.innerText = formatWorkspacePath(globalWorkspace); input.placeholder = "folder_name";
+    } else {
+        prefix.classList.add('hidden'); input.classList.add('rounded-l-lg'); input.classList.remove('border-l-0');
+        input.placeholder = "C:/Users/Diony/Desktop/bot";
+    }
 }
 
-// ==========================================
-// ADD, EDIT, DELETE MODALS
-// ==========================================
+async function browseFolder(inputId, handleWorkspace = true) {
+    try {
+        const res = await fetch('/api/system/browse'); const data = await res.json();
+        if (data.path && data.path !== "") {
+            document.getElementById(inputId).value = data.path;
+            if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
+        }
+    } catch (e) { showToast("Failed to open native folder picker.", "error"); }
+}
+
+function toggleSourceMode() {
+    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+    const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
+    const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
+
+    if (mode === 'local') {
+        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden');
+        projName.required = true; projPath.required = true; repoUrl.required = false;
+    } else {
+        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden');
+        projName.required = false; projPath.required = false; repoUrl.required = true;
+    }
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
+            document.getElementById('setting-workspace').value = globalWorkspace;
+            if (settings.global_env) document.getElementById('setting-global-env').value = settings.global_env;
+            toggleWorkspaceMode(); 
+        }
+    } catch (e) {}
+}
+
+async function saveSettings() {
+    const btn = document.getElementById('save-settings-btn'); const originalHTML = toggleButtonLoading(btn, true);
+    globalWorkspace = document.getElementById('setting-workspace').value;
+    const globalEnv = document.getElementById('setting-global-env').value;
+    try {
+        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, log_buffer: false, global_env: globalEnv }) });
+        if (response.ok) { showToast("System settings applied.", "success"); toggleWorkspaceMode(); } 
+        else { const err = await response.json(); showToast(err.error, "error"); }
+    } catch (e) { showToast("Server error.", "error"); } 
+    finally { toggleButtonLoading(btn, false, originalHTML); }
+}
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); toggleSourceMode(); toggleWorkspaceMode(); }
 function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
@@ -881,4 +709,107 @@ async function executeDelete() {
         else { const data = await res.json(); showToast(data.error, "error"); closeDeleteModal(); }
     } catch (err) { showToast("Failed to delete", "error"); closeDeleteModal(); } 
     finally { toggleButtonLoading(btn, false, originalHTML); document.getElementById('deleteFilesFromDisk').checked = false; }
+}
+
+// Drag & Drop
+function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
+function handleDragOver(e) { e.preventDefault(); return false; }
+function handleDragEnter(e) { if (this !== draggedRow) this.classList.add('border-t-2', 'border-indigo-500'); }
+function handleDragLeave() { this.classList.remove('border-t-2', 'border-indigo-500'); }
+function handleDrop(e) {
+    e.stopPropagation(); this.classList.remove('border-t-2', 'border-indigo-500');
+    if (draggedRow !== this) {
+        const tbody = document.getElementById('project-list'); const rows = Array.from(tbody.children);
+        const draggedIndex = rows.indexOf(draggedRow); const droppedIndex = rows.indexOf(this);
+        if (draggedIndex < droppedIndex) this.parentNode.insertBefore(draggedRow, this.nextSibling);
+        else this.parentNode.insertBefore(draggedRow, this); saveNewOrder();
+    } return false;
+}
+function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
+async function saveNewOrder() {
+    const tbody = document.getElementById('project-list'); const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
+    const res = await fetch('/api/projects/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrderIDs) });
+    if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
+}
+
+async function startProject(id, name, btn) { 
+    getOrCreateTerminal(id, name); 
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
+        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
+        else { showToast("Project started", "success"); }
+    } catch (e) { showToast("Network error", "error"); } 
+    finally { toggleButtonLoading(btn, false, originalHTML); }
+}
+
+async function restartProject(id, name, btn) {
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        showToast("Restart sequence initiated...", "success");
+        await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
+        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to restart", "error"); } 
+        else { showToast("Project restarted successfully", "success"); getOrCreateTerminal(id, name); }
+    } catch (e) { showToast("Network error during restart", "error"); } 
+    finally { toggleButtonLoading(btn, false, originalHTML); }
+}
+
+async function stopProject(id, btn) { 
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
+        if (!res.ok) { const data = await res.json(); if (!data.error.includes("not currently running")) showToast(data.error || "Failed to stop", "error"); } 
+        else { showToast("Project stopped", "success"); }
+    } catch (e) { showToast("Network error", "error"); } 
+    finally { toggleButtonLoading(btn, false, originalHTML); }
+}
+
+async function backupProject(id, btn) {
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) showToast(data.message, "success"); else showToast(data.error || "Backup failed", "error");
+    } catch (e) { showToast("Network error during backup", "error"); } 
+    finally { toggleButtonLoading(btn, false, originalHTML); }
+}
+
+let isEnvBlurred = true;
+function toggleEnvBlur() {
+    const el = document.getElementById('envContent'); const icon = document.getElementById('envEyeIcon');
+    isEnvBlurred = !isEnvBlurred;
+    if (isEnvBlurred) {
+        el.classList.add('blur-sm');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
+    } else {
+        el.classList.remove('blur-sm');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+    }
+}
+
+async function openEnvModal(id) {
+    const project = cachedProjects.find(p => p.id === id); if (!project) return;
+    document.getElementById('envProjId').value = project.id;
+    const textArea = document.getElementById('envContent'); textArea.value = "Loading...";
+    isEnvBlurred = false; toggleEnvBlur();
+    const modal = document.getElementById('envModal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    try {
+        const res = await fetch(`/api/projects/env?id=${id}`);
+        if (res.ok) { const data = await res.json(); textArea.value = data.content; } 
+        else { textArea.value = ""; showToast("Failed to load .env.", "error"); }
+    } catch (err) { textArea.value = ""; showToast("Network error", "error"); }
+}
+
+function closeEnvModal() { document.getElementById('envModal').classList.add('hidden'); document.getElementById('envForm').reset(); }
+
+async function submitEnv(e) {
+    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
+    const id = document.getElementById('envProjId').value; const content = document.getElementById('envContent').value;
+    try {
+        const res = await fetch(`/api/projects/env?id=${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: content }) });
+        if (res.ok) { closeEnvModal(); showToast(".env saved securely!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
+    } catch (err) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
