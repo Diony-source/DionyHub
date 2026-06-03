@@ -4,6 +4,8 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
+
+// Multi-select variables
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
 
@@ -14,6 +16,9 @@ let maximizedTerminalId = null;
 let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
+// Terminal resizer state
+let isResizing = false;
+
 document.addEventListener("DOMContentLoaded", () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
     loadProjects();
@@ -22,6 +27,41 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
+
+    // Terminal Resizer Dinleyicileri
+    const resizer = document.getElementById('horizontal-resizer');
+    const terminalPane = document.getElementById('terminal-pane');
+    const dashboardView = document.getElementById('dashboard-view');
+
+    if (resizer && terminalPane && dashboardView) {
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'row-resize';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const dashRect = dashboardView.getBoundingClientRect();
+            let newHeight = dashRect.bottom - e.clientY;
+            
+            // Limit the terminal height so it doesn't crush the top completely
+            if (newHeight < 150) newHeight = 150;
+            if (newHeight > dashRect.height - 200) newHeight = dashRect.height - 200;
+            
+            terminalPane.style.height = `${newHeight}px`;
+            terminalPane.style.flex = 'none';
+            refreshAllTerminalFits();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                refreshAllTerminalFits();
+            }
+        });
+    }
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#contextMenu')) hideContextMenu();
@@ -52,29 +92,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const cmdInput = document.getElementById('cmdInput');
-    cmdInput.addEventListener('input', handleCmdSearch);
-    
-    cmdInput.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (currentCmdActions.length > 0) {
-                cmdSelectedIndex = (cmdSelectedIndex + 1) % currentCmdActions.length;
-                updateCmdSelection();
+    if (cmdInput) {
+        cmdInput.addEventListener('input', handleCmdSearch);
+        
+        cmdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (currentCmdActions.length > 0) {
+                    cmdSelectedIndex = (cmdSelectedIndex + 1) % currentCmdActions.length;
+                    updateCmdSelection();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (currentCmdActions.length > 0) {
+                    cmdSelectedIndex = (cmdSelectedIndex - 1 + currentCmdActions.length) % currentCmdActions.length;
+                    updateCmdSelection();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentCmdActions[cmdSelectedIndex]) {
+                    closeCmdPalette();
+                    currentCmdActions[cmdSelectedIndex].action();
+                }
             }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (currentCmdActions.length > 0) {
-                cmdSelectedIndex = (cmdSelectedIndex - 1 + currentCmdActions.length) % currentCmdActions.length;
-                updateCmdSelection();
-            }
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (currentCmdActions[cmdSelectedIndex]) {
-                closeCmdPalette();
-                currentCmdActions[cmdSelectedIndex].action();
-            }
-        }
-    });
+        });
+    }
 });
 
 window.addEventListener('resize', () => { setTimeout(refreshAllTerminalFits, 50); });
@@ -152,7 +194,7 @@ function showContextMenu(e, pId, pName, status) {
     menu.style.flexDirection = 'column';
     menu.style.pointerEvents = 'auto';
     
-    void menu.offsetWidth; // Reflow
+    void menu.offsetWidth; 
     
     menu.style.left = `${e.pageX}px`;
     menu.style.top = `${e.pageY}px`;
@@ -163,7 +205,6 @@ function showContextMenu(e, pId, pName, status) {
 function hideContextMenu() {
     const menu = document.getElementById('contextMenu');
     if (!menu) return;
-    
     menu.style.display = 'none';
     menu.classList.remove('scale-100', 'opacity-100');
     menu.classList.add('scale-95', 'opacity-0');
@@ -174,6 +215,7 @@ function toggleCmdPalette() {
     const box = document.getElementById('cmdPaletteBox');
     const input = document.getElementById('cmdInput');
     
+    if (!pal || !box || !input) return;
     hideContextMenu(); 
 
     if (pal.classList.contains('hidden')) {
@@ -193,6 +235,7 @@ function toggleCmdPalette() {
 function closeCmdPalette() {
     const pal = document.getElementById('cmdPalette');
     const box = document.getElementById('cmdPaletteBox');
+    if (!pal || !box) return;
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
     setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
@@ -221,6 +264,7 @@ function handleCmdSearch(e) {
 
 function updateCmdSelection() {
     const resultsDiv = document.getElementById('cmdResults');
+    if (!resultsDiv) return;
     const allBtns = resultsDiv.querySelectorAll('.cmd-item');
     
     allBtns.forEach((btn, idx) => {
@@ -228,18 +272,19 @@ function updateCmdSelection() {
         if (idx === cmdSelectedIndex) {
             btn.classList.add('bg-indigo-500/20', 'text-white');
             btn.classList.remove('text-gray-300', 'hover:bg-gray-800');
-            iconSpan.classList.add('scale-110');
+            if (iconSpan) iconSpan.classList.add('scale-110');
             btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         } else {
             btn.classList.remove('bg-indigo-500/20', 'text-white');
             btn.classList.add('text-gray-300', 'hover:bg-gray-800');
-            iconSpan.classList.remove('scale-110');
+            if (iconSpan) iconSpan.classList.remove('scale-110');
         }
     });
 }
 
 function renderCmdResults() {
     const resultsDiv = document.getElementById('cmdResults');
+    if (!resultsDiv) return;
     resultsDiv.innerHTML = '';
 
     if (currentCmdActions.length === 0) {
@@ -272,14 +317,11 @@ function renderCmdResults() {
     updateCmdSelection();
 }
 
-// ==========================================
-// TMUX ENGINE (BÖLÜNMÜŞ TERMİNAL HAVUZU)
-// ==========================================
-
 function getOrCreateTerminal(id, name) {
     if (terminalPool[id]) return terminalPool[id];
 
     const grid = document.getElementById('terminals-grid');
+    if (!grid) return null;
 
     const wrapper = document.createElement('div');
     wrapper.id = `tmux-wrapper-${id}`;
@@ -300,7 +342,8 @@ function getOrCreateTerminal(id, name) {
     actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
 
     const searchInput = document.createElement('input');
-    searchInput.type = "text"; searchInput.id = `search-input-${id}`;
+    searchInput.type = "text"; 
+    searchInput.id = `search-input-${id}`;
     searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 neon-focus shadow-inner";
     searchInput.placeholder = "Find in logs...";
 
@@ -309,8 +352,14 @@ function getOrCreateTerminal(id, name) {
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
     searchBtn.title = "Search Logs";
     searchBtn.onclick = () => {
-        if (searchInput.classList.contains('hidden')) { searchInput.classList.remove('hidden'); searchInput.focus(); } 
-        else { searchInput.classList.add('hidden'); searchInput.value = ''; if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); }
+        if (searchInput.classList.contains('hidden')) { 
+            searchInput.classList.remove('hidden'); 
+            searchInput.focus(); 
+        } else { 
+            searchInput.classList.add('hidden'); 
+            searchInput.value = ''; 
+            if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); 
+        }
     };
 
     const exportBtn = document.createElement('button');
@@ -331,14 +380,22 @@ function getOrCreateTerminal(id, name) {
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
-    actionsDiv.appendChild(searchInput); actionsDiv.appendChild(searchBtn); actionsDiv.appendChild(exportBtn); actionsDiv.appendChild(maxBtn); actionsDiv.appendChild(clearBtn);
-    header.appendChild(titleSpan); header.appendChild(actionsDiv);
+    actionsDiv.appendChild(searchInput); 
+    actionsDiv.appendChild(searchBtn); 
+    actionsDiv.appendChild(exportBtn); 
+    actionsDiv.appendChild(maxBtn); 
+    actionsDiv.appendChild(clearBtn);
+    
+    header.appendChild(titleSpan); 
+    header.appendChild(actionsDiv);
 
     const termContainer = document.createElement('div');
     termContainer.id = `tmux-term-${id}`;
     termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden";
 
-    wrapper.appendChild(header); wrapper.appendChild(termContainer); grid.appendChild(wrapper);
+    wrapper.appendChild(header); 
+    wrapper.appendChild(termContainer); 
+    grid.appendChild(wrapper);
 
     requestAnimationFrame(() => {
         wrapper.classList.remove('scale-95', 'opacity-0');
@@ -398,25 +455,68 @@ function exportTerminalLogs(id, name) {
 }
 
 function updateGridCSS() {
-    const grid = document.getElementById('terminals-grid'); const activeIds = Object.keys(terminalPool); const count = activeIds.length;
-    grid.style.display = 'grid'; grid.style.gap = '16px'; 
-    activeIds.forEach(id => terminalPool[id].container.classList.remove('hidden'));
+    const grid = document.getElementById('terminals-grid'); 
+    if (!grid) return;
+    
+    const activeIds = Object.keys(terminalPool); 
+    const count = activeIds.length;
+    
+    grid.style.display = 'grid'; 
+    grid.style.gap = '16px'; 
+    
+    activeIds.forEach(id => {
+        terminalPool[id].container.classList.remove('hidden');
+    });
 
     if (maximizedTerminalId && terminalPool[maximizedTerminalId]) {
-        activeIds.forEach(id => { if (id !== maximizedTerminalId) terminalPool[id].container.classList.add('hidden'); });
-        grid.style.gridTemplateColumns = `1fr`; grid.style.gridTemplateRows = `1fr`;
+        activeIds.forEach(id => { 
+            if (id !== maximizedTerminalId) {
+                terminalPool[id].container.classList.add('hidden'); 
+            }
+        });
+        grid.style.gridTemplateColumns = `1fr`; 
+        grid.style.gridTemplateRows = `1fr`;
+        grid.style.gridAutoRows = 'auto';
     } else {
-        if (count === 1) { grid.style.gridTemplateColumns = `1fr`; grid.style.gridTemplateRows = `1fr`; } 
-        else if (count === 2) { grid.style.gridTemplateColumns = `1fr 1fr`; grid.style.gridTemplateRows = `1fr`; } 
-        else if (count <= 4) { grid.style.gridTemplateColumns = `1fr 1fr`; grid.style.gridTemplateRows = `1fr 1fr`; } 
-        else { grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(400px, 1fr))`; grid.style.gridTemplateRows = `repeat(auto-fit, minmax(250px, 1fr))`; }
+        if (count === 1) { 
+            grid.style.gridTemplateColumns = `1fr`; 
+            grid.style.gridTemplateRows = `1fr`; 
+            grid.style.gridAutoRows = 'auto';
+        } else if (count === 2) { 
+            grid.style.gridTemplateColumns = `1fr 1fr`; 
+            grid.style.gridTemplateRows = `1fr`; 
+            grid.style.gridAutoRows = 'auto';
+        } else if (count <= 4) { 
+            grid.style.gridTemplateColumns = `1fr 1fr`; 
+            grid.style.gridTemplateRows = `1fr 1fr`; 
+            grid.style.gridAutoRows = 'auto';
+        } else { 
+            grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(400px, 1fr))`; 
+            grid.style.gridAutoRows = `250px`; 
+            grid.style.gridTemplateRows = `none`; 
+        }
     }
     setTimeout(refreshAllTerminalFits, 50);
 }
 
-function refreshAllTerminalFits() { Object.values(terminalPool).forEach(instance => { if (!instance.container.classList.contains('hidden')) { try { instance.fitAddon.fit(); } catch(e) {} } }); }
-function toggleMaximizeTerminal(id) { maximizedTerminalId = (maximizedTerminalId === id) ? null : id; updateGridCSS(); if(maximizedTerminalId) { terminalPool[id].term.focus(); } }
-function clearAllTerminals() { Object.values(terminalPool).forEach(instance => { instance.term.clear(); }); }
+function refreshAllTerminalFits() { 
+    Object.values(terminalPool).forEach(instance => { 
+        if (!instance.container.classList.contains('hidden')) { 
+            try { instance.fitAddon.fit(); } catch(e) {} 
+        } 
+    }); 
+}
+
+function toggleMaximizeTerminal(id) { 
+    if (maximizedTerminalId === id) { maximizedTerminalId = null; } 
+    else { maximizedTerminalId = id; }
+    updateGridCSS(); 
+    if (maximizedTerminalId) { terminalPool[id].term.focus(); } 
+}
+
+function clearAllTerminals() { 
+    Object.values(terminalPool).forEach(instance => { instance.term.clear(); }); 
+}
 
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
@@ -430,6 +530,7 @@ function connectWebSocket() {
                 statsArray.forEach(stat => {
                     const badge = document.getElementById('status-' + stat.id);
                     const statsDiv = document.getElementById('stats-' + stat.id);
+                    
                     if (!badge) return;
 
                     if (stat.status === 'running') {
@@ -440,31 +541,50 @@ function connectWebSocket() {
                             const hrs = Math.floor(stat.uptime / 3600); const mins = Math.floor((stat.uptime % 3600) / 60); const secs = stat.uptime % 60;
                             const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
                             const sparkHtml = drawSparkline(stat.id, stat.cpu);
-                            statsDiv.innerHTML = `<div class="flex flex-col gap-0.5"><div class="flex gap-2"><span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span></div><span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span></div> ${sparkHtml}`;
+                            
+                            statsDiv.innerHTML = `
+                                <div class="flex flex-col gap-0.5">
+                                    <div class="flex gap-2">
+                                        <span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span>
+                                        <span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span>
+                                    </div>
+                                    <span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span>
+                                </div> 
+                                ${sparkHtml}
+                            `;
                         }
-                        if (!terminalPool[stat.id]) { const p = cachedProjects.find(x => x.id === stat.id); if(p) getOrCreateTerminal(p.id, p.name); }
+                        
+                        if (!terminalPool[stat.id]) { 
+                            const p = cachedProjects.find(x => x.id === stat.id); 
+                            if(p) getOrCreateTerminal(p.id, p.name); 
+                        }
                     } else {
                         badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-bold transition-colors';
                         badge.innerText = 'Stopped';
-                        if (statsDiv) statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
+                        if (statsDiv) { statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`; }
                     }
                 });
                 return; 
             }
 
             let projName = "Unknown";
-            if (msg.id === 'system') projName = "DionyHub System Logs";
-            else { const p = cachedProjects.find(x => x.id === msg.id); projName = p ? p.name : msg.id; }
+            if (msg.id === 'system') { projName = "DionyHub System Logs"; } 
+            else { 
+                const p = cachedProjects.find(x => x.id === msg.id); 
+                projName = p ? p.name : msg.id; 
+            }
+            
             const termInstance = getOrCreateTerminal(msg.id, projName);
-            if (msg.id === 'system') termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m');
-            else termInstance.term.write(msg.data);
+            if (msg.id === 'system') { termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m'); } 
+            else { termInstance.term.write(msg.data); }
+            
         } catch (err) {
-            if(terminalPool['system']) terminalPool['system'].term.write(e.data);
+            if(terminalPool['system']) { terminalPool['system'].term.write(e.data); }
         }
     };
     
     socket.onclose = () => {
-        if (terminalPool['system']) terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
+        if (terminalPool['system']) { terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m'); }
         setTimeout(connectWebSocket, 3000);
     };
 }
@@ -481,18 +601,21 @@ function showToast(message, type = 'success') {
 
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-rose-500/10 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]';
-    const icon = type === 'error' ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+    const icon = type === 'error' 
+        ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` 
+        : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
 
     toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto ${bgColor} bg-[#11151f]`;
     toast.innerHTML = `${icon} <span class="text-sm font-bold drop-shadow-md">${message}</span>`;
+    
     container.appendChild(toast);
-
     requestAnimationFrame(() => { toast.classList.remove('translate-x-full', 'opacity-0'); });
     setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
 function formatWorkspacePath(path) {
-    const maxLength = 22; let cleanPath = path.replace(/\\/g, '/'); if (!cleanPath.endsWith('/')) cleanPath += '/';
+    const maxLength = 22; let cleanPath = path.replace(/\\/g, '/'); 
+    if (!cleanPath.endsWith('/')) { cleanPath += '/'; }
     if (cleanPath.length <= maxLength) return cleanPath;
     const startPart = cleanPath.substring(0, 3); const endPartLength = maxLength - startPart.length - 3; 
     return startPart + '...' + cleanPath.substring(cleanPath.length - endPartLength);
@@ -519,53 +642,50 @@ function switchView(viewName) {
     if (viewName === 'dashboard') {
         dashboardView.classList.remove('hidden'); settingsView.classList.add('hidden');
         viewTitle.innerText = "Active Library"; addBtn.classList.remove('hidden');
-        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all shadow-inner";
-        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium text-left mt-2 group";
+        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all shadow-inner";
+        if (navSettings) navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium text-left mt-2 group";
         setTimeout(refreshAllTerminalFits, 100);
     } else if (viewName === 'settings') {
         dashboardView.classList.add('hidden'); settingsView.classList.remove('hidden');
         viewTitle.innerText = "System Settings"; addBtn.classList.add('hidden');
-        navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium";
-        navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all mt-2 shadow-inner";
+        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium";
+        if (navSettings) navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all mt-2 shadow-inner";
     }
 }
 
 function updateBulkActionBar(filteredCount) {
-     const container = document.getElementById('bulk-actions-container');
-     const name = document.getElementById('bulk-tag-name');
-     const count = document.getElementById('bulk-project-count');
-     
-     if (!container || !name || !count) return;
- 
-     if (selectedProjectIds.size > 0) {
-         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
-         count.innerText = `${selectedProjectIds.size} proje`;
-         container.classList.remove('hidden');
-         container.classList.add('flex');
-     } else if (currentTagFilter !== null) {
-         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
-         count.innerText = `${filteredCount} proje`;
-         container.classList.remove('hidden');
-         container.classList.add('flex');
-     } else {
-         container.classList.remove('flex');
-         container.classList.add('hidden');
-     }
- }
- 
- function applySelectionStyles() {
-     const tbody = document.getElementById('project-list');
-     if(!tbody) return;
-     
-     Array.from(tbody.children).forEach(tr => {
-         const id = tr.dataset.id;
-         if (selectedProjectIds.has(id)) {
-             tr.classList.add('bg-indigo-500/20', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
-             tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10');
-         } else {
-             tr.classList.remove('bg-indigo-500/20', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10');
-             tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
-         }
+    const container = document.getElementById('bulk-actions-container');
+    const name = document.getElementById('bulk-tag-name');
+    const count = document.getElementById('bulk-project-count');
+    
+    if (!container || !name || !count) return;
+
+    if (selectedProjectIds.size > 0) {
+        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Selected Items`;
+        count.innerText = `${selectedProjectIds.size} projects`;
+        container.classList.remove('hidden'); container.classList.add('flex');
+    } else if (currentTagFilter !== null) {
+        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
+        count.innerText = `${filteredCount} projects`;
+        container.classList.remove('hidden'); container.classList.add('flex');
+    } else {
+        container.classList.remove('flex'); container.classList.add('hidden');
+    }
+}
+
+function applySelectionStyles() {
+    const tbody = document.getElementById('project-list');
+    if(!tbody) return;
+    
+    Array.from(tbody.children).forEach(tr => {
+        const id = tr.dataset.id;
+        if (selectedProjectIds.has(id)) {
+            tr.classList.add('bg-indigo-500/10', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+            tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/20');
+        } else {
+            tr.classList.remove('bg-indigo-500/10', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/20');
+            tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+        }
     });
 }
 
@@ -587,7 +707,6 @@ function renderProjects() {
     tbody.innerHTML = '';
 
     const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
-
     updateBulkActionBar(filteredProjects.length);
 
     if (filteredProjects.length === 0) { 
@@ -598,7 +717,7 @@ function renderProjects() {
     filteredProjects.forEach((p, index) => {
         const tr = document.createElement('tr');
         const isSelected = selectedProjectIds.has(p.id);
-        tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/20 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
+        tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/10 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
         tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
 
        tr.addEventListener('click', (e) => {
@@ -611,12 +730,10 @@ function renderProjects() {
            } else if (e.shiftKey && lastSelectedIdx !== -1) {
                e.preventDefault(); 
                document.getSelection().removeAllRanges();
-               
                const start = Math.min(lastSelectedIdx, index);
                const end = Math.max(lastSelectedIdx, index);
                
                if (!e.ctrlKey && !e.metaKey) selectedProjectIds.clear();
-               
                for (let i = start; i <= end; i++) {
                    const iterId = filteredProjects[i].id;
                    if(iterId) selectedProjectIds.add(iterId);
@@ -626,7 +743,6 @@ function renderProjects() {
                selectedProjectIds.add(p.id);
                lastSelectedIdx = index;
            }
-           
            applySelectionStyles();
            updateBulkActionBar(filteredProjects.length);
        });
@@ -671,7 +787,6 @@ function renderProjects() {
         `;
         tbody.appendChild(tr);
     });
-    
     applySelectionStyles();
 }
 
@@ -768,7 +883,7 @@ async function saveSettings() {
 }
 
 function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); toggleSourceMode(); toggleWorkspaceMode(); }
-function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addForm').reset(); }
+function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); document.getElementById('addForm').reset(); }
 
 async function submitNewProject(e) {
     e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const mode = document.querySelector('input[name="sourceMode"]:checked').value;
@@ -811,13 +926,13 @@ async function executeDelete() {
     const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); const deleteFiles = document.getElementById('deleteFilesFromDisk').checked;
     try {
         const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
-        if(res.ok) { closeDeleteModal(); loadProjects(); if (deleteFiles) showToast("Files deleted", "success"); else showToast("Project removed", "success"); } 
+        if(res.ok) { closeDeleteModal(); selectedProjectIds.delete(projectToDelete); loadProjects(); if (deleteFiles) showToast("Files deleted", "success"); else showToast("Project removed", "success"); } 
         else { const data = await res.json(); showToast(data.error, "error"); closeDeleteModal(); }
     } catch (err) { showToast("Failed to delete", "error"); closeDeleteModal(); } 
     finally { toggleButtonLoading(btn, false, originalHTML); document.getElementById('deleteFilesFromDisk').checked = false; }
 }
 
- function confirmBulkDelete() {
+function confirmBulkDelete() {
      let count = selectedProjectIds.size;
      if (count === 0 && currentTagFilter) count = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).length;
      if (count === 0) return;
@@ -830,16 +945,16 @@ async function executeDelete() {
      
      const modal = document.getElementById('bulkDeleteModal');
      if(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
- }
+}
  
- function closeBulkDeleteModal() { 
+function closeBulkDeleteModal() { 
      const m = document.getElementById('bulkDeleteModal'); 
      if(m) { m.classList.remove('flex'); m.classList.add('hidden'); }
      const c = document.getElementById('bulkDeleteFilesFromDisk'); 
      if(c) c.checked = false; 
- }
+}
  
- async function executeBulkDelete() {
+async function executeBulkDelete() {
      let idsToProcess = [];
      if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
      else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id);
@@ -873,7 +988,45 @@ async function executeDelete() {
      } finally {
          toggleButtonLoading(btn, false, originalHTML);
      }
- }
+}
+
+async function executeBulkAction(action) {
+    let idsToProcess = [];
+    if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
+    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id);
+    
+    if (idsToProcess.length === 0) return;
+
+    const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';
+    const actionText = action === 'start' ? 'Başlatılıyor...' : 'Durduruluyor...';
+    
+    showToast(`${idsToProcess.length} proje ${actionText}`, "success");
+    
+    try {
+        if (action === 'start') {
+            idsToProcess.forEach(id => {
+                const p = cachedProjects.find(x => x.id === id);
+                if (p) getOrCreateTerminal(id, p.name);
+            });
+        }
+
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(idsToProcess)
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            showToast(data.message || "İşlem başarılı", "success");
+        } else {
+            const err = await res.json();
+            showToast(err.error || "İşlem başarısız", "error");
+        }
+    } catch (e) {
+        showToast("Bağlantı hatası", "error");
+    }
+}
 
 // Drag & Drop
 function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }

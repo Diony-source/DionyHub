@@ -54,7 +54,7 @@
     </div>
 
     <div class="flex-1 flex flex-col bg-transparent relative z-10">
-        <header class="h-16 bg-[#11151f]/60 backdrop-blur-xl border-b border-gray-800/60 flex items-center justify-between px-8 z-10 sticky top-0">
+        <header class="h-16 bg-[#11151f]/60 backdrop-blur-xl border-b border-gray-800/60 flex items-center justify-between px-8 z-10 sticky top-0 shrink-0">
             <h1 id="view-title" class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm">Active Library</h1>
             <div class="flex items-center gap-6">
                 <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] font-medium flex items-center gap-2 border border-indigo-400/50">
@@ -68,41 +68,57 @@
             </div>
         </header>
 
-        <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
-            <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
-                <div class="flex items-center gap-3">
-                    <span class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5" id="bulk-tag-name">
-                        <span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler
-                    </span>
-                    <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 proje</span>
+        <div id="dashboard-view" class="flex flex-col flex-1 overflow-hidden">
+            
+            <div id="table-pane" class="flex flex-col flex-1 overflow-y-auto relative min-h-[200px]">
+                <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <span class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5" id="bulk-tag-name">
+                            <span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler
+                        </span>
+                        <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 proje</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="executeBulkAction('start')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Seçilenleri Başlat
+                        </button>
+                        <button onclick="executeBulkAction('stop')" class="btn-action bg-amber-600/90 hover:bg-amber-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-amber-500/50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"></path></svg>
+                            Seçilenleri Durdur
+                        </button>
+                        <button onclick="confirmBulkDelete()" class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> 
+                            Seçilenleri Sil
+                        </button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="confirmBulkDelete()" class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> 
-                        Seçilenleri Sil
-                    </button>
-                </div>
-            </div>
-            <div class="px-8 pt-8 pb-4">
-                <div class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-2xl overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[900px]">
-                        <thead>
-                            <tr class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold">
-                                <th class="p-5 w-1/4">Project Name</th>
-                                <th class="p-5 w-1/4">Path</th>
-                                <th class="p-5 w-1/6">Status</th>
-                                <th class="p-5 w-1/5">Resources</th>
-                                <th class="p-5 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="project-list">
-                            <tr><td colspan="5" class="p-8 text-center text-gray-500 font-mono text-xs">Authenticating and loading modules...</td></tr>
-                        </tbody>
-                    </table>
+
+                <div class="px-8 pt-4 pb-4">
+                    <div class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-2xl overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[900px]">
+                            <thead>
+                                <tr class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold">
+                                    <th class="p-5 w-1/4">Project Name</th>
+                                    <th class="p-5 w-1/4">Path</th>
+                                    <th class="p-5 w-1/6">Status</th>
+                                    <th class="p-5 w-1/5">Resources</th>
+                                    <th class="p-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="project-list">
+                                <tr><td colspan="5" class="p-8 text-center text-gray-500 font-mono text-xs">Authenticating and loading modules...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="px-8 pb-8 flex-1 flex flex-col min-h-[400px]">
+            <div id="horizontal-resizer" class="h-3 w-full cursor-row-resize bg-gray-900 hover:bg-indigo-600/40 transition-colors flex items-center justify-center group z-20 shrink-0 border-t border-b border-gray-800/80 relative">
+                <div class="w-16 h-1 bg-gray-600 group-hover:bg-indigo-300 rounded-full transition-colors"></div>
+            </div>
+
+            <div id="terminal-pane" class="px-8 pt-4 pb-8 flex flex-col shrink-0 min-h-[200px]" style="height: 40vh;">
                 <div class="bg-[#11151f]/90 backdrop-blur-xl rounded-2xl border border-gray-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.6)] flex flex-col h-full overflow-hidden relative">
                     <div class="bg-[#0a0d14]/50 px-5 py-3 border-b border-gray-800/80 flex justify-between items-center shrink-0 z-10">
                         <div class="flex items-center gap-3">
@@ -119,7 +135,7 @@
                         </div>
                     </div>
                     
-                    <div id="terminals-grid" class="flex-1 w-full p-4 overflow-hidden relative"></div>
+                    <div id="terminals-grid" class="flex-1 w-full p-4 overflow-y-auto relative"></div>
                 </div>
             </div>
         </div>
