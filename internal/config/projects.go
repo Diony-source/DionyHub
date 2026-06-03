@@ -18,6 +18,7 @@ type Project struct {
 	Interactive bool    `json:"interactive"`
 	AutoStart   bool    `json:"auto_start"`
 	AutoRestart bool    `json:"auto_restart"`
+	AutoClose   bool    `json:"auto_close"` // YENİ: Otomatik terminal kapatma
 	Status      string  `json:"status,omitempty"`
 	Order       int     `json:"order"`
 	CPU         float64 `json:"cpu,omitempty"`
