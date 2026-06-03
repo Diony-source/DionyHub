@@ -16,7 +16,7 @@ let maximizedTerminalId = null;
 let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
-// Terminal resizer state & Modern ResizeObserver (Terminallerin anlık süzülmesini sağlar)
+// Terminal resizer state & Modern ResizeObserver
 let isResizing = false;
 const terminalResizeObserver = new ResizeObserver((entries) => {
     requestAnimationFrame(() => {
@@ -41,11 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const resizer = document.getElementById('horizontal-resizer');
     const terminalPane = document.getElementById('terminal-pane');
     const dashboardView = document.getElementById('dashboard-view');
+    const grid = document.getElementById('terminals-grid');
 
     if (resizer && terminalPane && dashboardView) {
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
             document.body.style.cursor = 'row-resize';
+            // Sürüklerken animasyonları kapat (Gecikme olmaması için)
+            if (grid) grid.style.transition = 'none';
             e.preventDefault();
         });
 
@@ -66,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isResizing) {
                 isResizing = false;
                 document.body.style.cursor = '';
+                if (grid) grid.style.transition = ''; // Animasyonları geri aç
             }
         });
     }
@@ -350,7 +354,8 @@ function getOrCreateTerminal(id, name) {
 
     const wrapper = document.createElement('div');
     wrapper.id = `tmux-wrapper-${id}`;
-    wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition-all duration-300 transform scale-95 opacity-0";
+    // transition class'ı düzeltildi (Sadece opacity/transform animasyonlu, layout değişimi anlık olacak)
+    wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition opacity transform duration-300 scale-95 opacity-0 min-w-0 max-w-full";
 
     const header = document.createElement('div');
     header.className = "bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-700/50 shadow-sm z-10 shrink-0";
@@ -441,16 +446,22 @@ function getOrCreateTerminal(id, name) {
     header.appendChild(titleSpan); 
     header.appendChild(actionsDiv);
 
+    // KESİN ÇÖZÜM: XTERM'İN KUTUYU İTMESİNİ (BLOWOUT) ENGELLEYEN ABSOLUTE YAPI
+    const xtermWrapper = document.createElement('div');
+    xtermWrapper.className = "flex-1 relative w-full min-w-0 min-h-[150px] overflow-hidden";
+    xtermWrapper.dataset.termId = id;
+
     const termContainer = document.createElement('div');
     termContainer.id = `tmux-term-${id}`;
-    termContainer.dataset.termId = id;
-    termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden min-h-0 relative";
-
+    termContainer.className = "absolute inset-0 bg-[#0a0d14] p-2 overflow-hidden";
+    
+    xtermWrapper.appendChild(termContainer);
     wrapper.appendChild(header); 
-    wrapper.appendChild(termContainer); 
+    wrapper.appendChild(xtermWrapper); 
     grid.appendChild(wrapper);
 
-    terminalResizeObserver.observe(termContainer);
+    // Büyüme/küçülmeleri algılayıp xterm'e anında bildirmesi için
+    terminalResizeObserver.observe(xtermWrapper);
 
     requestAnimationFrame(() => {
         wrapper.classList.remove('scale-95', 'opacity-0');
@@ -645,16 +656,20 @@ function updateGridCSS() {
     const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
     const count = activeIds.length;
     
-    // Flexbox esneklik mantığı
+    // Tümüyle Flexbox'a ve Masonry Mantığına Geçiş Yapıldı. 
+    // Sonsuza doğru taşma sorunu engellendi (overflowX = 'hidden' ve max-w-full).
     grid.style.display = 'flex'; 
     grid.style.flexWrap = 'wrap'; 
     grid.style.alignContent = 'stretch';
     grid.style.alignItems = 'stretch';
     grid.style.gap = '16px'; 
+    grid.style.overflowX = 'hidden'; 
+    grid.style.width = '100%';
+    grid.style.minWidth = '0';
     
     Object.keys(terminalPool).forEach(id => {
         if (terminalPool[id].minimized) {
-            terminalPool[id].container.classList.add('hidden');
+            terminalPool[id].container.style.display = 'none';
         }
     });
 
@@ -662,36 +677,43 @@ function updateGridCSS() {
         activeIds.forEach(id => { 
             const wrapper = terminalPool[id].container;
             if (id !== maximizedTerminalId) {
-                wrapper.classList.add('hidden'); 
+                wrapper.style.display = 'none'; 
             } else {
-                wrapper.classList.remove('hidden', 'w-full', 'h-full');
+                wrapper.style.display = 'flex';
                 wrapper.style.flex = '1 1 100%';
+                wrapper.style.height = 'auto';
                 wrapper.style.minHeight = '250px';
+                wrapper.style.maxWidth = '100%';
             }
         });
     } else {
         activeIds.forEach(id => {
             const wrapper = terminalPool[id].container;
-            wrapper.classList.remove('hidden', 'w-full', 'h-full');
+            wrapper.style.display = 'flex';
+            wrapper.style.maxWidth = '100%'; 
             
             if (count === 1) { 
                 wrapper.style.flex = '1 1 100%';
+            } else if (count === 2) { 
+                wrapper.style.flex = '1 1 calc(50% - 16px)';
+            } else if (count <= 4) { 
+                wrapper.style.flex = '1 1 calc(50% - 16px)';
             } else { 
-                // Masonry tarzı sağa genişleme, min:400px
-                wrapper.style.flex = '1 1 400px';
+                wrapper.style.flex = '1 1 400px'; 
             }
-            wrapper.style.minHeight = '250px';
+            
+            // ESNEK YAPI BURADA! height 'auto' ile boşluğu dolduracak.
+            wrapper.style.height = 'auto'; 
+            wrapper.style.minHeight = '250px'; 
         });
     }
-    setTimeout(refreshAllTerminalFits, 50);
 }
 
 function refreshAllTerminalFits() { 
+    // ResizeObserver otomatik yönetiyor ancak manuel tetikler için kalmalı
     Object.values(terminalPool).forEach(instance => { 
-        if (!instance.container.classList.contains('hidden')) { 
-            try { 
-                instance.fitAddon.fit(); 
-            } catch(e) {} 
+        if (!instance.container.classList.contains('hidden') && instance.container.style.display !== 'none') { 
+            try { instance.fitAddon.fit(); } catch(e) {} 
         } 
     }); 
 }
@@ -924,14 +946,17 @@ function updateBulkActionBar(filteredCount) {
     if (selectedProjectIds.size > 0) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
         count.innerText = `${selectedProjectIds.size} proje`;
+        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else if (currentTagFilter !== null) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
         count.innerText = `${filteredCount} proje`;
+        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else {
+        container.style.display = 'none';
         container.classList.remove('flex');
         container.classList.add('hidden');
     }
