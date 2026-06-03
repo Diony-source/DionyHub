@@ -239,6 +239,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 			s.projects[i].Interactive = updatedData.Interactive
 			s.projects[i].AutoStart = updatedData.AutoStart
 			s.projects[i].AutoRestart = updatedData.AutoRestart
+			s.projects[i].AutoClose = updatedData.AutoClose // YENİ EKLENDİ
 			s.projects[i].Tag = updatedData.Tag
 			found = true
 			break
@@ -268,6 +269,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
 		AutoRestart bool   `json:"auto_restart"`
+		AutoClose   bool   `json:"auto_close"` // YENİ EKLENDİ
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -300,6 +302,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
+		AutoClose:   req.AutoClose, // YENİ EKLENDİ
 		Status:      "stopped",
 	}
 
@@ -327,6 +330,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
 		AutoRestart bool   `json:"auto_restart"`
+		AutoClose   bool   `json:"auto_close"` // YENİ EKLENDİ
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -378,6 +382,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
+		AutoClose:   req.AutoClose, // YENİ EKLENDİ
 		Status:      "stopped",
 	}
 
