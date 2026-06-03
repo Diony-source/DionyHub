@@ -28,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
     switchView('dashboard');
 
-    // Terminal Resizer Dinleyicileri
     const resizer = document.getElementById('horizontal-resizer');
     const terminalPane = document.getElementById('terminal-pane');
     const dashboardView = document.getElementById('dashboard-view');
@@ -42,15 +41,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
+            
             const dashRect = dashboardView.getBoundingClientRect();
             let newHeight = dashRect.bottom - e.clientY;
             
-            // Limit the terminal height so it doesn't crush the top completely
             if (newHeight < 150) newHeight = 150;
             if (newHeight > dashRect.height - 200) newHeight = dashRect.height - 200;
             
             terminalPane.style.height = `${newHeight}px`;
-            terminalPane.style.flex = 'none';
+            terminalPane.style.flex = 'none'; 
+            
             refreshAllTerminalFits();
         });
 
@@ -59,6 +59,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 isResizing = false;
                 document.body.style.cursor = '';
                 refreshAllTerminalFits();
+            }
+        });
+    }
+
+    if (terminalPane) {
+        terminalPane.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            terminalPane.classList.add('ring-2', 'ring-indigo-500/50');
+        });
+        terminalPane.addEventListener('dragleave', (e) => {
+            terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
+        });
+        terminalPane.addEventListener('drop', (e) => {
+            e.preventDefault();
+            terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
+            const minId = e.dataTransfer.getData('application/diony-min-term');
+            if (minId && terminalPool[minId] && terminalPool[minId].minimized) {
+                restoreTerminal(minId);
             }
         });
     }
@@ -187,7 +205,6 @@ function showContextMenu(e, pId, pName, status) {
             hideContextMenu(); 
             item.action(); 
         });
-        
         menu.appendChild(btn);
     });
 
@@ -206,7 +223,6 @@ function showContextMenu(e, pId, pName, status) {
 function hideContextMenu() {
     const menu = document.getElementById('contextMenu');
     if (!menu) return;
-    
     menu.style.display = 'none';
     menu.classList.remove('scale-100', 'opacity-100');
     menu.classList.add('scale-95', 'opacity-0');
@@ -218,14 +234,12 @@ function toggleCmdPalette() {
     const input = document.getElementById('cmdInput');
     
     if (!pal || !box || !input) return;
-    
     hideContextMenu(); 
 
     if (pal.classList.contains('hidden')) {
         pal.classList.replace('hidden', 'flex');
         input.value = '';
         handleCmdSearch({target: {value: ''}}); 
-        
         requestAnimationFrame(() => {
             pal.classList.remove('opacity-0');
             box.classList.remove('scale-95');
@@ -239,15 +253,10 @@ function toggleCmdPalette() {
 function closeCmdPalette() {
     const pal = document.getElementById('cmdPalette');
     const box = document.getElementById('cmdPaletteBox');
-    
     if (!pal || !box) return;
-    
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
-    
-    setTimeout(() => {
-        pal.classList.replace('flex', 'hidden');
-    }, 200);
+    setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
 function handleCmdSearch(e) {
@@ -274,12 +283,10 @@ function handleCmdSearch(e) {
 function updateCmdSelection() {
     const resultsDiv = document.getElementById('cmdResults');
     if (!resultsDiv) return;
-    
     const allBtns = resultsDiv.querySelectorAll('.cmd-item');
     
     allBtns.forEach((btn, idx) => {
         const iconSpan = btn.querySelector('.cmd-icon');
-        
         if (idx === cmdSelectedIndex) {
             btn.classList.add('bg-indigo-500/20', 'text-white');
             btn.classList.remove('text-gray-300', 'hover:bg-gray-800');
@@ -296,7 +303,6 @@ function updateCmdSelection() {
 function renderCmdResults() {
     const resultsDiv = document.getElementById('cmdResults');
     if (!resultsDiv) return;
-    
     resultsDiv.innerHTML = '';
 
     if (currentCmdActions.length === 0) {
@@ -309,10 +315,7 @@ function renderCmdResults() {
         const isActive = idx === cmdSelectedIndex;
         
         btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 transition-colors group ${isActive ? 'bg-indigo-500/20 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
-        btn.innerHTML = `
-            <span class="cmd-icon text-lg opacity-70 transition-transform ${isActive ? 'scale-110' : ''}">${a.icon}</span> 
-            <span class="font-mono text-sm font-bold tracking-wide">${a.name}</span>
-        `;
+        btn.innerHTML = `<span class="cmd-icon text-lg opacity-70 transition-transform ${isActive ? 'scale-110' : ''}">${a.icon}</span> <span class="font-mono text-sm font-bold tracking-wide">${a.name}</span>`;
         
         btn.addEventListener('mouseenter', () => {
             cmdSelectedIndex = idx;
@@ -391,6 +394,16 @@ function getOrCreateTerminal(id, name) {
     exportBtn.title = "Export Logs to .txt";
     exportBtn.onclick = () => exportTerminalLogs(id, name);
 
+    const minBtn = document.createElement('button');
+    minBtn.innerHTML = `
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+        </svg>
+    `;
+    minBtn.className = "text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors";
+    minBtn.title = "Minimize Terminal";
+    minBtn.onclick = () => minimizeTerminal(id, name);
+
     const maxBtn = document.createElement('button');
     maxBtn.innerHTML = `
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -414,6 +427,7 @@ function getOrCreateTerminal(id, name) {
     actionsDiv.appendChild(searchInput); 
     actionsDiv.appendChild(searchBtn); 
     actionsDiv.appendChild(exportBtn); 
+    actionsDiv.appendChild(minBtn); 
     actionsDiv.appendChild(maxBtn); 
     actionsDiv.appendChild(clearBtn);
     
@@ -468,7 +482,9 @@ function getOrCreateTerminal(id, name) {
         fitAddon: fitAddon, 
         searchAddon: searchAddon, 
         container: wrapper, 
-        currentLine: "" 
+        currentLine: "",
+        minimized: false,
+        lastStatus: 'stopped'
     };
     terminalPool[id] = termInstance;
 
@@ -562,30 +578,90 @@ function exportTerminalLogs(id, name) {
     showToast(`${name} logs exported successfully!`, "success");
 }
 
+function minimizeTerminal(id, name) {
+    if (!terminalPool[id]) return;
+    if (terminalPool[id].minimized) return; 
+
+    terminalPool[id].minimized = true;
+    terminalPool[id].container.classList.add('hidden');
+    
+    const tabsContainer = document.getElementById('minimized-tabs-container');
+    if (!document.getElementById(`min-tab-${id}`)) {
+        const tab = document.createElement('div');
+        tab.id = `min-tab-${id}`;
+        tab.draggable = true;
+        tab.className = "flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0";
+        
+        const dotColor = id === 'system' ? 'bg-indigo-500' : 'bg-emerald-500';
+        tab.innerHTML = `
+            <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div>
+            <span class="truncate max-w-[120px] font-bold">${name}</span>
+            <button class="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity ml-1 focus:outline-none" onclick="restoreTerminal('${id}')" title="Restore">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            </button>
+        `;
+        
+        tab.ondragstart = (e) => {
+            e.dataTransfer.setData('application/diony-min-term', id);
+            tab.classList.add('opacity-50');
+        };
+        tab.ondragend = (e) => {
+            tab.classList.remove('opacity-50');
+        };
+        tab.onclick = (e) => {
+            if (e.target.closest('button')) return; 
+            restoreTerminal(id);
+        };
+        tabsContainer.appendChild(tab);
+    }
+    
+    updateGridCSS();
+}
+
+function restoreTerminal(id) {
+    if (!terminalPool[id]) return;
+    terminalPool[id].minimized = false;
+    terminalPool[id].container.classList.remove('hidden');
+    
+    const tab = document.getElementById(`min-tab-${id}`);
+    if (tab) tab.remove();
+    
+    if (maximizedTerminalId === id) toggleMaximizeTerminal(id); 
+    updateGridCSS();
+}
+
 function updateGridCSS() {
     const grid = document.getElementById('terminals-grid'); 
     if (!grid) return;
     
-    const activeIds = Object.keys(terminalPool); 
+    const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
     const count = activeIds.length;
     
     grid.style.display = 'grid'; 
     grid.style.gap = '16px'; 
     
-    activeIds.forEach(id => {
-        terminalPool[id].container.classList.remove('hidden');
+    Object.keys(terminalPool).forEach(id => {
+        if (terminalPool[id].minimized) {
+            terminalPool[id].container.classList.add('hidden');
+        }
     });
 
-    if (maximizedTerminalId && terminalPool[maximizedTerminalId]) {
+    if (maximizedTerminalId && terminalPool[maximizedTerminalId] && !terminalPool[maximizedTerminalId].minimized) {
         activeIds.forEach(id => { 
             if (id !== maximizedTerminalId) {
                 terminalPool[id].container.classList.add('hidden'); 
+            } else {
+                terminalPool[id].container.classList.remove('hidden');
             }
         });
         grid.style.gridTemplateColumns = `1fr`; 
         grid.style.gridTemplateRows = `1fr`;
         grid.style.gridAutoRows = 'auto';
     } else {
+        activeIds.forEach(id => {
+            terminalPool[id].container.classList.remove('hidden');
+        });
+        
         if (count === 1) { 
             grid.style.gridTemplateColumns = `1fr`; 
             grid.style.gridTemplateRows = `1fr`; 
@@ -626,7 +702,7 @@ function toggleMaximizeTerminal(id) {
     
     updateGridCSS(); 
     
-    if (maximizedTerminalId) { 
+    if (maximizedTerminalId && !terminalPool[id].minimized) { 
         terminalPool[id].term.focus(); 
     } 
 }
@@ -651,6 +727,9 @@ function connectWebSocket() {
                     const statsDiv = document.getElementById('stats-' + stat.id);
                     
                     if (!badge) return;
+
+                    let prevStatus = terminalPool[stat.id] ? terminalPool[stat.id].lastStatus : null;
+                    if (terminalPool[stat.id]) terminalPool[stat.id].lastStatus = stat.status;
 
                     if (stat.status === 'running') {
                         badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors';
@@ -686,6 +765,13 @@ function connectWebSocket() {
                         
                         if (statsDiv) {
                             statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
+                        }
+
+                        if (prevStatus === 'running' && terminalPool[stat.id]) {
+                            const p = cachedProjects.find(x => x.id === stat.id);
+                            if (p && p.auto_close) {
+                                minimizeTerminal(stat.id, p.name);
+                            }
                         }
                     }
                 });
@@ -835,11 +921,13 @@ function updateBulkActionBar(filteredCount) {
     if (selectedProjectIds.size > 0) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
         count.innerText = `${selectedProjectIds.size} proje`;
+        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else if (currentTagFilter !== null) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
         count.innerText = `${filteredCount} proje`;
+        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else {
@@ -856,7 +944,6 @@ function applySelectionStyles() {
         const id = tr.dataset.id;
         
         if (selectedProjectIds.has(id)) {
-            // Arka plan opaklığını artırdık (bg-indigo-500/30) ki seçili olduğu çok net anlaşılsın
             tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
             tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10', 'bg-indigo-500/20');
         } else {
@@ -1226,7 +1313,8 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value, 
                 interactive: document.getElementById('projInteractive').checked, 
                 auto_start: document.getElementById('projAutoStart').checked, 
-                auto_restart: document.getElementById('projAutoRestart').checked, 
+                auto_restart: document.getElementById('projAutoRestart').checked,
+                auto_close: document.getElementById('projAutoClose').checked,
                 initial_env: document.getElementById('projInitialEnv').value 
             };
             
@@ -1247,7 +1335,8 @@ async function submitNewProject(e) {
                 tag: document.getElementById('projTag').value, 
                 interactive: document.getElementById('projInteractive').checked, 
                 auto_start: document.getElementById('projAutoStart').checked, 
-                auto_restart: document.getElementById('projAutoRestart').checked, 
+                auto_restart: document.getElementById('projAutoRestart').checked,
+                auto_close: document.getElementById('projAutoClose').checked,
                 initial_env: document.getElementById('projInitialEnv').value 
             };
             
@@ -1270,17 +1359,18 @@ async function submitNewProject(e) {
 }
 
 function openEditModal(id) {
-    const project = cachedProjects.find(p => p.id === id); 
+    const project = cachedProjects.find(p => p.id === id || p.ID === id); 
     if (!project) return;
     
-    document.getElementById('editProjId').value = project.id; 
-    document.getElementById('editProjName').value = project.name; 
-    document.getElementById('editProjPath').value = project.path; 
-    document.getElementById('editProjCmd').value = project.command || ''; 
-    document.getElementById('editProjTag').value = project.tag || ''; 
-    document.getElementById('editProjInteractive').checked = project.interactive; 
-    document.getElementById('editProjAutoStart').checked = project.auto_start || false; 
-    document.getElementById('editProjAutoRestart').checked = project.auto_restart || false;
+    document.getElementById('editProjId').value = project.id || project.ID; 
+    document.getElementById('editProjName').value = project.name || project.Name; 
+    document.getElementById('editProjPath').value = project.path || project.Path; 
+    document.getElementById('editProjCmd').value = project.command || project.Command || ''; 
+    document.getElementById('editProjTag').value = project.tag || project.Tag || ''; 
+    document.getElementById('editProjInteractive').checked = project.interactive || project.Interactive || false; 
+    document.getElementById('editProjAutoStart').checked = project.auto_start || project.AutoStart || false; 
+    document.getElementById('editProjAutoRestart').checked = project.auto_restart || project.AutoRestart || false;
+    document.getElementById('editProjAutoClose').checked = project.auto_close || project.AutoClose || false;
     
     const modal = document.getElementById('editModal'); 
     modal.classList.remove('hidden'); 
@@ -1304,7 +1394,8 @@ async function submitEditProject(event) {
         tag: document.getElementById('editProjTag').value, 
         interactive: document.getElementById('editProjInteractive').checked, 
         auto_start: document.getElementById('editProjAutoStart').checked, 
-        auto_restart: document.getElementById('editProjAutoRestart').checked 
+        auto_restart: document.getElementById('editProjAutoRestart').checked,
+        auto_close: document.getElementById('editProjAutoClose').checked
     };
     
     try {
@@ -1351,6 +1442,7 @@ async function executeDelete() {
         
         if(res.ok) { 
             closeDeleteModal(); 
+            selectedProjectIds.delete(projectToDelete);
             loadProjects(); 
             if (deleteFiles) showToast("Files deleted", "success"); 
             else showToast("Project removed", "success"); 
@@ -1399,7 +1491,7 @@ async function executeDelete() {
  async function executeBulkDelete() {
      let idsToProcess = [];
      if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id);
+     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
      
      if (idsToProcess.length === 0) return;
  
@@ -1437,7 +1529,7 @@ async function executeBulkAction(action) {
     if (selectedProjectIds.size > 0) {
         idsToProcess = Array.from(selectedProjectIds);
     } else if (currentTagFilter) {
-        idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id);
+        idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
     }
     
     if (idsToProcess.length === 0) return;
@@ -1450,8 +1542,8 @@ async function executeBulkAction(action) {
     try {
         if (action === 'start') {
             idsToProcess.forEach(id => {
-                const p = cachedProjects.find(x => x.id === id);
-                if (p) getOrCreateTerminal(id, p.name);
+                const p = cachedProjects.find(x => (x.id || x.ID) === id);
+                if (p) getOrCreateTerminal(id, p.name || p.Name);
             });
         }
 
@@ -1630,10 +1722,10 @@ function toggleEnvBlur() {
 }
 
 async function openEnvModal(id) {
-    const project = cachedProjects.find(p => p.id === id); 
+    const project = cachedProjects.find(p => p.id === id || p.ID === id); 
     if (!project) return;
     
-    document.getElementById('envProjId').value = project.id;
+    document.getElementById('envProjId').value = project.id || project.ID;
     const textArea = document.getElementById('envContent'); 
     textArea.value = "Loading...";
     
