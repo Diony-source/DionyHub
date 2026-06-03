@@ -16,8 +16,18 @@ let maximizedTerminalId = null;
 let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
-// Terminal resizer state
+// Terminal resizer state & Modern ResizeObserver (Terminallerin anlık süzülmesini sağlar)
 let isResizing = false;
+const terminalResizeObserver = new ResizeObserver((entries) => {
+    requestAnimationFrame(() => {
+        for (const entry of entries) {
+            const id = entry.target.dataset.termId;
+            if (id && terminalPool[id] && !terminalPool[id].minimized) {
+                try { terminalPool[id].fitAddon.fit(); } catch(e) {}
+            }
+        }
+    });
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
@@ -50,15 +60,12 @@ document.addEventListener("DOMContentLoaded", () => {
             
             terminalPane.style.height = `${newHeight}px`;
             terminalPane.style.flex = 'none'; 
-            
-            refreshAllTerminalFits();
         });
 
         document.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
                 document.body.style.cursor = '';
-                refreshAllTerminalFits();
             }
         });
     }
@@ -436,11 +443,14 @@ function getOrCreateTerminal(id, name) {
 
     const termContainer = document.createElement('div');
     termContainer.id = `tmux-term-${id}`;
-    termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden";
+    termContainer.dataset.termId = id;
+    termContainer.className = "flex-1 w-full bg-[#0a0d14] p-2 overflow-hidden min-h-0 relative";
 
     wrapper.appendChild(header); 
     wrapper.appendChild(termContainer); 
     grid.appendChild(wrapper);
+
+    terminalResizeObserver.observe(termContainer);
 
     requestAnimationFrame(() => {
         wrapper.classList.remove('scale-95', 'opacity-0');
@@ -583,7 +593,6 @@ function minimizeTerminal(id, name) {
     if (terminalPool[id].minimized) return; 
 
     terminalPool[id].minimized = true;
-    terminalPool[id].container.classList.add('hidden');
     
     const tabsContainer = document.getElementById('minimized-tabs-container');
     if (!document.getElementById(`min-tab-${id}`)) {
@@ -621,7 +630,6 @@ function minimizeTerminal(id, name) {
 function restoreTerminal(id) {
     if (!terminalPool[id]) return;
     terminalPool[id].minimized = false;
-    terminalPool[id].container.classList.remove('hidden');
     
     const tab = document.getElementById(`min-tab-${id}`);
     if (tab) tab.remove();
@@ -637,7 +645,11 @@ function updateGridCSS() {
     const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
     const count = activeIds.length;
     
-    grid.style.display = 'grid'; 
+    // Flexbox esneklik mantığı
+    grid.style.display = 'flex'; 
+    grid.style.flexWrap = 'wrap'; 
+    grid.style.alignContent = 'stretch';
+    grid.style.alignItems = 'stretch';
     grid.style.gap = '16px'; 
     
     Object.keys(terminalPool).forEach(id => {
@@ -648,37 +660,28 @@ function updateGridCSS() {
 
     if (maximizedTerminalId && terminalPool[maximizedTerminalId] && !terminalPool[maximizedTerminalId].minimized) {
         activeIds.forEach(id => { 
+            const wrapper = terminalPool[id].container;
             if (id !== maximizedTerminalId) {
-                terminalPool[id].container.classList.add('hidden'); 
+                wrapper.classList.add('hidden'); 
             } else {
-                terminalPool[id].container.classList.remove('hidden');
+                wrapper.classList.remove('hidden', 'w-full', 'h-full');
+                wrapper.style.flex = '1 1 100%';
+                wrapper.style.minHeight = '250px';
             }
         });
-        grid.style.gridTemplateColumns = `1fr`; 
-        grid.style.gridTemplateRows = `1fr`;
-        grid.style.gridAutoRows = 'auto';
     } else {
         activeIds.forEach(id => {
-            terminalPool[id].container.classList.remove('hidden');
+            const wrapper = terminalPool[id].container;
+            wrapper.classList.remove('hidden', 'w-full', 'h-full');
+            
+            if (count === 1) { 
+                wrapper.style.flex = '1 1 100%';
+            } else { 
+                // Masonry tarzı sağa genişleme, min:400px
+                wrapper.style.flex = '1 1 400px';
+            }
+            wrapper.style.minHeight = '250px';
         });
-        
-        if (count === 1) { 
-            grid.style.gridTemplateColumns = `1fr`; 
-            grid.style.gridTemplateRows = `1fr`; 
-            grid.style.gridAutoRows = 'auto';
-        } else if (count === 2) { 
-            grid.style.gridTemplateColumns = `1fr 1fr`; 
-            grid.style.gridTemplateRows = `1fr`; 
-            grid.style.gridAutoRows = 'auto';
-        } else if (count <= 4) { 
-            grid.style.gridTemplateColumns = `1fr 1fr`; 
-            grid.style.gridTemplateRows = `1fr 1fr`; 
-            grid.style.gridAutoRows = 'auto';
-        } else { 
-            grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(400px, 1fr))`; 
-            grid.style.gridAutoRows = `250px`; 
-            grid.style.gridTemplateRows = `none`; 
-        }
     }
     setTimeout(refreshAllTerminalFits, 50);
 }
@@ -756,8 +759,8 @@ function connectWebSocket() {
                         }
                         
                         if (!terminalPool[stat.id]) { 
-                            const p = cachedProjects.find(x => x.id === stat.id); 
-                            if(p) getOrCreateTerminal(p.id, p.name); 
+                            const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id); 
+                            if(p) getOrCreateTerminal(p.id || p.ID, p.name || p.Name); 
                         }
                     } else {
                         badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-bold transition-colors';
@@ -768,9 +771,9 @@ function connectWebSocket() {
                         }
 
                         if (prevStatus === 'running' && terminalPool[stat.id]) {
-                            const p = cachedProjects.find(x => x.id === stat.id);
-                            if (p && p.auto_close) {
-                                minimizeTerminal(stat.id, p.name);
+                            const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id);
+                            if (p && (p.auto_close || p.AutoClose)) {
+                                minimizeTerminal(stat.id, p.name || p.Name);
                             }
                         }
                     }
@@ -783,8 +786,8 @@ function connectWebSocket() {
             if (msg.id === 'system') {
                 projName = "DionyHub System Logs";
             } else { 
-                const p = cachedProjects.find(x => x.id === msg.id); 
-                projName = p ? p.name : msg.id; 
+                const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); 
+                projName = p ? (p.name || p.Name) : msg.id; 
             }
             
             const termInstance = getOrCreateTerminal(msg.id, projName);
@@ -921,13 +924,11 @@ function updateBulkActionBar(filteredCount) {
     if (selectedProjectIds.size > 0) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
         count.innerText = `${selectedProjectIds.size} proje`;
-        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else if (currentTagFilter !== null) {
         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
         count.innerText = `${filteredCount} proje`;
-        container.style.display = '';
         container.classList.remove('hidden');
         container.classList.add('flex');
     } else {
@@ -1091,7 +1092,6 @@ function renderProjects() {
         tbody.appendChild(tr);
     });
     
-    // Tablo yeniden yüklendiğinde eski seçili durumları koru
     applySelectionStyles();
 }
 
