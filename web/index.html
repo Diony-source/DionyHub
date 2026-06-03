@@ -69,6 +69,20 @@
         </header>
 
         <div id="dashboard-view" class="flex flex-col flex-1 overflow-y-auto">
+            <div id="bulk-actions-container" class="hidden px-8 pt-8 pb-0 justify-between items-end transition-all duration-300">
+                <div class="flex items-center gap-3">
+                    <span class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5" id="bulk-tag-name">
+                        <span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler
+                    </span>
+                    <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 proje</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="confirmBulkDelete()" class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> 
+                        Seçilenleri Sil
+                    </button>
+                </div>
+            </div>
             <div class="px-8 pt-8 pb-4">
                 <div class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-2xl overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[900px]">
@@ -233,6 +247,30 @@
         </div>
     </div>
 
+    <div id="bulkDeleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 flex flex-col">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-white text-center mb-2">Toplam <span id="bulkDeleteCount" class="text-rose-500"></span> Proje Silinsin mi?</h3>
+                <div class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="bulkDeleteFilesFromDisk" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-rose-600 transition-colors border border-gray-700 peer-checked:border-rose-500"></div>
+                        </div>
+                        <div>
+                            <span class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors">Dosyaları diskten kalıcı olarak sil</span>
+                            <span class="block text-xs text-rose-400/60 mt-0.5">Uyarı: Bu işlem geri alınamaz.</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeBulkDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">İptal</button>
+                    <button type="button" id="confirmBulkDeleteBtn" onclick="executeBulkDelete()" class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50">Şimdi Sil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div id="deleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter">
             <div class="p-6">

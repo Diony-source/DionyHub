@@ -4,6 +4,8 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
+let selectedProjectIds = new Set();
+let lastSelectedIdx = -1;
 
 const statsHistory = {}; 
 const terminalPool = {}; 
@@ -24,10 +26,22 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#contextMenu')) hideContextMenu();
         if (e.target.id === 'cmdPalette') closeCmdPalette();
+        
+        const isOutsideClick =  !e.target.closest('tr') && 
+                                !e.target.closest('#bulk-actions-container') && 
+                                !e.target.closest('.btn-action') && 
+                                !e.target.closest('.tag-filter-btn') && 
+                                !e.target.closest('.cursor-pointer');
+
+       if (isOutsideClick && selectedProjectIds.size > 0) {
+           selectedProjectIds.clear();
+           applySelectionStyles();
+           updateBulkActionBar(cachedProjects.length);
+       }
     });
 
     document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             toggleCmdPalette();
         }
@@ -85,24 +99,24 @@ function showContextMenu(e, pId, pName, status) {
     closeCmdPalette(); 
     
     const menu = document.getElementById('contextMenu');
+    if (!menu) return;
     menu.innerHTML = ''; 
 
     const isRunning = status === 'running';
 
     const items = [
-        { label: 'Start Project', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z', color: 'text-emerald-400', action: () => startProject(pId, pName, null), show: !isRunning },
-        { label: 'Restart Project', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'text-blue-400', action: () => restartProject(pId, pName, null), show: isRunning },
-        { label: 'Stop Project', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10h6v4H9z', color: 'text-rose-400', action: () => stopProject(pId, null), show: isRunning },
-        { label: 'divider', show: true },
-        { label: 'Edit Project', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'text-gray-400', action: () => openEditModal(pId), show: true },
-        { label: 'Environment (.env)', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', color: 'text-teal-400', action: () => openEnvModal(pId), show: true },
-        { label: 'Export Backup', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4', color: 'text-amber-400', action: () => backupProject(pId, null), show: true },
-        { label: 'divider', show: true },
-        { label: 'Delete', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', color: 'text-rose-500', action: () => openDeleteModal(pId), show: true },
+        { label: 'Start Project', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z', color: 'text-emerald-400', action: () => startProject(pId, pName, null), disabled: isRunning },
+        { label: 'Restart Project', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'text-blue-400', action: () => restartProject(pId, pName, null), disabled: !isRunning },
+        { label: 'Stop Project', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10h6v4H9z', color: 'text-rose-400', action: () => stopProject(pId, null), disabled: !isRunning },
+        { label: 'divider' },
+        { label: 'Edit Project', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'text-gray-400', action: () => openEditModal(pId), disabled: false },
+        { label: 'Environment (.env)', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', color: 'text-teal-400', action: () => openEnvModal(pId), disabled: false },
+        { label: 'Export Backup', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4', color: 'text-amber-400', action: () => backupProject(pId, null), disabled: false },
+        { label: 'divider' },
+        { label: 'Delete', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', color: 'text-rose-500', action: () => openDeleteModal(pId), disabled: false },
     ];
 
     items.forEach(item => {
-        if (!item.show) return;
         if (item.label === 'divider') {
             const divider = document.createElement('div');
             divider.className = 'h-px bg-gray-700/50 my-1 mx-2';
@@ -111,32 +125,48 @@ function showContextMenu(e, pId, pName, status) {
         }
         
         const btn = document.createElement('button');
-        btn.className = `w-full text-left px-4 py-2 hover:bg-gray-700/50 transition-colors flex items-center gap-3 group`;
-        btn.innerHTML = `<svg class="w-4 h-4 ${item.color} group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg> <span class="group-hover:text-white transition-colors">${item.label}</span>`;
+        const baseColor = item.disabled ? 'text-gray-600' : item.color;
+        const hoverClass = item.disabled ? 'cursor-not-allowed' : 'hover:bg-gray-700/50 group';
+        const textClass = item.disabled ? 'text-gray-600' : 'group-hover:text-white text-gray-300';
+        const iconScale = item.disabled ? '' : 'group-hover:scale-110';
+        
+        btn.className = `w-full text-left px-4 py-2 transition-colors flex items-center gap-3 ${hoverClass}`;
+        btn.innerHTML = `
+            <svg class="w-4 h-4 ${baseColor} ${iconScale} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path>
+            </svg> 
+            <span class="${textClass} transition-colors">${item.label}</span>
+        `;
         
         btn.addEventListener('mousedown', (ev) => { 
             ev.preventDefault();
             ev.stopPropagation();
+            if (item.disabled) return;
             hideContextMenu(); 
             item.action(); 
         });
         menu.appendChild(btn);
     });
 
-    menu.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        menu.style.left = `${e.pageX}px`;
-        menu.style.top = `${e.pageY}px`;
-        menu.classList.remove('scale-95', 'opacity-0');
-        menu.classList.add('scale-100', 'opacity-100');
-    });
+    menu.style.display = 'flex';
+    menu.style.flexDirection = 'column';
+    menu.style.pointerEvents = 'auto';
+    
+    void menu.offsetWidth; // Reflow
+    
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+    menu.classList.remove('scale-95', 'opacity-0');
+    menu.classList.add('scale-100', 'opacity-100');
 }
 
 function hideContextMenu() {
     const menu = document.getElementById('contextMenu');
+    if (!menu) return;
+    
+    menu.style.display = 'none';
     menu.classList.remove('scale-100', 'opacity-100');
     menu.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => menu.classList.add('hidden'), 200); 
 }
 
 function toggleCmdPalette() {
@@ -500,6 +530,45 @@ function switchView(viewName) {
     }
 }
 
+function updateBulkActionBar(filteredCount) {
+     const container = document.getElementById('bulk-actions-container');
+     const name = document.getElementById('bulk-tag-name');
+     const count = document.getElementById('bulk-project-count');
+     
+     if (!container || !name || !count) return;
+ 
+     if (selectedProjectIds.size > 0) {
+         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
+         count.innerText = `${selectedProjectIds.size} proje`;
+         container.classList.remove('hidden');
+         container.classList.add('flex');
+     } else if (currentTagFilter !== null) {
+         name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
+         count.innerText = `${filteredCount} proje`;
+         container.classList.remove('hidden');
+         container.classList.add('flex');
+     } else {
+         container.classList.remove('flex');
+         container.classList.add('hidden');
+     }
+ }
+ 
+ function applySelectionStyles() {
+     const tbody = document.getElementById('project-list');
+     if(!tbody) return;
+     
+     Array.from(tbody.children).forEach(tr => {
+         const id = tr.dataset.id;
+         if (selectedProjectIds.has(id)) {
+             tr.classList.add('bg-indigo-500/20', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+             tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10');
+         } else {
+             tr.classList.remove('bg-indigo-500/20', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10');
+             tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+         }
+    });
+}
+
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
@@ -519,6 +588,8 @@ function renderProjects() {
 
     const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
 
+    updateBulkActionBar(filteredProjects.length);
+
     if (filteredProjects.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-16 text-center border-b border-transparent"><div class="flex flex-col items-center justify-center opacity-40 hover:opacity-70 transition-opacity"><svg class="w-16 h-16 text-indigo-400 mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><span class="text-lg font-black text-gray-300 tracking-widest uppercase">No Projects Found</span><span class="text-sm text-gray-500 mt-2 font-medium">Your command center is empty. Click 'Add Project' to begin.</span></div></td></tr>`; 
         return; 
@@ -526,8 +597,39 @@ function renderProjects() {
 
     filteredProjects.forEach((p, index) => {
         const tr = document.createElement('tr');
-        tr.className = `border-b border-gray-800/60 hover:bg-gray-800/40 transition-colors group cursor-pointer bg-[#0f111a]/30`;
+        const isSelected = selectedProjectIds.has(p.id);
+        tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/20 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
         tr.setAttribute('draggable', 'true'); tr.dataset.id = p.id;
+
+       tr.addEventListener('click', (e) => {
+           if (e.target.closest('button') || e.target.closest('.cursor-grab')) return;
+           
+           if (e.ctrlKey || e.metaKey) {
+               if (selectedProjectIds.has(p.id)) selectedProjectIds.delete(p.id);
+               else selectedProjectIds.add(p.id);
+               lastSelectedIdx = index;
+           } else if (e.shiftKey && lastSelectedIdx !== -1) {
+               e.preventDefault(); 
+               document.getSelection().removeAllRanges();
+               
+               const start = Math.min(lastSelectedIdx, index);
+               const end = Math.max(lastSelectedIdx, index);
+               
+               if (!e.ctrlKey && !e.metaKey) selectedProjectIds.clear();
+               
+               for (let i = start; i <= end; i++) {
+                   const iterId = filteredProjects[i].id;
+                   if(iterId) selectedProjectIds.add(iterId);
+               }
+           } else {
+               selectedProjectIds.clear();
+               selectedProjectIds.add(p.id);
+               lastSelectedIdx = index;
+           }
+           
+           applySelectionStyles();
+           updateBulkActionBar(filteredProjects.length);
+       });
 
         tr.addEventListener('contextmenu', (e) => {
             const status = cachedProjects.find(x => x.id === p.id)?.status || 'stopped';
@@ -569,10 +671,14 @@ function renderProjects() {
         `;
         tbody.appendChild(tr);
     });
+    
+    applySelectionStyles();
 }
 
 function setFilter(tag) {
-    currentTagFilter = tag; loadProjects();
+    currentTagFilter = tag; 
+    selectedProjectIds.clear();
+    loadProjects();
     document.querySelectorAll('.tag-filter-btn').forEach(btn => { btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); btn.classList.add('text-gray-400', 'hover:bg-gray-800/50'); });
     const activeId = tag === null ? 'btn-filter-all' : `btn-filter-${tag}`; const activeBtn = document.getElementById(activeId);
     if (activeBtn) { activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-800/50'); }
@@ -710,6 +816,64 @@ async function executeDelete() {
     } catch (err) { showToast("Failed to delete", "error"); closeDeleteModal(); } 
     finally { toggleButtonLoading(btn, false, originalHTML); document.getElementById('deleteFilesFromDisk').checked = false; }
 }
+
+ function confirmBulkDelete() {
+     let count = selectedProjectIds.size;
+     if (count === 0 && currentTagFilter) count = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).length;
+     if (count === 0) return;
+     
+     const countText = document.getElementById('bulkDeleteCount');
+     if(countText) countText.innerText = count;
+     
+     const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
+     if(checkbox) checkbox.checked = false;
+     
+     const modal = document.getElementById('bulkDeleteModal');
+     if(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+ }
+ 
+ function closeBulkDeleteModal() { 
+     const m = document.getElementById('bulkDeleteModal'); 
+     if(m) { m.classList.remove('flex'); m.classList.add('hidden'); }
+     const c = document.getElementById('bulkDeleteFilesFromDisk'); 
+     if(c) c.checked = false; 
+ }
+ 
+ async function executeBulkDelete() {
+     let idsToProcess = [];
+     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
+     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id);
+     
+     if (idsToProcess.length === 0) return;
+ 
+     const deleteFiles = document.getElementById('bulkDeleteFilesFromDisk') ? document.getElementById('bulkDeleteFilesFromDisk').checked : false;
+     const btn = document.getElementById('confirmBulkDeleteBtn');
+     const originalHTML = toggleButtonLoading(btn, true);
+     
+     try {
+         const res = await fetch('/api/projects/delete-bulk', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles })
+         });
+         
+         if(res.ok) {
+             closeBulkDeleteModal();
+             selectedProjectIds.clear(); 
+             loadProjects();
+             showToast("Projeler başarıyla silindi", "success");
+         } else {
+             const data = await res.json();
+             showToast(data.error, "error");
+             closeBulkDeleteModal();
+         }
+     } catch (err) {
+         showToast("Bağlantı hatası", "error");
+         closeBulkDeleteModal();
+     } finally {
+         toggleButtonLoading(btn, false, originalHTML);
+     }
+ }
 
 // Drag & Drop
 function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
