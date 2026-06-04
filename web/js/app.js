@@ -7,8 +7,10 @@ let globalWorkspace = "C:/DionyHub/apps";
 
 let globalSavedTags = [];
 
+// Çoklu seçim (Multi-select) değişkenleri
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
+let activeSelectionSource = null; 
 
 const statsHistory = {}; 
 const terminalPool = {}; 
@@ -42,6 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const terminalPane = document.getElementById('terminal-pane');
     const dashboardView = document.getElementById('dashboard-view');
     const grid = document.getElementById('terminals-grid');
+    const tabsContainer = document.getElementById('minimized-tabs-container');
 
     if (resizer && terminalPane && dashboardView) {
         resizer.addEventListener('mousedown', (e) => {
@@ -73,9 +76,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // YENİ: Chrome Tipi Sekme (Tab) Sıralama ve Sürükle-Bırak Olayları
+    if (tabsContainer) {
+        tabsContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Alt taraftaki (terminalPane) drop olayını engelle
+            
+            const draggingTab = document.querySelector('.dragging-tab');
+            if (!draggingTab) return;
+            
+            const afterElement = getDragAfterElement(tabsContainer, e.clientX);
+            if (afterElement == null) {
+                tabsContainer.appendChild(draggingTab);
+            } else {
+                tabsContainer.insertBefore(draggingTab, afterElement);
+            }
+        });
+        
+        tabsContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    }
+
     if (terminalPane) {
         terminalPane.addEventListener('dragover', (e) => {
             e.preventDefault();
+            if (e.target.closest('#minimized-tabs-container')) return; 
             terminalPane.classList.add('ring-2', 'ring-indigo-500/50');
         });
         terminalPane.addEventListener('dragleave', (e) => {
@@ -84,6 +111,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         terminalPane.addEventListener('drop', (e) => {
             e.preventDefault();
             terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
+            if (e.target.closest('#minimized-tabs-container')) return;
+            
             const minId = e.dataTransfer.getData('application/diony-min-term');
             if (minId && terminalPool[minId] && terminalPool[minId].minimized) {
                 restoreTerminal(minId);
@@ -104,6 +133,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
        if (isOutsideClick && selectedProjectIds.size > 0) {
            selectedProjectIds.clear();
+           activeSelectionSource = null;
            applySelectionStyles();
            updateBulkActionBar(cachedProjects.length);
        }
@@ -377,11 +407,7 @@ function getOrCreateTerminal(id, name) {
     searchInput.placeholder = "Find in logs...";
 
     const searchBtn = document.createElement('button');
-    searchBtn.innerHTML = `
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-    `;
+    searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
     searchBtn.title = "Search Logs";
     searchBtn.onclick = () => {
@@ -396,42 +422,33 @@ function getOrCreateTerminal(id, name) {
     };
 
     const exportBtn = document.createElement('button');
-    exportBtn.innerHTML = `
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-        </svg>
-    `;
+    exportBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
     exportBtn.className = "text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors";
     exportBtn.title = "Export Logs to .txt";
     exportBtn.onclick = () => exportTerminalLogs(id, name);
 
     const minBtn = document.createElement('button');
-    minBtn.innerHTML = `
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-        </svg>
-    `;
+    minBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>`;
     minBtn.className = "text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors";
     minBtn.title = "Minimize Terminal";
     minBtn.onclick = () => minimizeTerminal(id, name);
 
     const maxBtn = document.createElement('button');
-    maxBtn.innerHTML = `
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
-        </svg>
-    `;
+    maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
     maxBtn.className = "text-gray-400 hover:text-white hover:bg-gray-700/80 p-1.5 rounded-lg transition-colors";
     maxBtn.title = "Toggle Fullscreen";
     maxBtn.onclick = () => toggleMaximizeTerminal(id);
     
+    // YENİ: X (Close) Butonu - Terminali tamamen kapatır veya çalışıyorsa sekmeye küçültür
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+    closeBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
+    closeBtn.title = "Close Terminal";
+    closeBtn.onclick = () => closeTerminal(id);
+    
     const clearBtn = document.createElement('button');
-    clearBtn.innerHTML = `
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-        </svg>
-    `;
-    clearBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
+    clearBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+    clearBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors ml-1 border-l border-gray-700 pl-2";
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
@@ -440,6 +457,7 @@ function getOrCreateTerminal(id, name) {
     actionsDiv.appendChild(exportBtn); 
     actionsDiv.appendChild(minBtn); 
     actionsDiv.appendChild(maxBtn); 
+    actionsDiv.appendChild(closeBtn); 
     actionsDiv.appendChild(clearBtn);
     
     header.appendChild(titleSpan); 
@@ -467,24 +485,11 @@ function getOrCreateTerminal(id, name) {
 
     const term = new Terminal({
         theme: { 
-            background: '#0a0d14', 
-            foreground: '#e5e7eb', 
-            cursor: '#6366f1', 
-            selection: '#6366f140', 
-            black: '#1f2937', 
-            red: '#ef4444', 
-            green: '#10b981', 
-            yellow: '#f59e0b', 
-            blue: '#3b82f6', 
-            magenta: '#d946ef', 
-            cyan: '#06b6d4', 
-            white: '#f9fafb' 
+            background: '#0a0d14', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', 
+            black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', 
+            magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' 
         },
-        fontFamily: 'Consolas, "Courier New", monospace', 
-        fontSize: 13, 
-        cursorBlink: true, 
-        scrollback: 5000, 
-        convertEol: true
+        fontFamily: 'Consolas, "Courier New", monospace', fontSize: 13, cursorBlink: true, scrollback: 5000, convertEol: true
     });
 
     const fitAddon = new FitAddon.FitAddon(); 
@@ -570,6 +575,20 @@ function getOrCreateTerminal(id, name) {
     return termInstance;
 }
 
+// YENİ: Elementlerin sürüklenip aralarına gireceği noktayı hesaplayan mantık (Chrome Tabs Drag)
+function getDragAfterElement(container, x) {
+    const draggableElements = [...container.querySelectorAll('.min-tab:not(.dragging-tab)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = x - box.left - box.width / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
 function exportTerminalLogs(id, name) {
     const term = terminalPool[id].term; 
     term.selectAll(); 
@@ -607,23 +626,31 @@ function minimizeTerminal(id, name) {
         const tab = document.createElement('div');
         tab.id = `min-tab-${id}`;
         tab.draggable = true;
-        tab.className = "flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0";
+        // Sürükle bırak yapılabilmesi için min-tab classı eklendi
+        tab.className = "min-tab flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0 select-none";
         
         const dotColor = id === 'system' ? 'bg-indigo-500' : 'bg-emerald-500';
+        
+        // YENİ: Restore ve Close butonları sekme içine entegre edildi
         tab.innerHTML = `
             <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div>
             <span class="truncate max-w-[120px] font-bold">${name}</span>
-            <button type="button" class="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity ml-1 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
-            </button>
+            <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                <button type="button" class="hover:text-indigo-400 transition-colors p-0.5 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                </button>
+                <button type="button" class="hover:text-rose-400 transition-colors p-0.5 focus:outline-none" onclick="closeTerminal('${id}'); event.stopPropagation();" title="Close">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
         `;
         
         tab.ondragstart = (e) => {
             e.dataTransfer.setData('application/diony-min-term', id);
-            tab.classList.add('opacity-50');
+            tab.classList.add('opacity-50', 'dragging-tab'); // dragover hesabını yapmak için
         };
         tab.ondragend = (e) => {
-            tab.classList.remove('opacity-50');
+            tab.classList.remove('opacity-50', 'dragging-tab');
         };
         tab.onclick = (e) => {
             if (e.target.closest('button')) return; 
@@ -646,6 +673,41 @@ function restoreTerminal(id) {
     updateGridCSS();
 }
 
+// YENİ: Terminali tamamen kapatma veya Güvenli Minimize Etme Mantığı
+function closeTerminal(id) {
+    const termInstance = terminalPool[id];
+    if (!termInstance) return;
+
+    if (id === 'system') {
+        minimizeTerminal(id, "DionyHub System Logs");
+        return;
+    }
+
+    // Proje halen çalışıyorsa yok etme, sadece küçült!
+    if (termInstance.lastStatus === 'running') {
+        if (!termInstance.minimized) {
+            const p = cachedProjects.find(x => (x.id || x.ID) === id);
+            const pName = p ? (p.name || p.Name) : id;
+            minimizeTerminal(id, pName);
+        } else {
+            showToast("Stop the project first to completely close the terminal.", "error");
+        }
+        return;
+    }
+
+    // Durmuşsa RAM'den ve DOM'dan tamamen sil
+    termInstance.term.dispose(); 
+    termInstance.container.remove();
+    
+    const tab = document.getElementById(`min-tab-${id}`);
+    if (tab) tab.remove();
+    
+    delete terminalPool[id];
+    if (maximizedTerminalId === id) maximizedTerminalId = null;
+    
+    updateGridCSS();
+}
+
 function updateGridCSS() {
     const grid = document.getElementById('terminals-grid'); 
     if (!grid) return;
@@ -655,7 +717,7 @@ function updateGridCSS() {
     
     grid.style.display = 'flex'; 
     grid.style.flexWrap = 'wrap'; 
-    grid.style.alignContent = 'flex-start';
+    grid.style.alignContent = 'stretch';
     grid.style.alignItems = 'stretch';
     grid.style.gap = '16px'; 
     grid.style.overflowX = 'hidden'; 
@@ -697,7 +759,7 @@ function updateGridCSS() {
                 wrapper.style.flex = '1 1 400px'; 
             }
             wrapper.style.height = 'auto'; 
-            wrapper.style.minHeight = '250px'; 
+            wrapper.style.minHeight = '200px'; 
         });
     }
 }
@@ -928,6 +990,156 @@ function switchView(viewName) {
     }
 }
 
+// BÖLÜNMÜŞ TABLO YARDIMCI FONKSİYONU
+function createProjectRow(p, index, sourceArray) {
+    const tr = document.createElement('tr');
+    const pId = p.id || p.ID; 
+    const pSource = (p.source || p.Source) === 'github' ? 'github' : 'local';
+    const isSelected = selectedProjectIds.has(pId);
+    
+    tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/30 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
+    tr.setAttribute('draggable', 'true'); 
+    tr.dataset.id = pId;
+
+    tr.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('.cursor-grab')) return;
+       
+        // KORUMA: Farklı source (tablo) tıklandıysa eski seçimleri temizle
+        if (activeSelectionSource !== null && activeSelectionSource !== pSource && selectedProjectIds.size > 0) {
+            selectedProjectIds.clear();
+        }
+        activeSelectionSource = pSource;
+
+        if (e.ctrlKey || e.metaKey) {
+            if (selectedProjectIds.has(pId)) selectedProjectIds.delete(pId);
+            else selectedProjectIds.add(pId);
+            lastSelectedIdx = index;
+        } else if (e.shiftKey && lastSelectedIdx !== -1) {
+            e.preventDefault(); 
+            document.getSelection().removeAllRanges();
+           
+            const start = Math.min(lastSelectedIdx, index);
+            const end = Math.max(lastSelectedIdx, index);
+           
+            if (!e.ctrlKey && !e.metaKey) selectedProjectIds.clear();
+           
+            for (let i = start; i <= end; i++) {
+                const iterId = sourceArray[i].id || sourceArray[i].ID;
+                if(iterId) selectedProjectIds.add(iterId);
+            }
+        } else {
+            selectedProjectIds.clear();
+            selectedProjectIds.add(pId);
+            lastSelectedIdx = index;
+        }
+       
+        applySelectionStyles();
+        updateBulkActionBar(cachedProjects.length);
+    });
+
+    tr.addEventListener('contextmenu', (e) => {
+        const status = cachedProjects.find(x => (x.id || x.ID) === pId)?.status || 'stopped';
+        showContextMenu(e, pId, p.name || p.Name, status);
+    });
+
+    tr.addEventListener('dragstart', handleDragStart); 
+    tr.addEventListener('dragover', handleDragOver);
+    tr.addEventListener('dragenter', handleDragEnter); 
+    tr.addEventListener('dragleave', handleDragLeave);
+    tr.addEventListener('drop', handleDrop); 
+    tr.addEventListener('dragend', handleDragEnd);
+    
+    const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
+    const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
+    const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
+    const safeName = p.name || p.Name || "Unknown";
+
+    tr.innerHTML = `
+        <td class="p-4 font-bold text-gray-200 flex items-center gap-4">
+            <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+            </div>
+            <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${safeName.charAt(0).toUpperCase()}</div>
+            <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
+        </td>
+        <td class="p-4 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
+        <td class="p-4"><span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
+        <td class="p-4 w-48"><div id="stats-${pId}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
+        <td class="p-4">
+            <div class="flex items-center justify-end gap-3 whitespace-nowrap opacity-40 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
+                    <button onclick="startProject('${pId}', '${safeName}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)] text-xs font-bold text-center transition-colors">Start</button>
+                    <button onclick="restartProject('${pId}', '${safeName}', this)" class="btn-action w-16 bg-blue-600/90 hover:bg-blue-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(59,130,246,0.2)] text-xs font-bold text-center transition-colors">Restart</button>
+                    <button onclick="stopProject('${pId}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="backupProject('${pId}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </button>
+                    <button onclick="openEnvModal('${pId}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                    </button>
+                    <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                    <button onclick="openDeleteModal('${pId}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </td>
+    `;
+    return tr;
+}
+
+function renderProjects() {
+    const localTbody = document.getElementById('local-project-list');
+    const githubTbody = document.getElementById('github-project-list');
+    const tableContainer = document.getElementById('split-tables-container');
+    const emptyState = document.getElementById('global-empty-state');
+
+    if (!localTbody || !githubTbody) return;
+    
+    localTbody.innerHTML = '';
+    githubTbody.innerHTML = '';
+
+    const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
+
+    updateBulkActionBar(filteredProjects.length);
+
+    if (filteredProjects.length === 0) { 
+        tableContainer.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return; 
+    } else {
+        tableContainer.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+    }
+
+    const localProjects = filteredProjects.filter(p => (p.source || p.Source) !== 'github');
+    const githubProjects = filteredProjects.filter(p => (p.source || p.Source) === 'github');
+
+    if (localProjects.length === 0) {
+        localTbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">No local projects found.</td></tr>`;
+    } else {
+        localProjects.forEach((p, index) => {
+            localTbody.appendChild(createProjectRow(p, index, localProjects));
+        });
+    }
+
+    if (githubProjects.length === 0) {
+        githubTbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">No GitHub repositories found.</td></tr>`;
+    } else {
+        githubProjects.forEach((p, index) => {
+            githubTbody.appendChild(createProjectRow(p, index, githubProjects));
+        });
+    }
+
+    applySelectionStyles();
+}
+
 function updateBulkActionBar(filteredCount) {
     const container = document.getElementById('bulk-actions-container');
     const name = document.getElementById('bulk-tag-name');
@@ -955,19 +1167,22 @@ function updateBulkActionBar(filteredCount) {
 }
  
 function applySelectionStyles() {
-    const tbody = document.getElementById('project-list');
-    if(!tbody) return;
-    
-    Array.from(tbody.children).forEach(tr => {
-        const id = tr.dataset.id;
+    ['local-project-list', 'github-project-list'].forEach(tbodyId => {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
         
-        if (selectedProjectIds.has(id)) {
-            tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
-            tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10', 'bg-indigo-500/20');
-        } else {
-            tr.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10', 'bg-indigo-500/20');
-            tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
-        }
+        Array.from(tbody.children).forEach(tr => {
+            const id = tr.dataset.id;
+            if (!id) return; // Skip "No projects found" row
+            
+            if (selectedProjectIds.has(id)) {
+                tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+                tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10', 'bg-indigo-500/20');
+            } else {
+                tr.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10', 'bg-indigo-500/20');
+                tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+            }
+        });
     });
 }
 
@@ -984,138 +1199,10 @@ async function loadProjects() {
     }
 }
 
-function renderProjects() {
-    const tbody = document.getElementById('project-list');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
-
-    updateBulkActionBar(filteredProjects.length);
-
-    if (filteredProjects.length === 0) { 
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="p-16 text-center border-b border-transparent">
-                    <div class="flex flex-col items-center justify-center opacity-40 hover:opacity-70 transition-opacity">
-                        <svg class="w-16 h-16 text-indigo-400 mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                        </svg>
-                        <span class="text-lg font-black text-gray-300 tracking-widest uppercase">No Projects Found</span>
-                        <span class="text-sm text-gray-500 mt-2 font-medium">Your command center is empty. Click 'Add Project' to begin.</span>
-                    </div>
-                </td>
-            </tr>
-        `; 
-        return; 
-    }
-
-    filteredProjects.forEach((p, index) => {
-        const tr = document.createElement('tr');
-        const pId = p.id || p.ID; 
-        const isSelected = selectedProjectIds.has(pId);
-        
-        tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/30 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
-        tr.setAttribute('draggable', 'true'); 
-        tr.dataset.id = pId;
-
-        tr.addEventListener('click', (e) => {
-            if (e.target.closest('button') || e.target.closest('.cursor-grab')) return;
-           
-            if (e.ctrlKey || e.metaKey) {
-                if (selectedProjectIds.has(pId)) {
-                    selectedProjectIds.delete(pId);
-                } else {
-                    selectedProjectIds.add(pId);
-                }
-                lastSelectedIdx = index;
-            } else if (e.shiftKey && lastSelectedIdx !== -1) {
-                e.preventDefault(); 
-                document.getSelection().removeAllRanges();
-               
-                const start = Math.min(lastSelectedIdx, index);
-                const end = Math.max(lastSelectedIdx, index);
-               
-                if (!e.ctrlKey && !e.metaKey) {
-                    selectedProjectIds.clear();
-                }
-               
-                for (let i = start; i <= end; i++) {
-                    const iterId = filteredProjects[i].id || filteredProjects[i].ID;
-                    if(iterId) selectedProjectIds.add(iterId);
-                }
-            } else {
-                selectedProjectIds.clear();
-                selectedProjectIds.add(pId);
-                lastSelectedIdx = index;
-            }
-           
-            applySelectionStyles();
-            updateBulkActionBar(filteredProjects.length);
-        });
-
-        tr.addEventListener('contextmenu', (e) => {
-            const status = cachedProjects.find(x => (x.id || x.ID) === pId)?.status || 'stopped';
-            showContextMenu(e, pId, p.name || p.Name, status);
-        });
-
-        tr.addEventListener('dragstart', handleDragStart); 
-        tr.addEventListener('dragover', handleDragOver);
-        tr.addEventListener('dragenter', handleDragEnter); 
-        tr.addEventListener('dragleave', handleDragLeave);
-        tr.addEventListener('drop', handleDrop); 
-        tr.addEventListener('dragend', handleDragEnd);
-        
-        const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
-        const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
-        const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
-        const safeName = p.name || p.Name || "Unknown";
-
-        tr.innerHTML = `
-            <td class="p-5 font-bold text-gray-200 flex items-center gap-4">
-                <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                </div>
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${safeName.charAt(0).toUpperCase()}</div>
-                <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
-            </td>
-            <td class="p-5 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
-            <td class="p-5"><span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
-            <td class="p-5 w-48"><div id="stats-${pId}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
-            <td class="p-5">
-                <div class="flex items-center justify-end gap-3 whitespace-nowrap opacity-40 group-hover:opacity-100 transition-opacity duration-300">
-                    <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
-                        <button onclick="startProject('${pId}', '${safeName}', this)" class="btn-action w-16 bg-emerald-600/90 hover:bg-emerald-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)] text-xs font-bold text-center transition-colors">Start</button>
-                        <button onclick="restartProject('${pId}', '${safeName}', this)" class="btn-action w-16 bg-blue-600/90 hover:bg-blue-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(59,130,246,0.2)] text-xs font-bold text-center transition-colors">Restart</button>
-                        <button onclick="stopProject('${pId}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="backupProject('${pId}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        </button>
-                        <button onclick="openEnvModal('${pId}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                        </button>
-                        <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        </button>
-                        <button onclick="openDeleteModal('${pId}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-    
-    // Tablo yeniden yüklendiğinde eski seçili durumları koru
-    applySelectionStyles();
-}
-
 function setFilter(tag) {
     currentTagFilter = tag; 
     selectedProjectIds.clear();
+    activeSelectionSource = null;
     loadProjects();
     
     document.querySelectorAll('.tag-filter-btn').forEach(btn => { 
@@ -1162,7 +1249,6 @@ function renderSidebarTags(projects) {
     });
 }
 
-// YENİ: TAG YÖNETİM FONKSİYONLARI (CREATE / ASSIGN)
 function openTagModal(tag = null) {
     document.getElementById('tagModalTitle').innerText = tag ? `Manage: #${tag}` : 'Create New Tag';
     document.getElementById('tagOriginalName').value = tag || '';
@@ -1732,7 +1818,6 @@ async function executeBulkAction(action) {
     }
 }
 
-// Drag & Drop
 function handleDragStart(e) { 
     draggedRow = this; 
     e.dataTransfer.effectAllowed = 'move'; 
@@ -1758,16 +1843,20 @@ function handleDrop(e) {
     e.stopPropagation(); 
     this.classList.remove('border-t-2', 'border-indigo-500');
     
+    if (draggedRow.parentNode !== this.parentNode) {
+        return false; 
+    }
+
     if (draggedRow !== this) {
-        const tbody = document.getElementById('project-list'); 
+        const tbody = this.parentNode; 
         const rows = Array.from(tbody.children);
         const draggedIndex = rows.indexOf(draggedRow); 
         const droppedIndex = rows.indexOf(this);
         
         if (draggedIndex < droppedIndex) {
-            this.parentNode.insertBefore(draggedRow, this.nextSibling);
+            tbody.insertBefore(draggedRow, this.nextSibling);
         } else {
-            this.parentNode.insertBefore(draggedRow, this); 
+            tbody.insertBefore(draggedRow, this); 
         }
         saveNewOrder();
     } 
@@ -1776,12 +1865,17 @@ function handleDrop(e) {
 
 function handleDragEnd() { 
     this.classList.remove('opacity-50'); 
-    document.querySelectorAll('#project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); 
+    document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); 
 }
 
 async function saveNewOrder() {
-    const tbody = document.getElementById('project-list'); 
-    const newOrderIDs = Array.from(tbody.children).map(tr => tr.dataset.id);
+    const localBody = document.getElementById('local-project-list');
+    const githubBody = document.getElementById('github-project-list');
+    
+    const localIDs = localBody ? Array.from(localBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
+    const githubIDs = githubBody ? Array.from(githubBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
+    
+    const newOrderIDs = [...localIDs, ...githubIDs];
     
     try {
         const res = await fetch('/api/projects/reorder', { 

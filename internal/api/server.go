@@ -306,7 +306,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
 		AutoClose:   req.AutoClose,
-		Source:      "local", // YENİ: Local olarak işaretliyoruz
+		Source:      "local",
 		Status:      "stopped",
 	}
 
@@ -349,26 +349,38 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parts := strings.Split(req.RepoURL, "/")
+	cleanURL := strings.TrimRight(req.RepoURL, "/")
+	parts := strings.Split(cleanURL, "/")
 	repoName := parts[len(parts)-1]
 	repoName = strings.TrimSuffix(repoName, ".git")
 
+	// YENİ: Ayarlar henüz oluşturulmadıysa çökme, varsayılan bir yol ata
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
-		http.Error(w, `{"error": "Global Workspace is not configured."}`, http.StatusBadRequest)
-		return
+		settings.Workspace = "C:/DionyHub/apps"
 	}
 
 	cleanWorkspace := strings.ReplaceAll(settings.Workspace, "\u202A", "")
 	cleanWorkspace = strings.ReplaceAll(cleanWorkspace, "\u202C", "")
 	os.MkdirAll(cleanWorkspace, 0755)
 
-	destPath := cleanWorkspace + "/" + repoName
+	destPath := filepath.Join(cleanWorkspace, repoName)
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
+	if _, err := os.Stat(destPath); !os.IsNotExist(err) {
+		http.Error(w, fmt.Sprintf(`{"error": "Folder '%s' already exists in your workspace!"}`, repoName), http.StatusBadRequest)
+		return
+	}
+
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
-	if err := cmd.Run(); err != nil {
-		http.Error(w, `{"error": "Git Clone Failed"}`, http.StatusInternalServerError)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		safeErr := strings.ReplaceAll(string(output), "\n", " ")
+		safeErr = strings.ReplaceAll(safeErr, "\"", "'")
+		if safeErr == "" {
+			safeErr = err.Error()
+		}
+		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, safeErr), http.StatusInternalServerError)
 		return
 	}
 
@@ -387,7 +399,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
 		AutoClose:   req.AutoClose,
-		Source:      "github", // YENİ: Github olarak işaretliyoruz
+		Source:      "github",
 		Status:      "stopped",
 	}
 
@@ -442,7 +454,6 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Sadece Source=="github" ise diskten silmeye izin ver.
 	if removeFiles && projectToDelete != nil && projectToDelete.Source == "github" {
 		os.RemoveAll(projectToDelete.Path)
 	}
@@ -495,7 +506,6 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 
 	for _, p := range s.projects {
 		if idMap[p.ID] {
-			// YENİ: Sadece Source=="github" ise diskten silmeye izin ver.
 			if req.RemoveFiles && p.Source == "github" {
 				os.RemoveAll(p.Path)
 			}
@@ -773,10 +783,10 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// YENİ: Settings yoksa bile çökmeyip varsayılana düşsün
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
-		http.Error(w, `{"error": "Workspace is not defined."}`, http.StatusInternalServerError)
-		return
+		settings.Workspace = "C:/DionyHub/apps"
 	}
 
 	backupDir := filepath.Join(settings.Workspace, "DionyHub_Backups")
