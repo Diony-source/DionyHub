@@ -7,7 +7,6 @@ let globalWorkspace = "C:/DionyHub/apps";
 
 let globalSavedTags = [];
 
-// Çoklu seçim (Multi-select) değişkenleri
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
 let activeSelectionSource = null; 
@@ -76,11 +75,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // YENİ: Chrome Tipi Sekme (Tab) Sıralama ve Sürükle-Bırak Olayları
     if (tabsContainer) {
         tabsContainer.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.stopPropagation(); // Alt taraftaki (terminalPane) drop olayını engelle
+            e.stopPropagation(); 
             
             const draggingTab = document.querySelector('.dragging-tab');
             if (!draggingTab) return;
@@ -439,7 +437,6 @@ function getOrCreateTerminal(id, name) {
     maxBtn.title = "Toggle Fullscreen";
     maxBtn.onclick = () => toggleMaximizeTerminal(id);
     
-    // YENİ: X (Close) Butonu - Terminali tamamen kapatır veya çalışıyorsa sekmeye küçültür
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
     closeBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
@@ -575,7 +572,6 @@ function getOrCreateTerminal(id, name) {
     return termInstance;
 }
 
-// YENİ: Elementlerin sürüklenip aralarına gireceği noktayı hesaplayan mantık (Chrome Tabs Drag)
 function getDragAfterElement(container, x) {
     const draggableElements = [...container.querySelectorAll('.min-tab:not(.dragging-tab)')];
     return draggableElements.reduce((closest, child) => {
@@ -626,12 +622,10 @@ function minimizeTerminal(id, name) {
         const tab = document.createElement('div');
         tab.id = `min-tab-${id}`;
         tab.draggable = true;
-        // Sürükle bırak yapılabilmesi için min-tab classı eklendi
         tab.className = "min-tab flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0 select-none";
         
         const dotColor = id === 'system' ? 'bg-indigo-500' : 'bg-emerald-500';
         
-        // YENİ: Restore ve Close butonları sekme içine entegre edildi
         tab.innerHTML = `
             <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div>
             <span class="truncate max-w-[120px] font-bold">${name}</span>
@@ -647,7 +641,7 @@ function minimizeTerminal(id, name) {
         
         tab.ondragstart = (e) => {
             e.dataTransfer.setData('application/diony-min-term', id);
-            tab.classList.add('opacity-50', 'dragging-tab'); // dragover hesabını yapmak için
+            tab.classList.add('opacity-50', 'dragging-tab');
         };
         tab.ondragend = (e) => {
             tab.classList.remove('opacity-50', 'dragging-tab');
@@ -673,7 +667,6 @@ function restoreTerminal(id) {
     updateGridCSS();
 }
 
-// YENİ: Terminali tamamen kapatma veya Güvenli Minimize Etme Mantığı
 function closeTerminal(id) {
     const termInstance = terminalPool[id];
     if (!termInstance) return;
@@ -683,19 +676,18 @@ function closeTerminal(id) {
         return;
     }
 
-    // Proje halen çalışıyorsa yok etme, sadece küçült!
     if (termInstance.lastStatus === 'running') {
         if (!termInstance.minimized) {
             const p = cachedProjects.find(x => (x.id || x.ID) === id);
             const pName = p ? (p.name || p.Name) : id;
             minimizeTerminal(id, pName);
+            showToast("Terminal kapatılamadı: Proje şu anda çalışıyor. Sekmeye küçültüldü, tamamen kapatmak için önce durdurun.", "error");
         } else {
-            showToast("Stop the project first to completely close the terminal.", "error");
+            showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
         }
         return;
     }
 
-    // Durmuşsa RAM'den ve DOM'dan tamamen sil
     termInstance.term.dispose(); 
     termInstance.container.remove();
     
@@ -717,7 +709,7 @@ function updateGridCSS() {
     
     grid.style.display = 'flex'; 
     grid.style.flexWrap = 'wrap'; 
-    grid.style.alignContent = 'stretch';
+    grid.style.alignContent = 'stretch';  
     grid.style.alignItems = 'stretch';
     grid.style.gap = '16px'; 
     grid.style.overflowX = 'hidden'; 
@@ -738,7 +730,7 @@ function updateGridCSS() {
             } else {
                 wrapper.style.display = 'flex';
                 wrapper.style.flex = '1 1 100%';
-                wrapper.style.height = 'auto';
+                wrapper.style.height = 'auto'; 
                 wrapper.style.minHeight = '250px';
                 wrapper.style.maxWidth = '100%';
             }
@@ -758,6 +750,7 @@ function updateGridCSS() {
             } else { 
                 wrapper.style.flex = '1 1 400px'; 
             }
+            
             wrapper.style.height = 'auto'; 
             wrapper.style.minHeight = '200px'; 
         });
@@ -990,7 +983,6 @@ function switchView(viewName) {
     }
 }
 
-// BÖLÜNMÜŞ TABLO YARDIMCI FONKSİYONU
 function createProjectRow(p, index, sourceArray) {
     const tr = document.createElement('tr');
     const pId = p.id || p.ID; 
@@ -1004,7 +996,6 @@ function createProjectRow(p, index, sourceArray) {
     tr.addEventListener('click', (e) => {
         if (e.target.closest('button') || e.target.closest('.cursor-grab')) return;
        
-        // KORUMA: Farklı source (tablo) tıklandıysa eski seçimleri temizle
         if (activeSelectionSource !== null && activeSelectionSource !== pSource && selectedProjectIds.size > 0) {
             selectedProjectIds.clear();
         }
@@ -1173,7 +1164,7 @@ function applySelectionStyles() {
         
         Array.from(tbody.children).forEach(tr => {
             const id = tr.dataset.id;
-            if (!id) return; // Skip "No projects found" row
+            if (!id) return; 
             
             if (selectedProjectIds.has(id)) {
                 tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
