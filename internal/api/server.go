@@ -52,8 +52,6 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
-
-	// YENİ ROTA: Tag Yönetim İstekleri
 	mux.HandleFunc("/api/tags/manage", s.handleManageTag)
 
 	go s.startMetricsPusher()
@@ -136,7 +134,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// SaveTags dizisini eskisinden taşıyoruz ki ezilmesin (Sadece Workspace ve GlobalEnv geliyor bu endpointten)
 		oldSettings, _ := config.LoadSettings("app_config.json")
 		newSettings.SavedTags = oldSettings.SavedTags
 
@@ -309,6 +306,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
 		AutoClose:   req.AutoClose,
+		Source:      "local", // YENİ: Local olarak işaretliyoruz
 		Status:      "stopped",
 	}
 
@@ -389,6 +387,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
 		AutoClose:   req.AutoClose,
+		Source:      "github", // YENİ: Github olarak işaretliyoruz
 		Status:      "stopped",
 	}
 
@@ -443,7 +442,8 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if removeFiles && projectToDelete != nil {
+	// YENİ: Sadece Source=="github" ise diskten silmeye izin ver.
+	if removeFiles && projectToDelete != nil && projectToDelete.Source == "github" {
 		os.RemoveAll(projectToDelete.Path)
 	}
 
@@ -495,7 +495,8 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 
 	for _, p := range s.projects {
 		if idMap[p.ID] {
-			if req.RemoveFiles {
+			// YENİ: Sadece Source=="github" ise diskten silmeye izin ver.
+			if req.RemoveFiles && p.Source == "github" {
 				os.RemoveAll(p.Path)
 			}
 			deletedCount++
@@ -821,7 +822,6 @@ func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// YENİ: Tag oluşturma ve çoklu proje atama (Bulk Assign) işlemini yürüten endpoint
 func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -842,7 +842,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	req.OriginalTag = strings.TrimSpace(req.OriginalTag)
 	req.NewTag = strings.TrimSpace(req.NewTag)
 
-	// 1. Ayarları Güncelle (Orijinal Tag'i sil, yenisini ekle)
 	settings, err := config.LoadSettings("app_config.json")
 	if err == nil {
 		var newSavedTags []string
@@ -850,7 +849,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 
 		for _, t := range settings.SavedTags {
 			if t == req.OriginalTag {
-				// Silinecek veya adı değişecek tag'i atla
 				continue
 			}
 			if t == req.NewTag {
@@ -859,7 +857,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 			newSavedTags = append(newSavedTags, t)
 		}
 
-		// Boş olmayan ve listede henüz bulunmayan yeni tag'i ekle
 		if req.NewTag != "" && !tagExists {
 			newSavedTags = append(newSavedTags, req.NewTag)
 		}
@@ -868,7 +865,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		config.SaveSettings("app_config.json", settings)
 	}
 
-	// 2. Projeleri Güncelle (Bulk Tag Assign)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -881,7 +877,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		if targetMap[p.ID] {
 			s.projects[i].Tag = req.NewTag
 		} else if req.OriginalTag != "" && p.Tag == req.OriginalTag {
-			// Eskiden bu gruptaydı ama artık check edilmemiş, o yüzden boşaltıyoruz.
 			s.projects[i].Tag = ""
 		}
 	}

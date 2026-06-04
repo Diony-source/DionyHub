@@ -81,26 +81,26 @@
                 <div id="bulk-actions-container" style="display: none;" class="px-8 pt-8 pb-0 justify-between items-end transition-all duration-300 shrink-0">
                     <div class="flex items-center gap-3">
                         <span class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5" id="bulk-tag-name">
-                            <span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler
+                            <span class="text-indigo-500 font-bold opacity-75">✓</span> Selected Items
                         </span>
-                        <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 proje</span>
+                        <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 projects</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <button onclick="executeBulkAction('start')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/50">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Seçilenleri Başlat
+                            Start Selected
                         </button>
                         
                         <button onclick="executeBulkAction('stop')" class="btn-action bg-amber-600/90 hover:bg-amber-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-amber-500/50">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"></path></svg>
-                            Seçilenleri Durdur
+                            Stop Selected
                         </button>
 
                         <button onclick="confirmBulkDelete()" class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg> 
-                            Seçilenleri Sil
+                            Delete Selected
                         </button>
                     </div>
                 </div>
@@ -197,7 +197,7 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Assigned Projects</label>
                         <div id="tagProjectList" class="bg-[#0a0d14] border border-gray-800 rounded-xl shadow-inner p-3 max-h-60 overflow-y-auto flex flex-col gap-2">
-                            </div>
+                        </div>
                         <p class="text-[10px] text-gray-500 mt-1.5">Select the projects you want to group under this tag.</p>
                     </div>
 
@@ -456,7 +456,8 @@
         <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter flex flex-col">
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete <span id="bulkDeleteCount" class="text-rose-500"></span> Projects?</h3>
-                <div class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner">
+                
+                <div id="bulkDeleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <div class="relative flex items-center shrink-0">
                             <input type="checkbox" id="bulkDeleteFilesFromDisk" class="sr-only peer">
@@ -468,6 +469,8 @@
                         </div>
                     </label>
                 </div>
+                <p id="bulkDeleteLocalWarning" class="text-xs text-amber-500/80 mb-6 text-center font-medium hidden">Local projects selected. Permanent file deletion disabled for safety.</p>
+
                 <div class="flex gap-3">
                     <button type="button" onclick="closeBulkDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
                     <button type="button" id="confirmBulkDeleteBtn" onclick="executeBulkDelete()" class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50">Delete Now</button>
@@ -480,7 +483,8 @@
         <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter">
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
-                <div class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner">
+                
+                <div id="deleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <div class="relative flex items-center shrink-0">
                             <input type="checkbox" id="deleteFilesFromDisk" class="sr-only peer">
@@ -492,6 +496,8 @@
                         </div>
                     </label>
                 </div>
+                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-6 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety. Only the DionyHub link will be removed.</p>
+
                 <div class="flex gap-3">
                     <button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
                     <button id="confirmDeleteBtn" onclick="executeDelete()" class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50">Delete Now</button>

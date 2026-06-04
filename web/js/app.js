@@ -5,10 +5,8 @@ let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 
-// YENİ: Boş tag'lerin tutulduğu yer
 let globalSavedTags = [];
 
-// Multi-select variables
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
 
@@ -33,7 +31,6 @@ const terminalResizeObserver = new ResizeObserver((entries) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
-    // Önce tag'leri (ayarları) yükle ki boş tag'ler render olabilsin
     await loadSettings();
     loadProjects();
     connectWebSocket();
@@ -1139,7 +1136,6 @@ function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
     const dynamicTags = projects.map(p => p.tag).filter(t => t && t.trim() !== '');
     
-    // Hem projelerden gelenleri hem de ayarlara kaydedilmiş boş tag'leri birleştir
     availableTags = [...new Set([...dynamicTags, ...globalSavedTags])].sort();
     
     const tagList = document.getElementById('tag-list'); 
@@ -1379,7 +1375,6 @@ async function loadSettings() {
             document.getElementById('setting-workspace').value = globalWorkspace;
             if (settings.global_env) document.getElementById('setting-global-env').value = settings.global_env;
             
-            // Gelen ayarlardaki saved_tags'leri global listeye atıyoruz.
             globalSavedTags = settings.saved_tags || [];
             
             toggleWorkspaceMode(); 
@@ -1559,8 +1554,23 @@ async function submitEditProject(event) {
 }
 
 function openDeleteModal(id) { 
+    const project = cachedProjects.find(p => p.id === id || p.ID === id);
+    const source = project ? (project.source || project.Source || 'local') : 'local';
+    
+    const checkboxContainer = document.getElementById('deleteFilesContainer');
+    const warningText = document.getElementById('deleteLocalWarning');
+    const checkbox = document.getElementById('deleteFilesFromDisk');
+    
+    if (source === 'github') {
+        checkboxContainer.classList.remove('hidden');
+        warningText.classList.add('hidden');
+    } else {
+        checkboxContainer.classList.add('hidden');
+        warningText.classList.remove('hidden');
+        checkbox.checked = false;
+    }
+
     projectToDelete = id; 
-    document.getElementById('deleteFilesFromDisk').checked = false; 
     document.getElementById('deleteModal').classList.replace('hidden', 'flex'); 
 }
 
@@ -1598,23 +1608,42 @@ async function executeDelete() {
     }
 }
 
- function confirmBulkDelete() {
-     let count = selectedProjectIds.size;
-     if (count === 0 && currentTagFilter) count = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).length;
-     if (count === 0) return;
-     
-     const countText = document.getElementById('bulkDeleteCount');
-     if(countText) countText.innerText = count;
-     
-     const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
-     if(checkbox) checkbox.checked = false;
-     
-     const modal = document.getElementById('bulkDeleteModal');
-     if(modal) { 
-         modal.classList.remove('hidden'); 
-         modal.classList.add('flex'); 
-     }
- }
+function confirmBulkDelete() {
+    let idsToProcess = [];
+    if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
+    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
+    
+    if (idsToProcess.length === 0) return;
+
+    let hasLocal = false;
+    idsToProcess.forEach(id => {
+        const p = cachedProjects.find(x => x.id === id || x.ID === id);
+        const source = p ? (p.source || p.Source || 'local') : 'local';
+        if (source !== 'github') hasLocal = true;
+    });
+
+    const checkboxContainer = document.getElementById('bulkDeleteFilesContainer');
+    const warningText = document.getElementById('bulkDeleteLocalWarning');
+    const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
+
+    if (!hasLocal) {
+        checkboxContainer.classList.remove('hidden');
+        warningText.classList.add('hidden');
+    } else {
+        checkboxContainer.classList.add('hidden');
+        warningText.classList.remove('hidden');
+        checkbox.checked = false;
+    }
+
+    const countText = document.getElementById('bulkDeleteCount');
+    if(countText) countText.innerText = idsToProcess.length;
+    
+    const modal = document.getElementById('bulkDeleteModal');
+    if(modal) { 
+        modal.classList.remove('hidden'); 
+        modal.classList.add('flex'); 
+    }
+}
  
  function closeBulkDeleteModal() { 
      const m = document.getElementById('bulkDeleteModal'); 
