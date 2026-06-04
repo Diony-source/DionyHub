@@ -53,6 +53,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
 
+	// YENİ ROTA: Tag Yönetim İstekleri
+	mux.HandleFunc("/api/tags/manage", s.handleManageTag)
+
 	go s.startMetricsPusher()
 }
 
@@ -133,6 +136,10 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// SaveTags dizisini eskisinden taşıyoruz ki ezilmesin (Sadece Workspace ve GlobalEnv geliyor bu endpointten)
+		oldSettings, _ := config.LoadSettings("app_config.json")
+		newSettings.SavedTags = oldSettings.SavedTags
+
 		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202A", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202C", "")
@@ -154,7 +161,6 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
-// DERLEME HATASINI ÇÖZEN YAPI
 type ProjectResponse struct {
 	config.Project
 	CPU float64 `json:"cpu"`
@@ -239,7 +245,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 			s.projects[i].Interactive = updatedData.Interactive
 			s.projects[i].AutoStart = updatedData.AutoStart
 			s.projects[i].AutoRestart = updatedData.AutoRestart
-			s.projects[i].AutoClose = updatedData.AutoClose // YENİ EKLENDİ
+			s.projects[i].AutoClose = updatedData.AutoClose
 			s.projects[i].Tag = updatedData.Tag
 			found = true
 			break
@@ -269,7 +275,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
 		AutoRestart bool   `json:"auto_restart"`
-		AutoClose   bool   `json:"auto_close"` // YENİ EKLENDİ
+		AutoClose   bool   `json:"auto_close"`
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -302,7 +308,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
-		AutoClose:   req.AutoClose, // YENİ EKLENDİ
+		AutoClose:   req.AutoClose,
 		Status:      "stopped",
 	}
 
@@ -330,7 +336,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Interactive bool   `json:"interactive"`
 		AutoStart   bool   `json:"auto_start"`
 		AutoRestart bool   `json:"auto_restart"`
-		AutoClose   bool   `json:"auto_close"` // YENİ EKLENDİ
+		AutoClose   bool   `json:"auto_close"`
 		InitialEnv  string `json:"initial_env"`
 	}
 
@@ -382,7 +388,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		Interactive: req.Interactive,
 		AutoStart:   req.AutoStart,
 		AutoRestart: req.AutoRestart,
-		AutoClose:   req.AutoClose, // YENİ EKLENDİ
+		AutoClose:   req.AutoClose,
 		Status:      "stopped",
 	}
 
@@ -813,4 +819,76 @@ func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// YENİ: Tag oluşturma ve çoklu proje atama (Bulk Assign) işlemini yürüten endpoint
+func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		OriginalTag string   `json:"original_tag"`
+		NewTag      string   `json:"new_tag"`
+		ProjectIDs  []string `json:"project_ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	req.OriginalTag = strings.TrimSpace(req.OriginalTag)
+	req.NewTag = strings.TrimSpace(req.NewTag)
+
+	// 1. Ayarları Güncelle (Orijinal Tag'i sil, yenisini ekle)
+	settings, err := config.LoadSettings("app_config.json")
+	if err == nil {
+		var newSavedTags []string
+		tagExists := false
+
+		for _, t := range settings.SavedTags {
+			if t == req.OriginalTag {
+				// Silinecek veya adı değişecek tag'i atla
+				continue
+			}
+			if t == req.NewTag {
+				tagExists = true
+			}
+			newSavedTags = append(newSavedTags, t)
+		}
+
+		// Boş olmayan ve listede henüz bulunmayan yeni tag'i ekle
+		if req.NewTag != "" && !tagExists {
+			newSavedTags = append(newSavedTags, req.NewTag)
+		}
+
+		settings.SavedTags = newSavedTags
+		config.SaveSettings("app_config.json", settings)
+	}
+
+	// 2. Projeleri Güncelle (Bulk Tag Assign)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	targetMap := make(map[string]bool)
+	for _, id := range req.ProjectIDs {
+		targetMap[id] = true
+	}
+
+	for i, p := range s.projects {
+		if targetMap[p.ID] {
+			s.projects[i].Tag = req.NewTag
+		} else if req.OriginalTag != "" && p.Tag == req.OriginalTag {
+			// Eskiden bu gruptaydı ama artık check edilmemiş, o yüzden boşaltıyoruz.
+			s.projects[i].Tag = ""
+		}
+	}
+
+	config.SaveProjects("config.json", s.projects)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Tag konfigürasyonu başarıyla kaydedildi"})
 }

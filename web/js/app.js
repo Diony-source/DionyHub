@@ -5,6 +5,9 @@ let availableTags = [];
 let cachedProjects = [];
 let globalWorkspace = "C:/DionyHub/apps";
 
+// YENİ: Boş tag'lerin tutulduğu yer
+let globalSavedTags = [];
+
 // Multi-select variables
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
@@ -16,7 +19,6 @@ let maximizedTerminalId = null;
 let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
-// Terminal resizer state & Modern ResizeObserver
 let isResizing = false;
 const terminalResizeObserver = new ResizeObserver((entries) => {
     requestAnimationFrame(() => {
@@ -29,10 +31,11 @@ const terminalResizeObserver = new ResizeObserver((entries) => {
     });
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     getOrCreateTerminal("system", "DionyHub System Logs");
+    // Önce tag'leri (ayarları) yükle ki boş tag'ler render olabilsin
+    await loadSettings();
     loadProjects();
-    loadSettings();
     connectWebSocket();
     initTagAutocomplete('projTag', 'tagDropdown'); 
     initTagAutocomplete('editProjTag', 'editTagDropdown'); 
@@ -47,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
             document.body.style.cursor = 'row-resize';
-            // Sürüklerken animasyonları kapat (Gecikme olmaması için)
             if (grid) grid.style.transition = 'none';
             e.preventDefault();
         });
@@ -69,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isResizing) {
                 isResizing = false;
                 document.body.style.cursor = '';
-                if (grid) grid.style.transition = ''; // Animasyonları geri aç
+                if (grid) grid.style.transition = ''; 
             }
         });
     }
@@ -100,7 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                 !e.target.closest('#bulk-actions-container') && 
                                 !e.target.closest('.btn-action') && 
                                 !e.target.closest('.tag-filter-btn') && 
-                                !e.target.closest('.cursor-pointer');
+                                !e.target.closest('.cursor-pointer') &&
+                                !e.target.closest('#tagModal');
 
        if (isOutsideClick && selectedProjectIds.size > 0) {
            selectedProjectIds.clear();
@@ -354,7 +357,6 @@ function getOrCreateTerminal(id, name) {
 
     const wrapper = document.createElement('div');
     wrapper.id = `tmux-wrapper-${id}`;
-    // transition class'ı düzeltildi (Sadece opacity/transform animasyonlu, layout değişimi anlık olacak)
     wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition opacity transform duration-300 scale-95 opacity-0 min-w-0 max-w-full";
 
     const header = document.createElement('div');
@@ -446,7 +448,6 @@ function getOrCreateTerminal(id, name) {
     header.appendChild(titleSpan); 
     header.appendChild(actionsDiv);
 
-    // KESİN ÇÖZÜM: XTERM'İN KUTUYU İTMESİNİ (BLOWOUT) ENGELLEYEN ABSOLUTE YAPI
     const xtermWrapper = document.createElement('div');
     xtermWrapper.className = "flex-1 relative w-full min-w-0 min-h-[150px] overflow-hidden";
     xtermWrapper.dataset.termId = id;
@@ -460,7 +461,6 @@ function getOrCreateTerminal(id, name) {
     wrapper.appendChild(xtermWrapper); 
     grid.appendChild(wrapper);
 
-    // Büyüme/küçülmeleri algılayıp xterm'e anında bildirmesi için
     terminalResizeObserver.observe(xtermWrapper);
 
     requestAnimationFrame(() => {
@@ -616,7 +616,7 @@ function minimizeTerminal(id, name) {
         tab.innerHTML = `
             <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div>
             <span class="truncate max-w-[120px] font-bold">${name}</span>
-            <button class="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity ml-1 focus:outline-none" onclick="restoreTerminal('${id}')" title="Restore">
+            <button type="button" class="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity ml-1 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
             </button>
         `;
@@ -656,11 +656,9 @@ function updateGridCSS() {
     const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
     const count = activeIds.length;
     
-    // Tümüyle Flexbox'a ve Masonry Mantığına Geçiş Yapıldı. 
-    // Sonsuza doğru taşma sorunu engellendi (overflowX = 'hidden' ve max-w-full).
     grid.style.display = 'flex'; 
     grid.style.flexWrap = 'wrap'; 
-    grid.style.alignContent = 'stretch';
+    grid.style.alignContent = 'flex-start';
     grid.style.alignItems = 'stretch';
     grid.style.gap = '16px'; 
     grid.style.overflowX = 'hidden'; 
@@ -701,8 +699,6 @@ function updateGridCSS() {
             } else { 
                 wrapper.style.flex = '1 1 400px'; 
             }
-            
-            // ESNEK YAPI BURADA! height 'auto' ile boşluğu dolduracak.
             wrapper.style.height = 'auto'; 
             wrapper.style.minHeight = '250px'; 
         });
@@ -710,7 +706,6 @@ function updateGridCSS() {
 }
 
 function refreshAllTerminalFits() { 
-    // ResizeObserver otomatik yönetiyor ancak manuel tetikler için kalmalı
     Object.values(terminalPool).forEach(instance => { 
         if (!instance.container.classList.contains('hidden') && instance.container.style.display !== 'none') { 
             try { instance.fitAddon.fit(); } catch(e) {} 
@@ -1117,6 +1112,7 @@ function renderProjects() {
         tbody.appendChild(tr);
     });
     
+    // Tablo yeniden yüklendiğinde eski seçili durumları koru
     applySelectionStyles();
 }
 
@@ -1141,7 +1137,10 @@ function setFilter(tag) {
 
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
-    availableTags = [...new Set(projects.map(p => p.tag).filter(t => t && t.trim() !== ''))];
+    const dynamicTags = projects.map(p => p.tag).filter(t => t && t.trim() !== '');
+    
+    // Hem projelerden gelenleri hem de ayarlara kaydedilmiş boş tag'leri birleştir
+    availableTags = [...new Set([...dynamicTags, ...globalSavedTags])].sort();
     
     const tagList = document.getElementById('tag-list'); 
     if (!tagList) return;
@@ -1155,11 +1154,121 @@ function renderSidebarTags(projects) {
     availableTags.forEach(tag => { 
         const isActive = currentTagFilter === tag; 
         tagList.innerHTML += `
-            <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${isActive ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'}">
-                # ${tag}
-            </button>
+            <div class="flex items-center group relative mt-1">
+                <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="flex-1 tag-filter-btn text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${isActive ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'} pr-8 truncate">
+                    # ${tag}
+                </button>
+                <button onclick="openTagModal('${tag}')" class="absolute right-1 opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-indigo-400 transition-all rounded bg-[#11151f] hover:bg-gray-800" title="Manage Tag">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+            </div>
         `; 
     });
+}
+
+// YENİ: TAG YÖNETİM FONKSİYONLARI (CREATE / ASSIGN)
+function openTagModal(tag = null) {
+    document.getElementById('tagModalTitle').innerText = tag ? `Manage: #${tag}` : 'Create New Tag';
+    document.getElementById('tagOriginalName').value = tag || '';
+    document.getElementById('tagNewName').value = tag || '';
+    
+    const btnDelete = document.getElementById('btnDeleteTag');
+    if (tag) btnDelete.classList.remove('hidden');
+    else btnDelete.classList.add('hidden');
+
+    const projectList = document.getElementById('tagProjectList');
+    projectList.innerHTML = '';
+    
+    if (cachedProjects.length === 0) {
+        projectList.innerHTML = '<span class="text-xs text-gray-500 italic">No projects available.</span>';
+    } else {
+        cachedProjects.forEach(p => {
+            const isAssigned = p.tag === tag;
+            const pId = p.id || p.ID;
+            const safeName = p.name || p.Name;
+            
+            projectList.innerHTML += `
+                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors border border-transparent hover:border-gray-700/50">
+                    <div class="relative flex items-center shrink-0">
+                        <input type="checkbox" name="tagProjectIds" value="${pId}" class="sr-only peer" ${isAssigned ? 'checked' : ''}>
+                        <div class="w-5 h-5 bg-gray-900 border border-gray-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-400 transition-colors flex items-center justify-center">
+                            <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold text-gray-300 select-none">${safeName}</span>
+                </label>
+            `;
+        });
+    }
+    
+    document.getElementById('tagModal').classList.remove('hidden');
+    document.getElementById('tagModal').classList.add('flex');
+}
+
+function closeTagModal() {
+    document.getElementById('tagModal').classList.remove('flex');
+    document.getElementById('tagModal').classList.add('hidden');
+    document.getElementById('tagForm').reset();
+}
+
+async function submitTag(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalHTML = toggleButtonLoading(btn, true);
+
+    const originalTag = document.getElementById('tagOriginalName').value;
+    const newTag = document.getElementById('tagNewName').value;
+    const checkboxes = document.querySelectorAll('input[name="tagProjectIds"]:checked');
+    const projectIds = Array.from(checkboxes).map(cb => cb.value);
+
+    try {
+        const res = await fetch('/api/tags/manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ original_tag: originalTag, new_tag: newTag, project_ids: projectIds })
+        });
+        
+        if (res.ok) {
+            closeTagModal();
+            if (currentTagFilter === originalTag) currentTagFilter = newTag || null;
+            await loadSettings(); 
+            await loadProjects(); 
+            showToast("Tag configured successfully", "success");
+        } else {
+            const err = await res.json();
+            showToast(err.error || "Failed to configure tag", "error");
+        }
+    } catch (err) {
+        showToast("Network error", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
+}
+
+async function deleteTag() {
+    const originalTag = document.getElementById('tagOriginalName').value;
+    if (!originalTag) return;
+    
+    try {
+        const res = await fetch('/api/tags/manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ original_tag: originalTag, new_tag: "", project_ids: [] })
+        });
+        
+        if (res.ok) {
+            closeTagModal();
+            if (currentTagFilter === originalTag) currentTagFilter = null;
+            await loadSettings();
+            await loadProjects();
+            showToast("Tag deleted", "success");
+        } else {
+            const err = await res.json();
+            showToast(err.error || "Failed to delete tag", "error");
+        }
+    } catch (err) {
+        showToast("Network error", "error");
+    }
 }
 
 function initTagAutocomplete(inputId, dropdownId) {
@@ -1269,6 +1378,10 @@ async function loadSettings() {
             globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
             document.getElementById('setting-workspace').value = globalWorkspace;
             if (settings.global_env) document.getElementById('setting-global-env').value = settings.global_env;
+            
+            // Gelen ayarlardaki saved_tags'leri global listeye atıyoruz.
+            globalSavedTags = settings.saved_tags || [];
+            
             toggleWorkspaceMode(); 
         }
     } catch (e) {

@@ -10,9 +10,10 @@ var settingsMu sync.Mutex
 
 // AppSettings holds the global configuration for DionyHub
 type AppSettings struct {
-	Workspace string `json:"workspace"`
-	LogBuffer bool   `json:"log_buffer"`
-	GlobalEnv string `json:"global_env"`
+	Workspace string   `json:"workspace"`
+	LogBuffer bool     `json:"log_buffer"`
+	GlobalEnv string   `json:"global_env"`
+	SavedTags []string `json:"saved_tags"` // YENİ: Projesiz bile ayakta kalabilen kalıcı Tag listesi
 }
 
 // LoadSettings retrieves settings securely from disk
