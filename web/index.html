@@ -319,9 +319,37 @@
                             <div id="tagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto"></div>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1.5">Initial .env</label>
-                        <textarea id="projInitialEnv" rows="3" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-sm neon-focus-emerald shadow-inner"></textarea>
+                    
+                    <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Environment (.env)</label>
+                        
+                        <div class="flex items-center gap-8 border-b border-gray-800/50 pb-4">
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Global Env</span>
+                                <div class="relative flex items-center shrink-0">
+                                    <input type="checkbox" id="addEnvGlobal" class="sr-only peer" onchange="toggleAddEnvMode('global')">
+                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Custom Env</span>
+                                <div class="relative flex items-center shrink-0">
+                                    <input type="checkbox" id="addEnvCustom" class="sr-only peer" onchange="toggleAddEnvMode('custom')">
+                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div id="addEnvGlobalPreview" class="hidden bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-gray-500 font-mono text-xs opacity-70 h-20 overflow-y-auto pointer-events-none shadow-inner"></div>
+                        
+                        <div id="addEnvCustomWrapper" class="hidden">
+                            <textarea id="projInitialEnv" rows="2" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs neon-focus-emerald shadow-inner" placeholder="PORT=8080&#10;DEBUG=true"></textarea>
+                        </div>
+
+                        <div id="addEnvNoneWarning" class="flex bg-rose-500/5 border border-dashed border-rose-500/20 rounded-lg px-3 py-2 items-start gap-2">
+                            <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <p class="text-xs text-rose-300/80 font-medium leading-tight">No .env file will be created. The project will run with empty/default variables.</p>
+                        </div>
                     </div>
                     
                     <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4">
@@ -465,28 +493,47 @@
     <div id="envModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-2xl w-full max-w-2xl mx-4 flex flex-col h-[70vh] modal-enter">
             <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    Environment Variables
-                    <button type="button" onclick="toggleEnvBlur()" class="text-gray-400 hover:text-teal-400 transition-colors focus:outline-none ml-2">
-                        <svg id="envEyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                        </svg>
-                    </button>
-                </h2>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">Environment Configuration</h2>
                 <button onclick="closeEnvModal()" class="text-gray-400 hover:text-rose-400 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <form id="envForm" onsubmit="submitEnv(event)" class="flex flex-col flex-1 overflow-hidden">
+            
+            <form id="envForm" onsubmit="submitEnv(event)" class="flex flex-col flex-1 overflow-hidden p-6 gap-4 bg-[#0a0d14] rounded-b-2xl">
                 <input type="hidden" id="envProjId">
-                <div class="p-0 flex-1 flex flex-col relative bg-[#0a0d14] shadow-inner">
-                    <textarea id="envContent" class="absolute inset-0 w-full h-full bg-transparent text-teal-400 font-mono text-sm p-6 focus:outline-none resize-none blur-sm transition-all duration-300" spellcheck="false"></textarea>
+                
+                <div class="flex items-center gap-8 shrink-0 border-b border-gray-800 pb-4">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Use Global Env</span>
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="editEnvGlobal" class="sr-only peer" onchange="toggleEditEnvMode('global')">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Custom Env</span>
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="editEnvCustom" class="sr-only peer" onchange="toggleEditEnvMode('custom')">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
+                        </div>
+                    </label>
                 </div>
-                <div class="px-6 py-4 border-t border-gray-800 bg-transparent flex justify-end gap-3 shrink-0">
-                    <button type="button" onclick="closeEnvModal()" class="px-5 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
-                    <button type="submit" class="btn-action bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded-lg font-bold shadow-[0_0_15px_rgba(13,148,136,0.4)] border border-teal-500/50">Save .env</button>
+                
+                <div id="editEnvGlobalPreview" class="hidden flex-1 bg-[#11151f] border border-gray-700 rounded-xl p-6 text-gray-500 font-mono text-sm opacity-70 overflow-y-auto shadow-inner pointer-events-none"></div>
+                
+                <div id="editEnvCustomWrapper" class="hidden flex-1 flex-col relative bg-[#11151f] border border-gray-700 rounded-xl shadow-inner overflow-hidden">
+                    <textarea id="envContent" class="absolute inset-0 w-full h-full bg-transparent text-emerald-400 font-mono text-sm p-6 focus:outline-none resize-none transition-all duration-300 neon-focus-emerald" spellcheck="false" placeholder="KEY=VALUE"></textarea>
+                </div>
+
+                <div id="editEnvNoneWarning" class="flex flex-1 flex-col items-center justify-center border border-dashed border-rose-500/30 rounded-xl bg-rose-500/5">
+                    <svg class="w-12 h-12 text-rose-400 mb-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <p class="text-sm text-rose-300 font-bold">No Environment Variables</p>
+                    <p class="text-xs text-rose-400/60 mt-1 max-w-sm text-center leading-relaxed">Saving this will completely delete the existing <span class="font-mono text-rose-300">.env</span> file from the project directory.</p>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3 shrink-0 border-t border-gray-800 pt-4">
+                    <button type="button" onclick="closeEnvModal()" class="px-5 py-2.5 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button type="submit" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.4)] border border-indigo-500/50">Save Configuration</button>
                 </div>
             </form>
         </div>
@@ -549,7 +596,7 @@
                         </div>
                     </label>
                 </div>
-                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety.</p>
+                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety. Only the DionyHub link will be removed.</p>
 
                 <div id="deleteTagContainer" class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden">
                     <label class="flex items-center gap-3 cursor-pointer group">

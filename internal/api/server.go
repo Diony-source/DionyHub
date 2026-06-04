@@ -62,7 +62,6 @@ func (s *Server) startMetricsPusher() {
 		time.Sleep(2 * time.Second)
 		s.mu.RLock()
 
-		// SPAM FIX: nil yerine bellekte boş bir dizi başlatıyoruz
 		stats := make([]map[string]interface{}, 0)
 		for _, p := range s.projects {
 			if s.manager.IsRunning(p.ID) {
@@ -275,6 +274,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		AutoRestart bool   `json:"auto_restart"`
 		AutoClose   bool   `json:"auto_close"`
 		InitialEnv  string `json:"initial_env"`
+		CreateEnv   bool   `json:"create_env"` // YENİ EKLENDİ
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -292,7 +292,8 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.InitialEnv != "" {
+	// YENİ: Sadece CreateEnv true ise dosya oluştur.
+	if req.CreateEnv {
 		envPath := filepath.Join(cleanPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
@@ -337,6 +338,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		AutoRestart bool   `json:"auto_restart"`
 		AutoClose   bool   `json:"auto_close"`
 		InitialEnv  string `json:"initial_env"`
+		CreateEnv   bool   `json:"create_env"` // YENİ EKLENDİ
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -384,7 +386,8 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.InitialEnv != "" {
+	// YENİ: Sadece CreateEnv true ise dosya oluştur.
+	if req.CreateEnv {
 		envPath := filepath.Join(destPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
@@ -742,14 +745,20 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		var req struct {
-			Content string `json:"content"`
+			Content   string `json:"content"`
+			DeleteEnv bool   `json:"delete_env"` // YENİ: Env dosyasını silme bayrağı
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
 			return
 		}
 
-		os.WriteFile(envFile, []byte(req.Content), 0644)
+		// YENİ: Eğer DeleteEnv true ise mevcut dosyayı diskten kalıcı olarak sil.
+		if req.DeleteEnv {
+			os.Remove(envFile)
+		} else {
+			os.WriteFile(envFile, []byte(req.Content), 0644)
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 	}

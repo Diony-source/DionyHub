@@ -3,15 +3,15 @@ let currentTagFilter = null;
 let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
-let globalWorkspace = "C:/DionyHub/apps";
 
+let globalWorkspace = "C:/DionyHub/apps";
 let globalSavedTags = [];
+let globalEnvText = ""; 
 
 let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
 let activeSelectionSource = null; 
 
-// Tag silme onayı için referanslar
 let tagToOrphan = null;
 let tagsToOrphanBulk = [];
 
@@ -1452,7 +1452,13 @@ async function loadSettings() {
             const settings = await response.json();
             globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
             document.getElementById('setting-workspace').value = globalWorkspace;
-            if (settings.global_env) document.getElementById('setting-global-env').value = settings.global_env;
+            
+            if (settings.global_env) {
+                document.getElementById('setting-global-env').value = settings.global_env;
+                globalEnvText = settings.global_env;
+            } else {
+                globalEnvText = "";
+            }
             
             globalSavedTags = settings.saved_tags || [];
             
@@ -1469,6 +1475,7 @@ async function saveSettings() {
     
     globalWorkspace = document.getElementById('setting-workspace').value;
     const globalEnv = document.getElementById('setting-global-env').value;
+    globalEnvText = globalEnv; 
     
     try {
         const response = await fetch('/api/settings', { 
@@ -1491,10 +1498,45 @@ async function saveSettings() {
     }
 }
 
+// YENİ: Checkbox bazlı Add Env Toggle mantığı
+function toggleAddEnvMode(clickedType) {
+    const globalCb = document.getElementById('addEnvGlobal');
+    const customCb = document.getElementById('addEnvCustom');
+    
+    if (clickedType === 'global' && globalCb && globalCb.checked) {
+        if(customCb) customCb.checked = false;
+    } else if (clickedType === 'custom' && customCb && customCb.checked) {
+        if(globalCb) globalCb.checked = false;
+    }
+    
+    const globalPreview = document.getElementById('addEnvGlobalPreview');
+    const customWrapper = document.getElementById('addEnvCustomWrapper');
+    const noneWarning = document.getElementById('addEnvNoneWarning');
+    
+    if (globalPreview) globalPreview.classList.add('hidden');
+    if (customWrapper) customWrapper.classList.add('hidden');
+    if (noneWarning) noneWarning.classList.add('hidden');
+    
+    if (globalCb && globalCb.checked) {
+        globalPreview.classList.remove('hidden');
+        globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings.";
+    } else if (customCb && customCb.checked) {
+        customWrapper.classList.remove('hidden');
+    } else {
+        noneWarning.classList.remove('hidden');
+    }
+}
+
 function openModal() { 
     document.getElementById('addModal').classList.replace('hidden', 'flex'); 
     toggleSourceMode(); 
     toggleWorkspaceMode(); 
+    
+    const globalCb = document.getElementById('addEnvGlobal');
+    const customCb = document.getElementById('addEnvCustom');
+    if (globalCb) globalCb.checked = false;
+    if (customCb) customCb.checked = true;
+    toggleAddEnvMode();
 }
 
 function closeModal() { 
@@ -1505,11 +1547,25 @@ function closeModal() {
 async function submitNewProject(e) {
     e.preventDefault(); 
     const btn = e.target.querySelector('button[type="submit"]'); 
-    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const originalHTML = toggleButtonLoading(btn, true, mode === 'github' ? 'Cloning Repo...' : '');
+    const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value;
+    const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
+    
+    const globalCb = document.getElementById('addEnvGlobal');
+    const customCb = document.getElementById('addEnvCustom');
+    let finalEnv = "";
+    let createEnv = true;
+    
+    if (globalCb && globalCb.checked) {
+        finalEnv = globalEnvText;
+    } else if (customCb && customCb.checked) {
+        finalEnv = document.getElementById('projInitialEnv').value;
+    } else {
+        finalEnv = ""; 
+        createEnv = false; 
+    }
     
     try {
-        if (mode === 'local') {
+        if (sourceMode === 'local') {
             let finalPath = document.getElementById('projPath').value.trim(); 
             const useWs = document.getElementById('useWorkspace').checked;
             
@@ -1527,7 +1583,8 @@ async function submitNewProject(e) {
                 auto_start: document.getElementById('projAutoStart').checked, 
                 auto_restart: document.getElementById('projAutoRestart').checked,
                 auto_close: document.getElementById('projAutoClose').checked,
-                initial_env: document.getElementById('projInitialEnv').value 
+                initial_env: finalEnv,
+                create_env: createEnv
             };
             
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
@@ -1549,7 +1606,8 @@ async function submitNewProject(e) {
                 auto_start: document.getElementById('projAutoStart').checked, 
                 auto_restart: document.getElementById('projAutoRestart').checked,
                 auto_close: document.getElementById('projAutoClose').checked,
-                initial_env: document.getElementById('projInitialEnv').value 
+                initial_env: finalEnv,
+                create_env: createEnv
             };
             
             const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
@@ -1632,7 +1690,6 @@ async function submitEditProject(event) {
     }
 }
 
-// BOŞ TAG KORUMALI SİLME (SINGLE)
 function openDeleteModal(id) { 
     const project = cachedProjects.find(p => p.id === id || p.ID === id);
     const source = project ? (project.source || project.Source || 'local') : 'local';
@@ -1734,7 +1791,6 @@ async function executeDelete() {
     }
 }
 
-// BOŞ TAG KORUMALI SİLME (BULK)
 function confirmBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
@@ -2081,6 +2137,37 @@ function toggleEnvBlur() {
     }
 }
 
+// YENİ: Checkbox bazlı Edit Env Toggle mantığı
+function toggleEditEnvMode(clickedType) {
+    const globalCb = document.getElementById('editEnvGlobal');
+    const customCb = document.getElementById('editEnvCustom');
+    
+    if (clickedType === 'global' && globalCb && globalCb.checked) {
+        if(customCb) customCb.checked = false;
+    } else if (clickedType === 'custom' && customCb && customCb.checked) {
+        if(globalCb) globalCb.checked = false;
+    }
+    
+    const globalPreview = document.getElementById('editEnvGlobalPreview');
+    const customWrapper = document.getElementById('editEnvCustomWrapper');
+    const noneWarning = document.getElementById('editEnvNoneWarning');
+    
+    if (globalPreview) globalPreview.classList.add('hidden');
+    if (customWrapper) { customWrapper.classList.add('hidden'); customWrapper.classList.remove('flex'); }
+    if (noneWarning) { noneWarning.classList.add('hidden'); noneWarning.classList.remove('flex'); }
+    
+    if (globalCb && globalCb.checked) {
+        globalPreview.classList.remove('hidden');
+        globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings.";
+    } else if (customCb && customCb.checked) {
+        customWrapper.classList.remove('hidden');
+        customWrapper.classList.add('flex');
+    } else {
+        noneWarning.classList.remove('hidden');
+        noneWarning.classList.add('flex');
+    }
+}
+
 async function openEnvModal(id) {
     const project = cachedProjects.find(p => p.id === id || p.ID === id); 
     if (!project) return;
@@ -2101,8 +2188,29 @@ async function openEnvModal(id) {
         if (res.ok) { 
             const data = await res.json(); 
             textArea.value = data.content; 
+            
+            const globalCb = document.getElementById('editEnvGlobal');
+            const customCb = document.getElementById('editEnvCustom');
+            
+            if (data.content.trim() === "") {
+                if(globalCb) globalCb.checked = false;
+                if(customCb) customCb.checked = false;
+            } else if (data.content.trim() === globalEnvText.trim() && globalEnvText.trim() !== "") {
+                if(globalCb) globalCb.checked = true;
+                if(customCb) customCb.checked = false;
+            } else {
+                if(globalCb) globalCb.checked = false;
+                if(customCb) customCb.checked = true;
+            }
+            toggleEditEnvMode();
+            
         } else { 
             textArea.value = ""; 
+            const globalCb = document.getElementById('editEnvGlobal');
+            const customCb = document.getElementById('editEnvCustom');
+            if(globalCb) globalCb.checked = false;
+            if(customCb) customCb.checked = false;
+            toggleEditEnvMode();
             showToast("Failed to load .env.", "error"); 
         }
     } catch (err) { 
@@ -2122,13 +2230,27 @@ async function submitEnv(e) {
     const originalHTML = toggleButtonLoading(btn, true);
     
     const id = document.getElementById('envProjId').value; 
-    const content = document.getElementById('envContent').value;
+    
+    const globalCb = document.getElementById('editEnvGlobal');
+    const customCb = document.getElementById('editEnvCustom');
+    
+    let finalEnv = "";
+    let deleteEnv = false;
+    
+    if (globalCb && globalCb.checked) {
+        finalEnv = globalEnvText;
+    } else if (customCb && customCb.checked) {
+        finalEnv = document.getElementById('envContent').value;
+    } else {
+        finalEnv = ""; 
+        deleteEnv = true; 
+    }
     
     try {
         const res = await fetch(`/api/projects/env?id=${id}`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ content: content }) 
+            body: JSON.stringify({ content: finalEnv, delete_env: deleteEnv }) 
         });
         if (res.ok) { 
             closeEnvModal(); 
