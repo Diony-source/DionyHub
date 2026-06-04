@@ -11,6 +11,10 @@ let selectedProjectIds = new Set();
 let lastSelectedIdx = -1;
 let activeSelectionSource = null; 
 
+// Tag silme onayı için referanslar
+let tagToOrphan = null;
+let tagsToOrphanBulk = [];
+
 const statsHistory = {}; 
 const terminalPool = {}; 
 let maximizedTerminalId = null;
@@ -952,7 +956,6 @@ function toggleButtonLoading(btn, isLoading, originalContent = '') {
     }
 }
 
-// YENİ: Butonların ve aktif durumların yeni tasarımı
 function switchView(viewName) {
     const dashboardView = document.getElementById('dashboard-view'); 
     const settingsView = document.getElementById('settings-view');
@@ -1189,7 +1192,6 @@ async function loadProjects() {
     }
 }
 
-// YENİ: Tag Aktif/İnaktif Tasarımları
 function setFilter(tag) {
     currentTagFilter = tag; 
     selectedProjectIds.clear();
@@ -1208,7 +1210,6 @@ function setFilter(tag) {
     }
 }
 
-// YENİ: Tag Listesi ve "All Projects" tasarımı
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
     const dynamicTags = projects.map(p => p.tag).filter(t => t && t.trim() !== '');
@@ -1631,21 +1632,48 @@ async function submitEditProject(event) {
     }
 }
 
+// BOŞ TAG KORUMALI SİLME (SINGLE)
 function openDeleteModal(id) { 
     const project = cachedProjects.find(p => p.id === id || p.ID === id);
     const source = project ? (project.source || project.Source || 'local') : 'local';
+    const tag = project ? (project.tag || project.Tag) : null;
     
     const checkboxContainer = document.getElementById('deleteFilesContainer');
     const warningText = document.getElementById('deleteLocalWarning');
     const checkbox = document.getElementById('deleteFilesFromDisk');
     
-    if (source === 'github') {
-        checkboxContainer.classList.remove('hidden');
-        warningText.classList.add('hidden');
-    } else {
-        checkboxContainer.classList.add('hidden');
-        warningText.classList.remove('hidden');
-        checkbox.checked = false;
+    if (checkboxContainer && warningText && checkbox) {
+        if (source === 'github') {
+            checkboxContainer.classList.remove('hidden');
+            warningText.classList.add('hidden');
+        } else {
+            checkboxContainer.classList.add('hidden');
+            warningText.classList.remove('hidden');
+            checkbox.checked = false;
+        }
+    }
+
+    const tagContainer = document.getElementById('deleteTagContainer');
+    const tagCheckbox = document.getElementById('deleteOrphanedTag');
+    const tagNameSpan = document.getElementById('orphanTagName');
+    
+    tagToOrphan = null;
+    if (tagContainer && tagCheckbox && tagNameSpan) {
+        if (tag) {
+            const remaining = cachedProjects.filter(p => (p.tag === tag || p.Tag === tag) && (p.id !== id && p.ID !== id));
+            if (remaining.length === 0) {
+                tagToOrphan = tag;
+                tagNameSpan.innerText = `#${tag}`;
+                tagContainer.classList.remove('hidden');
+                tagCheckbox.checked = false; 
+            } else {
+                tagContainer.classList.add('hidden');
+                tagCheckbox.checked = false;
+            }
+        } else {
+            tagContainer.classList.add('hidden');
+            tagCheckbox.checked = false;
+        }
     }
 
     projectToDelete = id; 
@@ -1654,19 +1682,38 @@ function openDeleteModal(id) {
 
 function closeDeleteModal() { 
     document.getElementById('deleteModal').classList.replace('flex', 'hidden'); 
-    document.getElementById('deleteFilesFromDisk').checked = false; 
+    const diskCb = document.getElementById('deleteFilesFromDisk');
+    if (diskCb) diskCb.checked = false; 
+    const tagCb = document.getElementById('deleteOrphanedTag');
+    if (tagCb) tagCb.checked = false;
+    tagToOrphan = null;
     projectToDelete = null; 
 }
 
 async function executeDelete() { 
     const btn = document.getElementById('confirmDeleteBtn'); 
     const originalHTML = toggleButtonLoading(btn, true); 
-    const deleteFiles = document.getElementById('deleteFilesFromDisk').checked;
+    const diskCb = document.getElementById('deleteFilesFromDisk');
+    const deleteFiles = diskCb ? diskCb.checked : false;
+    
+    const deleteTagCheckbox = document.getElementById('deleteOrphanedTag');
+    const tagContainer = document.getElementById('deleteTagContainer');
+    const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
     
     try {
         const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
         
         if(res.ok) { 
+            if (shouldDeleteTag && tagToOrphan) {
+                await fetch('/api/tags/manage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ original_tag: tagToOrphan, new_tag: "", project_ids: [] })
+                });
+                if (currentTagFilter === tagToOrphan) currentTagFilter = null;
+                await loadSettings();
+            }
+
             closeDeleteModal(); 
             selectedProjectIds.delete(projectToDelete);
             loadProjects(); 
@@ -1682,10 +1729,12 @@ async function executeDelete() {
         closeDeleteModal(); 
     } finally { 
         toggleButtonLoading(btn, false, originalHTML); 
-        document.getElementById('deleteFilesFromDisk').checked = false; 
+        if (diskCb) diskCb.checked = false; 
+        if (deleteTagCheckbox) deleteTagCheckbox.checked = false;
     }
 }
 
+// BOŞ TAG KORUMALI SİLME (BULK)
 function confirmBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
@@ -1694,23 +1743,60 @@ function confirmBulkDelete() {
     if (idsToProcess.length === 0) return;
 
     let hasLocal = false;
-    idsToProcess.forEach(id => {
-        const p = cachedProjects.find(x => x.id === id || x.ID === id);
-        const source = p ? (p.source || p.Source || 'local') : 'local';
-        if (source !== 'github') hasLocal = true;
+    const processSet = new Set(idsToProcess);
+    const tagCounts = {}; 
+    const tagDeletes = {}; 
+
+    cachedProjects.forEach(p => {
+        const pId = p.id || p.ID;
+        const source = p.source || p.Source || 'local';
+        const t = p.tag || p.Tag;
+        
+        if (processSet.has(pId) && source !== 'github') hasLocal = true;
+        
+        if (t) {
+            tagCounts[t] = (tagCounts[t] || 0) + 1;
+            if (processSet.has(pId)) {
+                tagDeletes[t] = (tagDeletes[t] || 0) + 1;
+            }
+        }
     });
 
     const checkboxContainer = document.getElementById('bulkDeleteFilesContainer');
     const warningText = document.getElementById('bulkDeleteLocalWarning');
     const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
 
-    if (!hasLocal) {
-        checkboxContainer.classList.remove('hidden');
-        warningText.classList.add('hidden');
-    } else {
-        checkboxContainer.classList.add('hidden');
-        warningText.classList.remove('hidden');
-        checkbox.checked = false;
+    if (checkboxContainer && warningText && checkbox) {
+        if (!hasLocal) {
+            checkboxContainer.classList.remove('hidden');
+            warningText.classList.add('hidden');
+        } else {
+            checkboxContainer.classList.add('hidden');
+            warningText.classList.remove('hidden');
+            checkbox.checked = false;
+        }
+    }
+
+    tagsToOrphanBulk = [];
+    for (const t in tagDeletes) {
+        if (tagCounts[t] === tagDeletes[t]) {
+            tagsToOrphanBulk.push(t);
+        }
+    }
+
+    const tagContainer = document.getElementById('bulkDeleteTagContainer');
+    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags');
+    const tagNameSpan = document.getElementById('bulkOrphanTagNames');
+
+    if (tagContainer && tagCheckbox && tagNameSpan) {
+        if (tagsToOrphanBulk.length > 0) {
+            tagNameSpan.innerText = tagsToOrphanBulk.map(t => `#${t}`).join(', ');
+            tagContainer.classList.remove('hidden');
+            tagCheckbox.checked = false; 
+        } else {
+            tagContainer.classList.add('hidden');
+            tagCheckbox.checked = false;
+        }
     }
 
     const countText = document.getElementById('bulkDeleteCount');
@@ -1723,51 +1809,72 @@ function confirmBulkDelete() {
     }
 }
  
- function closeBulkDeleteModal() { 
-     const m = document.getElementById('bulkDeleteModal'); 
-     if(m) { 
-         m.classList.remove('flex'); 
-         m.classList.add('hidden'); 
-     }
-     const c = document.getElementById('bulkDeleteFilesFromDisk'); 
-     if(c) c.checked = false; 
- }
+function closeBulkDeleteModal() { 
+    const m = document.getElementById('bulkDeleteModal'); 
+    if(m) { 
+        m.classList.remove('flex'); 
+        m.classList.add('hidden'); 
+    }
+    const c = document.getElementById('bulkDeleteFilesFromDisk'); 
+    if(c) c.checked = false; 
+    const t = document.getElementById('bulkDeleteOrphanedTags'); 
+    if(t) t.checked = false;
+    tagsToOrphanBulk = [];
+}
  
- async function executeBulkDelete() {
-     let idsToProcess = [];
-     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
-     
-     if (idsToProcess.length === 0) return;
- 
-     const deleteFiles = document.getElementById('bulkDeleteFilesFromDisk') ? document.getElementById('bulkDeleteFilesFromDisk').checked : false;
-     const btn = document.getElementById('confirmBulkDeleteBtn');
-     const originalHTML = toggleButtonLoading(btn, true);
-     
-     try {
-         const res = await fetch('/api/projects/delete-bulk', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles })
-         });
-         
-         if(res.ok) {
-             closeBulkDeleteModal();
-             selectedProjectIds.clear(); 
-             loadProjects();
-             showToast("Projeler başarıyla silindi", "success");
-         } else {
-             const data = await res.json();
-             showToast(data.error, "error");
-             closeBulkDeleteModal();
-         }
-     } catch (err) {
-         showToast("Bağlantı hatası", "error");
-         closeBulkDeleteModal();
-     } finally {
-         toggleButtonLoading(btn, false, originalHTML);
-     }
- }
+async function executeBulkDelete() {
+    let idsToProcess = [];
+    if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
+    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
+    
+    if (idsToProcess.length === 0) return;
+
+    const diskCb = document.getElementById('bulkDeleteFilesFromDisk');
+    const deleteFiles = diskCb ? diskCb.checked : false;
+    
+    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags');
+    const tagContainer = document.getElementById('bulkDeleteTagContainer');
+    const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
+
+    const btn = document.getElementById('confirmBulkDeleteBtn');
+    const originalHTML = toggleButtonLoading(btn, true);
+    
+    try {
+        const res = await fetch('/api/projects/delete-bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles })
+        });
+        
+        if(res.ok) {
+            if (shouldDeleteTags && tagsToOrphanBulk.length > 0) {
+                for (const t of tagsToOrphanBulk) {
+                    await fetch('/api/tags/manage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ original_tag: t, new_tag: "", project_ids: [] })
+                    });
+                    if (currentTagFilter === t) currentTagFilter = null;
+                }
+                await loadSettings();
+            }
+
+            closeBulkDeleteModal();
+            selectedProjectIds.clear(); 
+            loadProjects();
+            showToast("Projeler başarıyla silindi", "success");
+        } else {
+            const data = await res.json();
+            showToast(data.error, "error");
+            closeBulkDeleteModal();
+        }
+    } catch (err) {
+        showToast("Bağlantı hatası", "error");
+        closeBulkDeleteModal();
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
+}
 
 async function executeBulkAction(action) {
     let idsToProcess = [];

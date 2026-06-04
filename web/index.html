@@ -237,7 +237,7 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Assigned Projects</label>
                         <div id="tagProjectList" class="bg-[#0a0d14] border border-gray-800 rounded-xl shadow-inner p-3 max-h-60 overflow-y-auto flex flex-col gap-2">
-                            </div>
+                        </div>
                         <p class="text-[10px] text-gray-500 mt-1.5">Select the projects you want to group under this tag.</p>
                     </div>
 
@@ -497,7 +497,7 @@
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete <span id="bulkDeleteCount" class="text-rose-500"></span> Projects?</h3>
                 
-                <div id="bulkDeleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all">
+                <div id="bulkDeleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <div class="relative flex items-center shrink-0">
                             <input type="checkbox" id="bulkDeleteFilesFromDisk" class="sr-only peer">
@@ -509,7 +509,20 @@
                         </div>
                     </label>
                 </div>
-                <p id="bulkDeleteLocalWarning" class="text-xs text-amber-500/80 mb-6 text-center font-medium hidden">Local projects selected. Permanent file deletion disabled for safety.</p>
+                <p id="bulkDeleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">Local projects selected. Permanent file deletion disabled for safety.</p>
+
+                <div id="bulkDeleteTagContainer" class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="bulkDeleteOrphanedTags" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-indigo-600 transition-colors border border-gray-700 peer-checked:border-indigo-500"></div>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors">Clean up empty tags</span>
+                            <span class="block text-xs text-indigo-400/60 mt-0.5 truncate" id="bulkOrphanTagNames"></span>
+                        </div>
+                    </label>
+                </div>
 
                 <div class="flex gap-3">
                     <button type="button" onclick="closeBulkDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
@@ -524,7 +537,7 @@
             <div class="p-6">
                 <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
                 
-                <div id="deleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all">
+                <div id="deleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <div class="relative flex items-center shrink-0">
                             <input type="checkbox" id="deleteFilesFromDisk" class="sr-only peer">
@@ -536,7 +549,20 @@
                         </div>
                     </label>
                 </div>
-                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-6 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety. Only the DionyHub link will be removed.</p>
+                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety.</p>
+
+                <div id="deleteTagContainer" class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="deleteOrphanedTag" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-600 transition-colors duration-300 border border-gray-700 peer-checked:border-indigo-500"></div>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors truncate">Delete empty tag: <span id="orphanTagName"></span></span>
+                            <span class="block text-xs text-indigo-400/60 mt-0.5">This tag will have no projects left.</span>
+                        </div>
+                    </label>
+                </div>
 
                 <div class="flex gap-3">
                     <button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
