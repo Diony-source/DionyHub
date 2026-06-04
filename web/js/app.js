@@ -794,7 +794,7 @@ function connectWebSocket() {
             
             if (msg.id === 'metrics') {
                 const statsArray = JSON.parse(msg.data);
-                if (!statsArray) return; // NİHAİ KORUMA: Backend'den null gelse bile çökmeyecek!
+                if (!statsArray) return; 
                 
                 statsArray.forEach(stat => {
                     const badge = document.getElementById('status-' + stat.id);
@@ -884,10 +884,6 @@ function connectWebSocket() {
     };
 }
 
-// ==========================================
-// UTILITIES & UI HELPERS
-// ==========================================
-
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -956,6 +952,7 @@ function toggleButtonLoading(btn, isLoading, originalContent = '') {
     }
 }
 
+// YENİ: Butonların ve aktif durumların yeni tasarımı
 function switchView(viewName) {
     const dashboardView = document.getElementById('dashboard-view'); 
     const settingsView = document.getElementById('settings-view');
@@ -970,8 +967,8 @@ function switchView(viewName) {
         viewTitle.innerText = "Active Library"; 
         addBtn.classList.remove('hidden');
         
-        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all shadow-inner";
-        if (navSettings) navSettings.className = "w-full flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium text-left mt-2 group";
+        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all shadow-[inset_3px_0_0_#6366f1] group";
+        if (navSettings) navSettings.className = "w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold text-left mt-6 group";
         
         setTimeout(refreshAllTerminalFits, 100);
     } else if (viewName === 'settings') {
@@ -980,8 +977,8 @@ function switchView(viewName) {
         viewTitle.innerText = "System Settings"; 
         addBtn.classList.add('hidden');
         
-        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2 text-gray-400 hover:bg-gray-800/50 hover:text-white rounded-lg transition-colors border border-transparent font-medium";
-        if (navSettings) navSettings.className = "w-full flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 font-medium transition-all mt-2 shadow-inner";
+        if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold group";
+        if (navSettings) navSettings.className = "w-full flex items-center gap-3 px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all mt-6 shadow-[inset_3px_0_0_#6366f1] group";
     }
 }
 
@@ -1192,6 +1189,7 @@ async function loadProjects() {
     }
 }
 
+// YENİ: Tag Aktif/İnaktif Tasarımları
 function setFilter(tag) {
     currentTagFilter = tag; 
     selectedProjectIds.clear();
@@ -1199,19 +1197,18 @@ function setFilter(tag) {
     loadProjects();
     
     document.querySelectorAll('.tag-filter-btn').forEach(btn => { 
-        btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); 
-        btn.classList.add('text-gray-400', 'hover:bg-gray-800/50'); 
+        btn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 pr-8 truncate group/btn";
     });
     
     const activeId = tag === null ? 'btn-filter-all' : `btn-filter-${tag}`; 
     const activeBtn = document.getElementById(activeId);
     
     if (activeBtn) { 
-        activeBtn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/30'); 
-        activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-800/50'); 
+        activeBtn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-indigo-500/20 flex items-center gap-2 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1] pr-8 truncate group/btn";
     }
 }
 
+// YENİ: Tag Listesi ve "All Projects" tasarımı
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
     const dynamicTags = projects.map(p => p.tag).filter(t => t && t.trim() !== '');
@@ -1222,20 +1219,22 @@ function renderSidebarTags(projects) {
     if (!tagList) return;
     
     tagList.innerHTML = `
-        <button id="btn-filter-all" onclick="setFilter(null)" class="tag-filter-btn w-full text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${currentTagFilter === null ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'}">
-            All Projects
+        <button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn">
+            <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <span class="font-semibold tracking-wide">All Projects</span>
         </button>
     `;
     
     availableTags.forEach(tag => { 
         const isActive = currentTagFilter === tag; 
         tagList.innerHTML += `
-            <div class="flex items-center group relative mt-1">
-                <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="flex-1 tag-filter-btn text-left px-4 py-1.5 rounded-md text-sm transition-colors border ${isActive ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-transparent text-gray-400 hover:bg-gray-800/50'} pr-8 truncate">
-                    # ${tag}
+            <div class="flex items-center group relative mb-1">
+                <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 ${isActive ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} pr-8 truncate group/btn">
+                    <span class="text-indigo-500/50 font-black text-lg leading-none group-hover/btn:text-indigo-400 transition-colors">#</span> 
+                    <span class="font-semibold tracking-wide">${tag}</span>
                 </button>
-                <button onclick="openTagModal('${tag}')" class="absolute right-1 opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-indigo-400 transition-all rounded bg-[#11151f] hover:bg-gray-800" title="Manage Tag">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <button onclick="openTagModal('${tag}')" class="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-indigo-400 transition-all rounded-md bg-[#11151f] border border-gray-700 hover:bg-gray-800 hover:scale-110 shadow-lg z-10" title="Manage Tag">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </button>
             </div>
         `; 
