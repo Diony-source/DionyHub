@@ -794,6 +794,8 @@ function connectWebSocket() {
             
             if (msg.id === 'metrics') {
                 const statsArray = JSON.parse(msg.data);
+                if (!statsArray) return; // NİHAİ KORUMA: Backend'den null gelse bile çökmeyecek!
+                
                 statsArray.forEach(stat => {
                     const badge = document.getElementById('status-' + stat.id);
                     const statsDiv = document.getElementById('stats-' + stat.id);
@@ -1113,7 +1115,7 @@ function renderProjects() {
     const githubProjects = filteredProjects.filter(p => (p.source || p.Source) === 'github');
 
     if (localProjects.length === 0) {
-        localTbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">No local projects found.</td></tr>`;
+        localTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-indigo-400 transition-colors">No local projects found. Click here to add one.</td></tr>`;
     } else {
         localProjects.forEach((p, index) => {
             localTbody.appendChild(createProjectRow(p, index, localProjects));
@@ -1121,7 +1123,7 @@ function renderProjects() {
     }
 
     if (githubProjects.length === 0) {
-        githubTbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">No GitHub repositories found.</td></tr>`;
+        githubTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-emerald-400 transition-colors">No GitHub repositories found. Click here to clone one.</td></tr>`;
     } else {
         githubProjects.forEach((p, index) => {
             githubTbody.appendChild(createProjectRow(p, index, githubProjects));

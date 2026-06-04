@@ -62,7 +62,8 @@ func (s *Server) startMetricsPusher() {
 		time.Sleep(2 * time.Second)
 		s.mu.RLock()
 
-		var stats []map[string]interface{}
+		// SPAM FIX: nil yerine bellekte boş bir dizi başlatıyoruz
+		stats := make([]map[string]interface{}, 0)
 		for _, p := range s.projects {
 			if s.manager.IsRunning(p.ID) {
 				cpu, ram, uptime := s.manager.GetStats(p.ID)
@@ -354,7 +355,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	repoName := parts[len(parts)-1]
 	repoName = strings.TrimSuffix(repoName, ".git")
 
-	// YENİ: Ayarlar henüz oluşturulmadıysa çökme, varsayılan bir yol ata
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
 		settings.Workspace = "C:/DionyHub/apps"
@@ -783,7 +783,6 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Settings yoksa bile çökmeyip varsayılana düşsün
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
 		settings.Workspace = "C:/DionyHub/apps"
