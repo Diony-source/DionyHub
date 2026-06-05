@@ -2,22 +2,43 @@
 package logger
 
 import (
+	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 )
 
-// InitGlobalLogger sets up the foundational structured logger (slog).
-// In the upcoming phases, we will map this to output internal debug logs
-// separately from the user-facing system logs.
+// InitGlobalLogger initializes a global slog instance that writes to both stdout and a rotating file.
 func InitGlobalLogger() {
-	opts := &slog.HandlerOptions{
-		Level: slog.LevelDebug, // Geliştirme aşamasında her şeyi görmek için Debug seviyesindeyiz
+	logDir := "DionyHub_SystemLogs"
+	os.MkdirAll(logDir, 0755)
+	engineLogPath := filepath.Join(logDir, "engine_audit.log")
+
+	fileWriter, err := NewRotatingLogWriter(engineLogPath, 10)
+	if err != nil {
+		panic("Failed to initialize engine logger: " + err.Error())
 	}
 
-	// Şimdilik sadece terminale şık bir formatta (TextHandler) yazacak
-	// İleride bunu rotating.go ile birleştirip debug.log dosyasına bağlayacağız.
-	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	multiWriter := io.MultiWriter(os.Stdout, fileWriter)
 
-	// Tüm Go ekosisteminde varsayılan loglayıcı olarak bunu belirliyoruz
+	// YENİ: Logları okunaklı hale getiren özel biçimlendirici
+	opts := &slog.HandlerOptions{
+		Level:     slog.LevelDebug,
+		AddSource: false, // DİKKAT: Terminali kirletmemesi için dosya yollarını gizledik
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Saati kısalt: Sadece Saat:Dakika:Saniye
+			if a.Key == slog.TimeKey {
+				return slog.String(a.Key, a.Value.Time().Format("15:04:05"))
+			}
+			return a
+		},
+	}
+
+	logger := slog.New(slog.NewTextHandler(multiWriter, opts))
 	slog.SetDefault(logger)
+
+	slog.Info("Global structured logging engine initialized successfully",
+		slog.String("log_dir", logDir),
+		slog.Int("max_size_mb", 10),
+	)
 }

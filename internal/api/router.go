@@ -1,9 +1,14 @@
 package api
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
 // RegisterRoutes wires up the HTTP endpoints to their respective handler functions.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
+	slog.Debug("Starting to register API endpoints...")
+
 	// Project Operations
 	mux.HandleFunc("/api/projects", s.handleGetProjects)
 	mux.HandleFunc("/api/projects/add", s.handleAddProject)
@@ -27,8 +32,12 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/tags/manage", s.handleManageTag)
 
 	// WebSockets
+	slog.Debug("Registering WebSocket endpoint under /ws")
 	mux.HandleFunc("/ws", s.broadcaster.HandleWS)
 
 	// Start background metric collector
+	slog.Debug("Booting up background metrics worker...")
 	go s.startMetricsPusher()
+
+	slog.Info("All API routes and background workers registered successfully")
 }

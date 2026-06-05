@@ -5,6 +5,7 @@ package logger
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -79,10 +80,12 @@ func (w *RotatingLogWriter) rotate() {
 	w.open()
 
 	// Zipping operation moved to a goroutine to avoid blocking the main logging thread
+	// DİKKAT: Sonsuz döngü yaratmamak için burada slog kullanılmaz! Hatalar stderr'e basılır.
 	go func(src string) {
 		zipPath := src + ".zip"
 		zipFile, err := os.Create(zipPath)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[Logger Fail] Could not create zip archive: %v\n", err)
 			return
 		}
 		defer zipFile.Close()
@@ -97,7 +100,11 @@ func (w *RotatingLogWriter) rotate() {
 				io.Copy(writer, f)
 				f.Close()
 				os.Remove(src)
+			} else {
+				fmt.Fprintf(os.Stderr, "[Logger Fail] Could not open old log for zipping: %v\n", err)
 			}
+		} else {
+			fmt.Fprintf(os.Stderr, "[Logger Fail] Could not create zip entry: %v\n", err)
 		}
 	}(archivePath)
 }

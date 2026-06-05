@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,9 +15,12 @@ import (
 // It securely traverses the directory tree and explicitly skips ".git" directories
 // to prevent bloat and potential corruption of version control data.
 func ZipDirectory(sourceDir, targetZip string) error {
+	slog.Info("Starting directory compression (Backup)", slog.String("source", sourceDir), slog.String("target", targetZip))
+
 	// Create the target zip file securely
 	zipFile, err := os.Create(targetZip)
 	if err != nil {
+		slog.Error("Failed to create target zip file", slog.String("target", targetZip), slog.Any("error", err))
 		return fmt.Errorf("failed to create target zip file %s: %w", targetZip, err)
 	}
 	defer zipFile.Close()
@@ -24,20 +28,25 @@ func ZipDirectory(sourceDir, targetZip string) error {
 	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
+	var fileCount int // Ne kadar dosya ziplendiğini saymak için
+
 	// Walk through the source directory explicitly handling errors
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			slog.Error("Error accessing path during zip operation", slog.String("path", path), slog.Any("error", err))
 			return fmt.Errorf("error accessing path %s: %w", path, err)
 		}
 
 		// Security & Performance: Skip .git directory to avoid archiving repository history
 		if info.IsDir() && info.Name() == ".git" {
+			slog.Debug("Skipping .git directory during compression", slog.String("path", path))
 			return filepath.SkipDir
 		}
 
 		// Calculate relative path to maintain directory structure inside the zip
 		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
+			slog.Error("Failed to calculate relative path", slog.String("path", path), slog.Any("error", err))
 			return fmt.Errorf("failed to calculate relative path for %s: %w", path, err)
 		}
 
@@ -50,6 +59,7 @@ func ZipDirectory(sourceDir, targetZip string) error {
 		// Create file header based on OS file info
 		header, err := zip.FileInfoHeader(info)
 		if err != nil {
+			slog.Error("Failed to create zip file header", slog.String("file", info.Name()), slog.Any("error", err))
 			return fmt.Errorf("failed to create zip file header for %s: %w", info.Name(), err)
 		}
 		header.Name = relPath
@@ -62,6 +72,7 @@ func ZipDirectory(sourceDir, targetZip string) error {
 
 		writer, err := archive.CreateHeader(header)
 		if err != nil {
+			slog.Error("Failed to write zip header", slog.String("header_name", header.Name), slog.Any("error", err))
 			return fmt.Errorf("failed to write header for %s: %w", header.Name, err)
 		}
 
@@ -73,15 +84,30 @@ func ZipDirectory(sourceDir, targetZip string) error {
 		// Open target file securely
 		file, err := os.Open(path)
 		if err != nil {
+			slog.Error("Failed to open file for archiving", slog.String("path", path), slog.Any("error", err))
 			return fmt.Errorf("failed to open file %s for archiving: %w", path, err)
 		}
 		defer file.Close()
 
 		// Copy file content to the zip archive
 		if _, err := io.Copy(writer, file); err != nil {
+			slog.Error("Failed to copy file content to archive", slog.String("path", path), slog.Any("error", err))
 			return fmt.Errorf("failed to write file %s to archive: %w", path, err)
 		}
 
+		fileCount++ // Dosyayı başarıyla zipe attık
 		return nil
 	})
+
+	if err != nil {
+		slog.Error("Directory compression failed prematurely", slog.String("source", sourceDir), slog.Any("error", err))
+		return err
+	}
+
+	slog.Info("Directory successfully compressed",
+		slog.String("target", targetZip),
+		slog.Int("files_archived", fileCount),
+	)
+
+	return nil
 }

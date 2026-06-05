@@ -3,6 +3,7 @@
 package process
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -27,11 +28,21 @@ func (m *Manager) GetStats(id string) (cpu float64, ram float64, uptime int64) {
 
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
+		// DİKKAT: Bu fonksiyon sık çağrılır. İşlem o an kapanıyorsa hata verebilir.
+		// Sadece debug modunda görmek için logluyoruz, ana log dosyasını şişirmiyoruz.
+		slog.Debug("Failed to attach to process for metrics collection", slog.String("project_id", id), slog.Int("pid", pid), slog.Any("error", err))
 		return 0, 0, int64(time.Since(p.StartTime).Seconds())
 	}
 
-	cpuPercent, _ := proc.CPUPercent()
-	memInfo, _ := proc.MemoryInfo()
+	cpuPercent, err := proc.CPUPercent()
+	if err != nil {
+		slog.Debug("Failed to read CPU metrics", slog.String("project_id", id), slog.Any("error", err))
+	}
+
+	memInfo, err := proc.MemoryInfo()
+	if err != nil {
+		slog.Debug("Failed to read Memory metrics", slog.String("project_id", id), slog.Any("error", err))
+	}
 
 	if memInfo != nil {
 		ram = float64(memInfo.RSS) / (1024 * 1024)

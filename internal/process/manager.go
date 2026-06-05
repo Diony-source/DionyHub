@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,6 +47,7 @@ type Manager struct {
 
 // NewManager initializes the process orchestrator and global system audit logger.
 func NewManager(console io.Writer, ws io.Writer) *Manager {
+	slog.Debug("Initializing core process manager")
 	sysLogger, _ := logger.NewRotatingLogWriter("dionyhub_system.log", 10)
 	return &Manager{
 		processes: make(map[string]*Process),
@@ -121,7 +123,9 @@ func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer
 		}
 
 		if err != nil {
+			// DİKKAT: Normal kapanışları yoksay, sadece olağanüstü okuma hatalarını logla
 			if err != io.EOF && !errors.Is(err, os.ErrClosed) && !strings.Contains(err.Error(), "file already closed") {
+				slog.Error("Stream read error occurred", slog.String("project_id", id), slog.Any("error", err))
 				m.sysLog(id, name, fmt.Sprintf("\x1b[31m[SYSTEM LOG ERROR] %v\x1b[0m", err))
 			}
 			break
@@ -130,15 +134,18 @@ func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer
 }
 
 func (m *Manager) WriteInput(id string, input string) error {
+	slog.Debug("Sending standard input (stdin) to process", slog.String("project_id", id))
 	m.mu.RLock()
 	p, exists := m.processes[id]
 	m.mu.RUnlock()
 
 	if !exists || !p.Running {
+		slog.Warn("Attempted to write input to non-running process", slog.String("project_id", id))
 		return errors.New("process is not running")
 	}
 
 	if p.Stdin == nil {
+		slog.Warn("Attempted to write input, but stdin pipe is missing", slog.String("project_id", id))
 		return errors.New("this process does not accept internal terminal inputs")
 	}
 
@@ -147,13 +154,19 @@ func (m *Manager) WriteInput(id string, input string) error {
 	}
 
 	_, err := io.WriteString(p.Stdin, input)
+	if err != nil {
+		slog.Error("Failed to write to stdin pipe", slog.String("project_id", id), slog.Any("error", err))
+	}
 	return err
 }
 
 func (m *Manager) Start(id, name, path string, interactive bool, autoRestart bool, globalEnvs []string, nameCmd string, args ...string) error {
+	slog.Info("Requesting process start", slog.String("project_id", id), slog.String("command", nameCmd), slog.Bool("interactive", interactive))
+
 	m.mu.Lock()
 	if p, exists := m.processes[id]; exists && p.Running {
 		m.mu.Unlock()
+		slog.Warn("Process is already running, ignoring start request", slog.String("project_id", id))
 		return errors.New("process is already running")
 	}
 	m.mu.Unlock()
@@ -187,11 +200,15 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		stdout, err := cmd.StdoutPipe()
 		if err == nil {
 			go m.prefixLogger(id, name, stdout, logWriter)
+		} else {
+			slog.Error("Failed to attach stdout pipe", slog.String("project_id", id), slog.Any("error", err))
 		}
 
 		stderr, err := cmd.StderrPipe()
 		if err == nil {
 			go m.prefixLogger(id, name, stderr, logWriter)
+		} else {
+			slog.Error("Failed to attach stderr pipe", slog.String("project_id", id), slog.Any("error", err))
 		}
 
 		stdinPipe, _ = cmd.StdinPipe()
@@ -202,6 +219,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	cmd.Env = append(cmd.Env, globalEnvs...)
 
 	if err := cmd.Start(); err != nil {
+		slog.Error("OS rejected process start", slog.String("project_id", id), slog.Any("error", err))
 		if logWriter != nil {
 			logWriter.Close()
 		}
@@ -226,10 +244,12 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	}
 	m.mu.Unlock()
 
+	slog.Info("OS Process successfully spawned", slog.String("project_id", id), slog.Int("pid", pid))
 	m.sysLog(id, name, fmt.Sprintf("🚀 \x1b[32mProject started successfully (PID: %d).\x1b[0m", pid))
 
 	go func() {
-		cmd.Wait()
+		// Wait returns error if process exits with non-zero status
+		waitErr := cmd.Wait()
 
 		m.mu.Lock()
 		var intended bool
@@ -249,11 +269,25 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 		uptime := time.Since(start)
 		isCrash := !intended
+
+		if waitErr != nil && !intended {
+			slog.Warn("Process terminated with non-zero exit code (Crash)",
+				slog.String("project_id", id),
+				slog.String("uptime", uptime.String()),
+				slog.Any("exit_error", waitErr),
+			)
+		} else if !intended {
+			slog.Warn("Process terminated unexpectedly but cleanly", slog.String("project_id", id))
+		} else {
+			slog.Debug("Process terminated normally due to user stop signal", slog.String("project_id", id))
+		}
+
 		if m.OnExit != nil {
 			m.OnExit(id, name, uptime, isCrash)
 		}
 
 		if autoRestart && !intended {
+			slog.Warn("Auto-restart condition met, scheduling recovery", slog.String("project_id", id))
 			m.sysLog(id, name, "⚠️ \x1b[33mProcess crashed! Restarting in 3 seconds...\x1b[0m")
 			time.Sleep(3 * time.Second)
 
@@ -265,6 +299,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 			m.mu.RUnlock()
 
 			if stillExists {
+				slog.Info("Executing auto-recovery restart sequence", slog.String("project_id", id))
 				m.sysLog(id, name, "🛡️ Initiating auto-recovery...")
 				m.Start(id, name, path, interactive, autoRestart, globalEnvs, nameCmd, args...)
 			}
@@ -277,6 +312,8 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 }
 
 func (m *Manager) Stop(id string) error {
+	slog.Info("Stop sequence initiated for process", slog.String("project_id", id))
+
 	m.mu.Lock()
 	p, exists := m.processes[id]
 	if exists {
@@ -285,6 +322,7 @@ func (m *Manager) Stop(id string) error {
 	m.mu.Unlock()
 
 	if !exists || !p.Running {
+		slog.Warn("Attempted to stop a non-running process", slog.String("project_id", id))
 		return errors.New("process is not currently running")
 	}
 
@@ -294,10 +332,12 @@ func (m *Manager) Stop(id string) error {
 	} else if p.RecoveredPID > 0 {
 		pid = p.RecoveredPID
 	} else {
+		slog.Error("Failed to resolve PID for termination", slog.String("project_id", id))
 		return errors.New("cannot determine process ID to kill")
 	}
 
 	m.sysLog(id, p.Name, "🛑 Stop signal sent. Terminating process tree...")
+	slog.Debug("Issuing OS kill command", slog.String("project_id", id), slog.Int("pid", pid))
 
 	var err error
 	if runtime.GOOS == "windows" {
@@ -314,6 +354,12 @@ func (m *Manager) Stop(id string) error {
 		if proc != nil {
 			err = proc.Kill()
 		}
+	}
+
+	if err != nil {
+		slog.Error("OS failed to terminate process", slog.String("project_id", id), slog.Int("pid", pid), slog.Any("error", err))
+	} else {
+		slog.Info("OS successfully terminated process tree", slog.String("project_id", id), slog.Int("pid", pid))
 	}
 
 	m.mu.Lock()
@@ -344,6 +390,8 @@ func (m *Manager) StopAll() {
 		}
 	}
 	m.mu.RUnlock()
+
+	slog.Info("Global shutdown hook triggered: Terminating all active process trees", slog.Int("active_count", len(ids)))
 
 	for _, id := range ids {
 		m.Stop(id)

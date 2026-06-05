@@ -4,6 +4,7 @@ package config
 
 import (
 	"encoding/json"
+	"log/slog" // YENİ: Kademeli loglama motorumuzu dahil ediyoruz
 	"os"
 	"sync"
 )
@@ -33,40 +34,52 @@ var (
 )
 
 // LoadProjects reads the configuration file from disk and unmarshals it into a slice of Project.
-// If the target file does not exist, it securely handles the error and returns an empty slice
-// to allow seamless initialization of a new workspace.
 func LoadProjects(filename string) ([]Project, error) {
+	slog.Debug("Attempting to load projects configuration", slog.String("filename", filename))
+
 	mu.RLock()
 	defer mu.RUnlock()
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
+			slog.Debug("Projects configuration file does not exist, returning empty slice", slog.String("filename", filename))
 			return []Project{}, nil
 		}
-		// Return explicit errors up the call stack instead of ignoring them
+		slog.Error("Failed to read projects configuration file", slog.String("filename", filename), slog.Any("error", err))
 		return nil, err
 	}
 
 	var projects []Project
 	if err := json.Unmarshal(data, &projects); err != nil {
+		slog.Error("Failed to unmarshal projects JSON data", slog.String("filename", filename), slog.Any("error", err))
 		return nil, err
 	}
 
+	slog.Debug("Successfully loaded projects", slog.Int("count", len(projects)))
 	return projects, nil
 }
 
 // SaveProjects safely marshals a slice of Project into JSON format and writes it to the specified file.
-// It explicitly utilizes a mutex lock to guarantee data integrity during concurrent disk writes.
 func SaveProjects(filename string, projects []Project) error {
+	slog.Debug("Attempting to save projects configuration", slog.String("filename", filename), slog.Int("count", len(projects)))
+
 	mu.Lock()
 	defer mu.Unlock()
 
 	data, err := json.MarshalIndent(projects, "", "  ")
 	if err != nil {
+		slog.Error("Failed to marshal projects to JSON", slog.Any("error", err))
 		return err
 	}
 
 	// 0644 permission ensures the file is readable by others but only writable by the owner
-	return os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, 0644)
+	if err != nil {
+		slog.Error("Failed to write projects to disk", slog.String("filename", filename), slog.Any("error", err))
+		return err
+	}
+
+	slog.Debug("Successfully saved projects configuration", slog.String("filename", filename))
+	return nil
 }

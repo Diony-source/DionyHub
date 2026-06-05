@@ -1,0 +1,352 @@
+time=2026-06-05T18:29:04.257+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/logger/logger.go:36 msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=2026-06-05T18:29:04.275+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:57 msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-05T18:29:05.055+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:36 msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-05T18:29:05.055+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:26 msg="Initializing WebSocket Broadcaster component"
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:38 msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:59 msg="Successfully loaded projects" count=8
+time=2026-06-05T18:29:05.056+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:68 msg="Successfully loaded project configurations" count=8
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:50 msg="Initializing core process manager"
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=noteapp id=1780618949493
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618949493
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=CrashTest id=1780618751290
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618751290
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=env_test id=1780618770556
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618770556
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=filereader id=1780618931388
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618931388
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=focus_timer id=1780618940799
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618940799
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=soru_test id=1780618967389
+time=2026-06-05T18:29:05.056+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618967389
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=survivor_test id=1780618980983
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618980983
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=hangman id=1780591488979
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780591488979
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/server.go:25 msg="Initializing core API server instance"
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:10 msg="Starting to register API endpoints..."
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:35 msg="Registering WebSocket endpoint under /ws"
+time=2026-06-05T18:29:05.057+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:39 msg="Booting up background metrics worker..."
+time=2026-06-05T18:29:05.057+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:42 msg="All API routes and background workers registered successfully"
+time=2026-06-05T18:29:05.057+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:120 msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-05T18:29:19.344+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/ status=200 duration=22.3548ms client_ip=[::1]:59508
+time=2026-06-05T18:29:19.362+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/css/style.css status=200 duration=0s client_ip=[::1]:59508
+time=2026-06-05T18:29:19.376+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/state.js status=200 duration=0s client_ip=[::1]:59508
+time=2026-06-05T18:29:19.376+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/api.js status=200 duration=0s client_ip=[::1]:64774
+time=2026-06-05T18:29:19.377+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/websocket.js status=200 duration=0s client_ip=[::1]:55137
+time=2026-06-05T18:29:19.377+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/terminal.js status=200 duration=0s client_ip=[::1]:51785
+time=2026-06-05T18:29:19.377+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/main.js status=200 duration=0s client_ip=[::1]:61839
+time=2026-06-05T18:29:19.377+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/ui.js status=200 duration=0s client_ip=[::1]:53122
+time=2026-06-05T18:29:19.629+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:879 msg="Fetching historical logs for terminal" target_id=system
+time=2026-06-05T18:29:19.629+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:38 msg="Fetching system settings"
+time=2026-06-05T18:29:19.629+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:22 msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-05T18:29:19.629+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s client_ip=[::1]:61839
+time=2026-06-05T18:29:19.629+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:44 msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-05T18:29:19.629+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:45 msg="Successfully retrieved system settings"
+time=2026-06-05T18:29:19.629+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/settings status=200 duration=503.3µs client_ip=[::1]:53122
+time=2026-06-05T18:29:19.720+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:32 msg="Fetching all projects and their current stats"
+time=2026-06-05T18:29:19.720+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:68 msg="Successfully returned projects list" count=8
+time=2026-06-05T18:29:19.720+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s client_ip=[::1]:53122
+time=2026-06-05T18:29:19.720+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:52356
+time=2026-06-05T18:29:19.720+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:52356 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:19.720+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:52356
+time=2026-06-05T18:29:22.775+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:58647
+time=2026-06-05T18:29:22.775+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:58647 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:22.775+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:58647
+time=2026-06-05T18:29:25.780+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:50814
+time=2026-06-05T18:29:25.780+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:50814 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:25.780+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:50814
+time=2026-06-05T18:29:28.787+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:55996
+time=2026-06-05T18:29:28.787+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:55996 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:28.787+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:55996
+time=2026-06-05T18:29:31.791+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:62649
+time=2026-06-05T18:29:31.791+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:62649 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:31.791+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:62649
+time=2026-06-05T18:29:34.512+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/ status=200 duration=0s client_ip=[::1]:57397
+time=2026-06-05T18:29:34.532+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/css/style.css status=200 duration=0s client_ip=[::1]:57397
+time=2026-06-05T18:29:34.539+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/state.js status=200 duration=0s client_ip=[::1]:57397
+time=2026-06-05T18:29:34.540+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/api.js status=200 duration=622.6µs client_ip=[::1]:64081
+time=2026-06-05T18:29:34.540+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/websocket.js status=200 duration=0s client_ip=[::1]:56115
+time=2026-06-05T18:29:34.540+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/main.js status=200 duration=0s client_ip=[::1]:62855
+time=2026-06-05T18:29:34.540+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/ui.js status=200 duration=0s client_ip=[::1]:60999
+time=2026-06-05T18:29:34.540+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/terminal.js status=200 duration=0s client_ip=[::1]:54772
+time=2026-06-05T18:29:34.725+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:879 msg="Fetching historical logs for terminal" target_id=system
+time=2026-06-05T18:29:34.725+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:38 msg="Fetching system settings"
+time=2026-06-05T18:29:34.725+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:22 msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-05T18:29:34.725+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s client_ip=[::1]:62855
+time=2026-06-05T18:29:34.725+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:44 msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-05T18:29:34.725+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:45 msg="Successfully retrieved system settings"
+time=2026-06-05T18:29:34.725+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/settings status=200 duration=504.9µs client_ip=[::1]:60999
+time=2026-06-05T18:29:34.784+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:32 msg="Fetching all projects and their current stats"
+time=2026-06-05T18:29:34.784+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:68 msg="Successfully returned projects list" count=8
+time=2026-06-05T18:29:34.784+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s client_ip=[::1]:60999
+time=2026-06-05T18:29:34.784+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:63984
+time=2026-06-05T18:29:34.784+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:63984 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:34.784+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:63984
+time=2026-06-05T18:29:34.852+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:42 msg="API Request Failed (Client Error)" method=GET path=/favicon.ico status=404 duration=0s client_ip=[::1]:60999
+time=2026-06-05T18:29:37.820+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:62769
+time=2026-06-05T18:29:37.820+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:62769 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:37.820+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:62769
+time=2026-06-05T18:29:38.569+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:130 msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-05T18:29:38.569+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:131 msg="Terminating all running background processes..."
+time=2026-06-05T18:29:38.569+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:394 msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-05T18:29:38.570+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:142 msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-05T18:29:43.654+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/logger/logger.go:36 msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=2026-06-05T18:29:43.675+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:57 msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-05T18:29:44.288+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:36 msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-05T18:29:44.288+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:26 msg="Initializing WebSocket Broadcaster component"
+time=2026-06-05T18:29:44.288+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:38 msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-05T18:29:44.288+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:59 msg="Successfully loaded projects" count=8
+time=2026-06-05T18:29:44.288+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:68 msg="Successfully loaded project configurations" count=8
+time=2026-06-05T18:29:44.288+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:50 msg="Initializing core process manager"
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=noteapp id=1780618949493
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618949493
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=CrashTest id=1780618751290
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618751290
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=env_test id=1780618770556
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618770556
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=filereader id=1780618931388
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618931388
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=focus_timer id=1780618940799
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618940799
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=soru_test id=1780618967389
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618967389
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=survivor_test id=1780618980983
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618980983
+time=2026-06-05T18:29:44.289+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=hangman id=1780591488979
+time=2026-06-05T18:29:44.290+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780591488979
+time=2026-06-05T18:29:44.290+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/server.go:25 msg="Initializing core API server instance"
+time=2026-06-05T18:29:44.290+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:10 msg="Starting to register API endpoints..."
+time=2026-06-05T18:29:44.290+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:35 msg="Registering WebSocket endpoint under /ws"
+time=2026-06-05T18:29:44.290+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:39 msg="Booting up background metrics worker..."
+time=2026-06-05T18:29:44.290+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:42 msg="All API routes and background workers registered successfully"
+time=2026-06-05T18:29:44.290+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:120 msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-05T18:29:46.221+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:53114
+time=2026-06-05T18:29:46.221+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:53114 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:46.221+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:53114
+time=2026-06-05T18:29:49.257+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:60339
+time=2026-06-05T18:29:49.257+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:60339 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:49.257+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:60339
+time=2026-06-05T18:29:52.302+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:53893
+time=2026-06-05T18:29:52.302+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:53893 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:52.302+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:53893
+time=2026-06-05T18:29:55.456+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:55325
+time=2026-06-05T18:29:55.456+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:55325 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:55.456+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:55325
+time=2026-06-05T18:29:58.551+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:61407
+time=2026-06-05T18:29:58.551+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:61407 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:29:58.551+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:61407
+time=2026-06-05T18:30:00.438+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:879 msg="Fetching historical logs for terminal" target_id=1780618949493
+time=2026-06-05T18:30:00.438+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s client_ip=[::1]:59236
+time=2026-06-05T18:30:00.438+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:618 msg="Processing bulk start request" project_count=1
+time=2026-06-05T18:30:00.438+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:22 msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-05T18:30:00.438+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:44 msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-05T18:30:00.438+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:164 msg="Requesting process start" project_id=1780618949493 command=go interactive=true
+time=2026-06-05T18:30:00.446+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:247 msg="OS Process successfully spawned" project_id=1780618949493 pid=16176
+time=2026-06-05T18:30:00.447+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:657 msg="Started project via bulk operation" project_id=1780618949493
+time=2026-06-05T18:30:00.447+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:665 msg="Bulk start completed" started_count=1
+time=2026-06-05T18:30:00.447+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=POST path=/api/projects/start-bulk status=200 duration=8.8475ms client_ip=[::1]:59442
+time=2026-06-05T18:30:01.715+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:61139
+time=2026-06-05T18:30:01.715+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:61139 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:01.715+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:61139
+time=2026-06-05T18:30:02.245+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:280 msg="Process terminated unexpectedly but cleanly" project_id=1780618949493
+time=2026-06-05T18:30:02.245+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/server.go:51 msg="Project process crashed unexpectedly!" project_id=1780618949493 project_name=noteapp uptime=1s
+time=2026-06-05T18:30:05.765+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:58708
+time=2026-06-05T18:30:05.765+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:58708 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:05.765+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:58708
+time=2026-06-05T18:30:09.792+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:62060
+time=2026-06-05T18:30:09.792+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:62060 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:09.792+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:62060
+time=2026-06-05T18:30:16.933+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:63190
+time=2026-06-05T18:30:16.933+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:63190 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:16.933+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:63190
+time=2026-06-05T18:30:21.718+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:62177
+time=2026-06-05T18:30:21.718+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:62177 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:21.718+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:62177
+time=2026-06-05T18:30:23.025+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:130 msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-05T18:30:23.025+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:131 msg="Terminating all running background processes..."
+time=2026-06-05T18:30:23.025+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:394 msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-05T18:30:23.025+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:142 msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-05T18:30:35.824+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/logger/logger.go:36 msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=2026-06-05T18:30:35.843+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:57 msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-05T18:30:36.482+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:36 msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-05T18:30:36.482+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:26 msg="Initializing WebSocket Broadcaster component"
+time=2026-06-05T18:30:36.482+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:38 msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-05T18:30:36.482+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/projects.go:59 msg="Successfully loaded projects" count=8
+time=2026-06-05T18:30:36.483+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:68 msg="Successfully loaded project configurations" count=8
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:50 msg="Initializing core process manager"
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=noteapp id=1780618949493
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618949493
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=CrashTest id=1780618751290
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618751290
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=env_test id=1780618770556
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618770556
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=filereader id=1780618931388
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618931388
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=focus_timer id=1780618940799
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618940799
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=soru_test id=1780618967389
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618967389
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=survivor_test id=1780618980983
+time=2026-06-05T18:30:36.483+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780618980983
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:74 msg="Checking recovery status for project" name=hangman id=1780591488979
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/process/recovery.go:19 msg="Checking for orphaned process recovery" project_id=1780591488979
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/server.go:25 msg="Initializing core API server instance"
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:10 msg="Starting to register API endpoints..."
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:35 msg="Registering WebSocket endpoint under /ws"
+time=2026-06-05T18:30:36.484+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:39 msg="Booting up background metrics worker..."
+time=2026-06-05T18:30:36.484+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/router.go:42 msg="All API routes and background workers registered successfully"
+time=2026-06-05T18:30:36.484+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:120 msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-05T18:30:37.352+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:59277
+time=2026-06-05T18:30:37.352+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:59277 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:37.352+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:59277
+time=2026-06-05T18:30:39.271+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/ status=200 duration=20.7316ms client_ip=[::1]:55767
+time=2026-06-05T18:30:39.291+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/css/style.css status=200 duration=0s client_ip=[::1]:55767
+time=2026-06-05T18:30:39.303+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/state.js status=200 duration=0s client_ip=[::1]:55767
+time=2026-06-05T18:30:39.304+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/api.js status=200 duration=0s client_ip=[::1]:59410
+time=2026-06-05T18:30:39.304+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/websocket.js status=200 duration=0s client_ip=[::1]:49983
+time=2026-06-05T18:30:39.304+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/terminal.js status=200 duration=0s client_ip=[::1]:54706
+time=2026-06-05T18:30:39.304+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/ui.js status=200 duration=0s client_ip=[::1]:64516
+time=2026-06-05T18:30:39.304+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/js/main.js status=200 duration=0s client_ip=[::1]:52539
+time=2026-06-05T18:30:39.472+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:879 msg="Fetching historical logs for terminal" target_id=system
+time=2026-06-05T18:30:39.472+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:38 msg="Fetching system settings"
+time=2026-06-05T18:30:39.472+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:22 msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-05T18:30:39.472+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s client_ip=[::1]:52539
+time=2026-06-05T18:30:39.472+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/config/settings.go:44 msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-05T18:30:39.473+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_system.go:45 msg="Successfully retrieved system settings"
+time=2026-06-05T18:30:39.473+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/settings status=200 duration=600.8µs client_ip=[::1]:64516
+time=2026-06-05T18:30:39.547+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:32 msg="Fetching all projects and their current stats"
+time=2026-06-05T18:30:39.547+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/handlers_project.go:68 msg="Successfully returned projects list" count=8
+time=2026-06-05T18:30:39.547+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:51 msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s client_ip=[::1]:64516
+time=2026-06-05T18:30:39.598+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:42 msg="API Request Failed (Client Error)" method=GET path=/favicon.ico status=404 duration=0s client_ip=[::1]:64516
+time=2026-06-05T18:30:42.124+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:56501
+time=2026-06-05T18:30:42.124+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:56501 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:42.124+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:56501
+time=2026-06-05T18:30:49.076+03:00 level=DEBUG source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:54 msg="Incoming WebSocket upgrade request" client_ip=[::1]:57974
+time=2026-06-05T18:30:49.076+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/ws.go:58 msg="Failed to upgrade HTTP connection to WebSocket" client_ip=[::1]:57974 error="websocket: response does not implement http.Hijacker"
+time=2026-06-05T18:30:49.076+03:00 level=ERROR source=C:/Users/Diony/Desktop/DionyHub/internal/api/middleware.go:33 msg="API Request Failed (Server Error)" method=GET path=/ws status=500 duration=0s client_ip=[::1]:57974
+time=2026-06-05T18:30:50.498+03:00 level=WARN source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:130 msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-05T18:30:50.498+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:131 msg="Terminating all running background processes..."
+time=2026-06-05T18:30:50.498+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/internal/process/manager.go:394 msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-05T18:30:50.498+03:00 level=INFO source=C:/Users/Diony/Desktop/DionyHub/cmd/server/main.go:142 msg="DionyHub shutdown sequence complete. Goodbye!"
+time=18:34:13 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=18:34:13 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=18:34:13 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=18:34:13 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=18:34:13 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=18:34:13 level=DEBUG msg="Successfully loaded projects" count=8
+time=18:34:13 level=INFO msg="Successfully loaded project configurations" count=8
+time=18:34:13 level=DEBUG msg="Initializing core process manager"
+time=18:34:13 level=DEBUG msg="Checking recovery status for project" name=noteapp id=1780618949493
+time=18:34:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618949493
+time=18:34:13 level=DEBUG msg="Checking recovery status for project" name=CrashTest id=1780618751290
+time=18:34:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618751290
+time=18:34:13 level=DEBUG msg="Checking recovery status for project" name=env_test id=1780618770556
+time=18:34:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618770556
+time=18:34:14 level=DEBUG msg="Checking recovery status for project" name=filereader id=1780618931388
+time=18:34:14 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618931388
+time=18:34:14 level=DEBUG msg="Checking recovery status for project" name=focus_timer id=1780618940799
+time=18:34:14 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618940799
+time=18:34:14 level=DEBUG msg="Checking recovery status for project" name=soru_test id=1780618967389
+time=18:34:14 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618967389
+time=18:34:14 level=DEBUG msg="Checking recovery status for project" name=survivor_test id=1780618980983
+time=18:34:14 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618980983
+time=18:34:14 level=DEBUG msg="Checking recovery status for project" name=hangman id=1780591488979
+time=18:34:14 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780591488979
+time=18:34:14 level=DEBUG msg="Initializing core API server instance"
+time=18:34:14 level=DEBUG msg="Starting to register API endpoints..."
+time=18:34:14 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=18:34:14 level=DEBUG msg="Booting up background metrics worker..."
+time=18:34:14 level=INFO msg="All API routes and background workers registered successfully"
+time=18:34:14 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=18:34:18 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63183
+time=18:34:18 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63183 total_active_clients=1
+time=18:34:20 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=20.8327ms
+time=18:34:21 level=DEBUG msg="Fetching historical logs for terminal" target_id=system
+time=18:34:21 level=DEBUG msg="Fetching system settings"
+time=18:34:21 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=18:34:21 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=18:34:21 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=18:34:21 level=DEBUG msg="Successfully retrieved system settings"
+time=18:34:21 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=18:34:21 level=DEBUG msg="Fetching all projects and their current stats"
+time=18:34:21 level=DEBUG msg="Successfully returned projects list" count=8
+time=18:34:21 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=18:34:21 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:55483
+time=18:34:21 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:55483 total_active_clients=2
+time=18:34:24 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:63183 error="write tcp [::1]:8080->[::1]:63183: wsasend: An established connection was aborted by the software in your host machine."
+time=18:34:34 level=DEBUG msg="Fetching historical logs for terminal" target_id=1780618949493
+time=18:34:34 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=18:34:34 level=INFO msg="Starting project execution" project_id=1780618949493 project_name=noteapp
+time=18:34:34 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=18:34:34 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=18:34:34 level=INFO msg="Requesting process start" project_id=1780618949493 command=go interactive=true
+time=18:34:34 level=INFO msg="OS Process successfully spawned" project_id=1780618949493 pid=32952
+time=18:34:34 level=INFO msg="Project started successfully" project_id=1780618949493
+time=18:34:34 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=17.7645ms
+time=18:34:41 level=WARN msg="Process terminated unexpectedly but cleanly" project_id=1780618949493
+time=18:34:41 level=ERROR msg="Project process crashed unexpectedly!" project_id=1780618949493 project_name=noteapp uptime=6s
+time=18:34:43 level=INFO msg="Starting project execution" project_id=1780618751290 project_name=CrashTest
+time=18:34:43 level=DEBUG msg="Fetching historical logs for terminal" target_id=1780618751290
+time=18:34:43 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=18:34:43 level=DEBUG msg="Cleared logs for project before starting" project_id=1780618751290
+time=18:34:43 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=18:34:43 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=18:34:43 level=INFO msg="Requesting process start" project_id=1780618751290 command=go interactive=false
+time=18:34:43 level=INFO msg="OS Process successfully spawned" project_id=1780618751290 pid=36844
+time=18:34:43 level=INFO msg="Project started successfully" project_id=1780618751290
+time=18:34:43 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.1689ms
+time=18:34:49 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1780618751290 uptime=6.1839957s exit_error="exit status 1"
+time=18:34:49 level=ERROR msg="Project process crashed unexpectedly!" project_id=1780618751290 project_name=CrashTest uptime=6s
+time=18:35:02 level=INFO msg="Stop command received for project" project_id=1780618751290
+time=18:35:02 level=INFO msg="Stop sequence initiated for process" project_id=1780618751290
+time=18:35:02 level=WARN msg="Attempted to stop a non-running process" project_id=1780618751290
+time=18:35:02 level=ERROR msg="Failed to stop project" project_id=1780618751290 error="process is not currently running"
+time=18:35:02 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=18:35:04 level=INFO msg="Stop command received for project" project_id=1780618770556
+time=18:35:04 level=INFO msg="Stop sequence initiated for process" project_id=1780618770556
+time=18:35:04 level=WARN msg="Attempted to stop a non-running process" project_id=1780618770556
+time=18:35:04 level=ERROR msg="Failed to stop project" project_id=1780618770556 error="process is not currently running"
+time=18:35:04 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=18:35:06 level=INFO msg="Stop command received for project" project_id=1780618770556
+time=18:35:06 level=INFO msg="Stop sequence initiated for process" project_id=1780618770556
+time=18:35:06 level=WARN msg="Attempted to stop a non-running process" project_id=1780618770556
+time=18:35:06 level=ERROR msg="Failed to stop project" project_id=1780618770556 error="process is not currently running"
+time=18:35:06 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=18:35:08 level=INFO msg="Starting project execution" project_id=1780618770556 project_name=env_test
+time=18:35:08 level=DEBUG msg="Cleared logs for project before starting" project_id=1780618770556
+time=18:35:08 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=18:35:08 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=18:35:08 level=INFO msg="Requesting process start" project_id=1780618770556 command=go interactive=false
+time=18:35:08 level=INFO msg="OS Process successfully spawned" project_id=1780618770556 pid=25264
+time=18:35:08 level=INFO msg="Project started successfully" project_id=1780618770556
+time=18:35:08 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.6321ms
+time=18:35:08 level=DEBUG msg="Fetching historical logs for terminal" target_id=1780618770556
+time=18:35:08 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=18:35:13 level=INFO msg="Stop command received for project" project_id=1780618770556
+time=18:35:13 level=INFO msg="Stop sequence initiated for process" project_id=1780618770556
+time=18:35:13 level=DEBUG msg="Issuing OS kill command" project_id=1780618770556 pid=25264
+time=18:35:13 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1780618770556
+time=18:35:13 level=INFO msg="Project process stopped by user" project_id=1780618770556 project_name=env_test uptime=4s
+time=18:35:13 level=INFO msg="OS successfully terminated process tree" project_id=1780618770556 pid=25264
+time=18:35:13 level=INFO msg="Project stopped successfully" project_id=1780618770556
+time=18:35:13 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=156.2477ms
+time=18:35:14 level=INFO msg="Starting project execution" project_id=1780618770556 project_name=env_test
+time=18:35:14 level=DEBUG msg="Cleared logs for project before starting" project_id=1780618770556
+time=18:35:14 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=18:35:14 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=18:35:14 level=INFO msg="Requesting process start" project_id=1780618770556 command=go interactive=false
+time=18:35:14 level=INFO msg="OS Process successfully spawned" project_id=1780618770556 pid=36792
+time=18:35:14 level=INFO msg="Project started successfully" project_id=1780618770556
+time=18:35:14 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.1009ms
+time=18:35:17 level=INFO msg="Stop command received for project" project_id=1780618770556
+time=18:35:17 level=INFO msg="Stop sequence initiated for process" project_id=1780618770556
+time=18:35:17 level=DEBUG msg="Issuing OS kill command" project_id=1780618770556 pid=36792
+time=18:35:17 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1780618770556
+time=18:35:17 level=INFO msg="Project process stopped by user" project_id=1780618770556 project_name=env_test uptime=2s
+time=18:35:17 level=INFO msg="OS successfully terminated process tree" project_id=1780618770556 pid=36792
+time=18:35:17 level=INFO msg="Project stopped successfully" project_id=1780618770556
+time=18:35:17 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=151.0984ms
+time=18:37:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=18:37:00 level=INFO msg="Terminating all running background processes..."
+time=18:37:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=18:37:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"

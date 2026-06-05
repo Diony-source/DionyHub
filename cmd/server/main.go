@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -33,10 +33,10 @@ func clearHubPort() {
 		cmd := exec.Command("powershell", "-NoProfile", "-Command", psCmd)
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		cmd.Run()
+		slog.Debug("Cleared potential port 8080 conflicts via PowerShell")
 	}
 }
 
-// YENİ: Sistem loglarını da WebSocket üzerinden JSON paketi olarak fırlatan kılıf
 type SystemLogWrapper struct {
 	ws io.Writer
 }
@@ -52,26 +52,26 @@ func (s *SystemLogWrapper) Write(p []byte) (n int, err error) {
 }
 
 func main() {
+	// 1. Kademeli Loglama Motorunu Başlat
 	logger.InitGlobalLogger()
+	slog.Info("Starting DionyHub Command Center Initialization...")
+
 	clearHubPort()
 
 	broadcaster := api.NewBroadcaster()
 	sysWrapper := &SystemLogWrapper{ws: broadcaster}
 
-	// CMD konsolu raw logları alır, WS ise JSON sarılı logları alır
-	multiWriter := io.MultiWriter(os.Stdout, sysWrapper)
+	projects, err := config.LoadProjects("config.json")
+	if err != nil {
+		slog.Warn("Could not load projects.json. Starting with empty library.", slog.Any("error", err))
+	} else {
+		slog.Info("Successfully loaded project configurations", slog.Int("count", len(projects)))
+	}
 
-	log.SetOutput(multiWriter)
-	log.SetFlags(0)
-
-	log.Println("[SYSTEM] Starting DionyHub Command Center...")
-
-	projects, _ := config.LoadProjects("config.json")
-
-	// YENİ: Manager yapısına konsol ve websocket bağlantılarını ayrıştırarak veriyoruz
 	procManager := process.NewManager(os.Stdout, broadcaster)
 
 	for _, p := range projects {
+		slog.Debug("Checking recovery status for project", slog.String("name", p.Name), slog.String("id", p.ID))
 		recovered := procManager.Recover(p.ID, p.Name, p.Path)
 
 		if !recovered && p.AutoStart {
@@ -89,9 +89,10 @@ func main() {
 					}
 				}
 
+				slog.Info("Auto-starting project", slog.String("name", p.Name))
 				err := procManager.Start(p.ID, p.Name, p.Path, p.Interactive, p.AutoRestart, globalEnvs, parts[0], parts[1:]...)
 				if err != nil {
-					log.Printf("[SYSTEM] Failed to auto-start project %s: %v", p.Name, err)
+					slog.Error("Failed to auto-start project", slog.String("name", p.Name), slog.Any("error", err))
 				}
 			}
 		}
@@ -104,26 +105,30 @@ func main() {
 	mux.Handle("/", fs)
 	server.RegisterRoutes(mux)
 
+	// YENİ: Bütün istekleri (router) Loglama Ajanı ile sarıp sarmalıyoruz
+	loggedMux := api.LoggingMiddleware(mux)
+
 	httpServer := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: loggedMux,
 	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Println("[SYSTEM] Server is running on http://localhost:8080")
+		slog.Info("Server is successfully running and listening", slog.String("url", "http://localhost:8080"))
+		sysWrapper.Write([]byte("DionyHub is ready! Listening on port 8080...\n"))
+
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("[SYSTEM] Server crashed: %v", err)
+			slog.Error("Server crashed", slog.Any("error", err))
 		}
 	}()
 
 	<-stop
 
-	log.Println("")
-	log.Println("[SYSTEM] Shutdown signal received! Initiating Graceful Shutdown...")
-	log.Println("[SYSTEM] Terminating all running background processes...")
+	slog.Warn("Shutdown signal received! Initiating Graceful Shutdown...")
+	slog.Info("Terminating all running background processes...")
 
 	procManager.StopAll()
 
@@ -131,9 +136,9 @@ func main() {
 	defer cancel()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Printf("[SYSTEM] Server forced to shutdown: %v", err)
+		slog.Error("Server forced to shutdown", slog.Any("error", err))
 	}
 
-	log.Println("[SYSTEM] DionyHub shutdown sequence complete. Goodbye!")
+	slog.Info("DionyHub shutdown sequence complete. Goodbye!")
 	time.Sleep(1 * time.Second)
 }

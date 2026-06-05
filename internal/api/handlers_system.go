@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -12,29 +12,37 @@ import (
 
 func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
+		slog.Warn("Invalid HTTP method for browse folder", slog.String("method", r.Method))
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
+	slog.Debug("Opening native OS folder picker dialogue")
 	path, err := osutil.PickFolder()
 	if err != nil || path == "" {
+		slog.Debug("Folder picker dialogue cancelled or failed", slog.Any("error", err))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"path": ""}`))
 		return
 	}
 
 	cleanPath := strings.ReplaceAll(path, "\\", "/")
+	slog.Info("Folder successfully selected via native picker", slog.String("path", cleanPath))
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"path": cleanPath})
 }
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		slog.Debug("Fetching system settings")
 		settings, err := config.LoadSettings("app_config.json")
 		if err != nil {
+			slog.Error("Failed to load settings from disk", slog.Any("error", err))
 			http.Error(w, `{"error": "Failed to load settings"}`, http.StatusInternalServerError)
 			return
 		}
+		slog.Debug("Successfully retrieved system settings")
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(settings)
 		return
@@ -43,9 +51,12 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var newSettings config.AppSettings
 		if err := json.NewDecoder(r.Body).Decode(&newSettings); err != nil {
+			slog.Warn("Failed to decode settings payload", slog.Any("error", err))
 			http.Error(w, `{"error": "Invalid JSON configuration"}`, http.StatusBadRequest)
 			return
 		}
+
+		slog.Info("Updating system settings", slog.String("workspace", newSettings.Workspace))
 
 		oldSettings, _ := config.LoadSettings("app_config.json")
 		newSettings.SavedTags = oldSettings.SavedTags
@@ -57,22 +68,25 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		newSettings.GlobalEnv = strings.TrimSpace(newSettings.GlobalEnv)
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
-			log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[31mSystem Error\x1b[0m -> Failed to save settings: %v", err)
+			slog.Error("System Error -> Failed to save settings to disk", slog.Any("error", err))
 			http.Error(w, `{"error": "Failed to save configuration to disk"}`, http.StatusInternalServerError)
 			return
 		}
 
-		log.Printf("\x1b[36m[AUDIT]\x1b[0m \x1b[35mSystem Settings\x1b[0m -> Global configuration updated successfully.")
+		slog.Info("System Settings -> Global configuration updated successfully")
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"message": "Settings saved successfully"}`))
 		return
 	}
+
+	slog.Warn("Invalid HTTP method for settings", slog.String("method", r.Method))
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
 func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		slog.Warn("Invalid HTTP method for manage tag", slog.String("method", r.Method))
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
@@ -84,12 +98,19 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Warn("Failed to decode manage tag payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
 
 	req.OriginalTag = strings.TrimSpace(req.OriginalTag)
 	req.NewTag = strings.TrimSpace(req.NewTag)
+
+	slog.Info("Managing tags",
+		slog.String("original_tag", req.OriginalTag),
+		slog.String("new_tag", req.NewTag),
+		slog.Int("affected_projects", len(req.ProjectIDs)),
+	)
 
 	settings, err := config.LoadSettings("app_config.json")
 	if err == nil {
@@ -111,7 +132,11 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		}
 
 		settings.SavedTags = newSavedTags
-		config.SaveSettings("app_config.json", settings)
+		if err := config.SaveSettings("app_config.json", settings); err != nil {
+			slog.Error("Failed to update saved tags in settings", slog.Any("error", err))
+		} else {
+			slog.Debug("Saved tags configuration successfully updated in settings")
+		}
 	}
 
 	s.mu.Lock()
@@ -130,7 +155,11 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	config.SaveProjects("config.json", s.projects)
+	if err := config.SaveProjects("config.json", s.projects); err != nil {
+		slog.Error("Failed to save projects after tag update", slog.Any("error", err))
+	} else {
+		slog.Info("Project tags updated and saved successfully")
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -4,6 +4,7 @@ package process
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,20 +16,25 @@ import (
 
 // Recover attempts to re-attach to an orphaned process using its stored PID file.
 func (m *Manager) Recover(id, name, path string) bool {
+	slog.Debug("Checking for orphaned process recovery", slog.String("project_id", id))
+
 	pidFile := filepath.Join(path, ".diony_hub.pid")
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
+		// Normal durum, proje çalışmıyor demektir. Log dosyasını şişirmemek için sessizce dönüyoruz.
 		return false
 	}
 
 	pidStr := strings.TrimSpace(string(data))
 	pid, err := strconv.Atoi(pidStr)
 	if err != nil {
+		slog.Warn("Corrupted PID file detected during recovery", slog.String("project_id", id), slog.String("path", pidFile), slog.Any("error", err))
 		return false
 	}
 
 	exists, err := process.PidExists(int32(pid))
 	if err != nil || !exists {
+		slog.Debug("PID file found but process is dead. Cleaning up.", slog.String("project_id", id), slog.Int("pid", pid))
 		os.Remove(pidFile)
 		return false
 	}
@@ -44,9 +50,11 @@ func (m *Manager) Recover(id, name, path string) bool {
 	}
 	m.mu.Unlock()
 
+	slog.Info("Successfully recovered and re-attached to orphaned process", slog.String("project_id", id), slog.Int("pid", pid))
 	m.sysLog(id, name, fmt.Sprintf("🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m", pid))
 
 	go func() {
+		slog.Debug("Started monitoring routine for recovered process", slog.String("project_id", id))
 		for {
 			time.Sleep(2 * time.Second)
 			alive, _ := process.PidExists(int32(pid))
@@ -65,6 +73,9 @@ func (m *Manager) Recover(id, name, path string) bool {
 
 				uptime := time.Since(start)
 				isCrash := !intended
+
+				slog.Warn("Recovered process has exited", slog.String("project_id", id), slog.Bool("intended", intended), slog.String("uptime", uptime.String()))
+
 				if m.OnExit != nil {
 					m.OnExit(id, name, uptime, isCrash)
 				}
