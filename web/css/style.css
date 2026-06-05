@@ -4,7 +4,7 @@
    BUTON FİZİĞİ (Rapid Trigger)
 ========================================== */
 .btn-action {
-    transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+    transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-action:active {
@@ -12,7 +12,26 @@
 }
 
 /* ==========================================
-   SCROLLBAR (KAYDIRMA ÇUBUĞU) ÖZELLEŞTİRMESİ
+   NEON FOCUS EFEKTLERİ (YENİ)
+========================================== */
+.neon-focus {
+    transition: all 0.3s ease;
+}
+
+.neon-focus:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.8);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.neon-focus-emerald:focus {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+/* ==========================================
+   SCROLLBAR (KAYDIRMA ÇUBUĞU)
 ========================================== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -35,7 +54,6 @@
     animation: springScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
 }
 
-/* HTML'den kurtarılan gecikme (Delay) class'ları */
 .anim-delay-1 { animation-delay: 0.1s; }
 .anim-delay-2 { animation-delay: 0.2s; }
 
@@ -46,4 +64,9 @@
 
 .spark-bar { 
     transition: height 0.3s ease-in-out; 
+}
+
+/* YENİ: Kayan Sekme (Sliding Tab) İndikatörü */
+.tab-slider {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
