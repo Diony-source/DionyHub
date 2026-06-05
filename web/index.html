@@ -1,666 +1,1669 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DionyHub - Command Center</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-search/lib/xterm-addon-search.js"></script>
 
     <link rel="stylesheet" href="/css/style.css" />
-</head>
-<body class="bg-[#0a0d14] text-gray-200 h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30 relative">
+  </head>
+  <body
+    class="bg-[#0a0d14] text-gray-200 h-screen flex overflow-hidden font-sans selection:bg-indigo-500/30 relative"
+  >
+    <div
+      class="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none z-0"
+    ></div>
+    <div
+      class="absolute bottom-[-15%] right-[-5%] w-[600px] h-[600px] bg-emerald-600/5 rounded-full blur-[150px] pointer-events-none z-0"
+    ></div>
 
-    <div class="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
-    <div class="absolute bottom-[-15%] right-[-5%] w-[600px] h-[600px] bg-emerald-600/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
+    <div
+      class="w-64 bg-[#11151f]/80 backdrop-blur-xl border-r border-gray-800/60 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.4)] z-20 relative shrink-0"
+    >
+      <div
+        class="h-16 flex items-center px-6 border-b border-gray-800/60 bg-transparent shrink-0"
+      >
+        <span
+          class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md"
+          >DionyHub</span
+        >
+      </div>
 
-    <div class="w-64 bg-[#11151f]/80 backdrop-blur-xl border-r border-gray-800/60 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.4)] z-20 relative shrink-0">
-        <div class="h-16 flex items-center px-6 border-b border-gray-800/60 bg-transparent shrink-0">
-            <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 drop-shadow-md">DionyHub</span>
+      <div class="p-5 flex-1 overflow-y-auto no-scrollbar flex flex-col">
+        <div class="space-y-1">
+          <button
+            onclick="switchView('dashboard')"
+            id="nav-dashboard"
+            class="w-full flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all shadow-[inset_3px_0_0_#6366f1] group"
+          >
+            <div class="flex items-center gap-3">
+              <svg
+                class="w-4 h-4 text-indigo-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                ></path>
+              </svg>
+              <span class="tracking-wide">Board</span>
+            </div>
+          </button>
         </div>
-        
-        <div class="p-5 flex-1 overflow-y-auto no-scrollbar flex flex-col">
-            <div class="space-y-1">
-                <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all shadow-[inset_3px_0_0_#6366f1] group">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        <span class="tracking-wide">Board</span>
-                    </div>
-                </button>
-            </div>
-                
-            <div class="flex items-center justify-between px-2 py-2 mt-8 mb-2">
-                <span class="text-[11px] font-black text-gray-500 uppercase tracking-widest drop-shadow-sm">Library Tags</span>
-                <button onclick="openTagModal()" class="text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/20 transition-all p-1 rounded-md border border-transparent hover:border-indigo-500/30 shadow-sm" title="Create New Tag">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                </button>
-            </div>
 
-            <div id="tag-list" class="space-y-1">
-                <!-- JS render area -->
-            </div>
+        <div class="flex items-center justify-between px-2 py-2 mt-8 mb-2">
+          <span
+            class="text-[11px] font-black text-gray-500 uppercase tracking-widest drop-shadow-sm"
+            >Library Tags</span
+          >
+          <button
+            onclick="openTagModal()"
+            class="text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/20 transition-all p-1 rounded-md border border-transparent hover:border-indigo-500/30 shadow-sm"
+            title="Create New Tag"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+          </button>
+        </div>
 
-            <div class="mt-auto pt-6">
-                <button onclick="switchView('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold text-left group">
-                    <svg class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <span class="tracking-wide">Settings</span>
-                </button>
-            </div>
+        <div id="tag-list" class="space-y-1">
+          <!-- JS render area -->
         </div>
-        
-        <div class="p-4 border-t border-gray-800/60 flex justify-center shrink-0">
-            <button onclick="toggleCmdPalette()" class="btn-action w-full text-xs text-gray-500 font-mono bg-[#0a0d14] px-3 py-2 rounded-lg border border-gray-800 hover:text-indigo-400 hover:border-indigo-500/30 transition-all flex items-center justify-between gap-2 shadow-inner group">
-                <div class="flex items-center gap-2">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    Search
-                </div>
-                <span class="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded shadow text-[10px] font-bold border border-gray-700 group-hover:border-indigo-500/30 group-hover:text-indigo-300 transition-colors">Ctrl+K</span>
-            </button>
+
+        <div class="mt-auto pt-6">
+          <button
+            onclick="switchView('settings')"
+            id="nav-settings"
+            class="w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold text-left group"
+          >
+            <svg
+              class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              ></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              ></path>
+            </svg>
+            <span class="tracking-wide">Settings</span>
+          </button>
         </div>
+      </div>
+
+      <div class="p-4 border-t border-gray-800/60 flex justify-center shrink-0">
+        <button
+          onclick="toggleCmdPalette()"
+          class="btn-action w-full text-xs text-gray-500 font-mono bg-[#0a0d14] px-3 py-2 rounded-lg border border-gray-800 hover:text-indigo-400 hover:border-indigo-500/30 transition-all flex items-center justify-between gap-2 shadow-inner group"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              ></path>
+            </svg>
+            Search
+          </div>
+          <span
+            class="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded shadow text-[10px] font-bold border border-gray-700 group-hover:border-indigo-500/30 group-hover:text-indigo-300 transition-colors"
+            >Ctrl+K</span
+          >
+        </button>
+      </div>
     </div>
 
     <div class="flex-1 flex flex-col bg-transparent relative z-10 min-w-0">
-        <header class="h-16 bg-[#11151f]/60 backdrop-blur-xl border-b border-gray-800/60 flex items-center justify-between px-8 z-10 sticky top-0 shrink-0">
-            <h1 id="view-title" class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm">Active Library</h1>
-            <div class="flex items-center gap-6">
-                <button id="header-add-btn" onclick="openModal()" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] font-medium flex items-center gap-2 border border-indigo-400/50">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Add Project
-                </button>
-                <div class="flex items-center gap-2 text-sm text-gray-400 border-l border-gray-800 pl-6">
-                    <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></div>
-                    System Status: <span class="text-emerald-400 font-semibold drop-shadow-sm">Online</span>
-                </div>
-            </div>
-        </header>
-
-        <div id="dashboard-view" class="flex flex-col flex-1 overflow-hidden min-w-0">
-            
-            <div id="table-pane" class="flex flex-col flex-1 overflow-y-auto relative min-h-[200px]">
-                
-                <div id="bulk-actions-container" style="display: none;" class="px-8 pt-6 pb-0 justify-between items-end transition-all duration-300 shrink-0">
-                    <div class="flex items-center gap-3">
-                        <span class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5" id="bulk-tag-name">
-                            <span class="text-indigo-500 font-bold opacity-75">✓</span> Selected Items
-                        </span>
-                        <span class="text-gray-400 text-sm font-medium" id="bulk-project-count">0 projects</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="executeBulkAction('start')" class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/50">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Start Selected
-                        </button>
-                        <button onclick="executeBulkAction('stop')" class="btn-action bg-amber-600/90 hover:bg-amber-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-amber-500/50">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"></path></svg>
-                            Stop Selected
-                        </button>
-                        <button onclick="confirmBulkDelete()" class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg> 
-                            Delete Selected
-                        </button>
-                    </div>
-                </div>
-
-                <div id="global-empty-state" onclick="openModal()" class="hidden flex-col items-center justify-center p-16 mt-8 opacity-60 hover:opacity-100 cursor-pointer transition-all duration-300 group rounded-2xl border border-dashed border-gray-700/50 hover:border-indigo-500/50 hover:bg-[#11151f]/50 mx-8">
-                    <svg class="w-20 h-20 text-gray-500 group-hover:text-indigo-400 mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.2)] group-hover:drop-shadow-[0_0_15px_rgba(99,102,241,0.6)] transition-all transform group-hover:scale-110 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                    </svg>
-                    <span class="text-xl font-black text-gray-400 group-hover:text-gray-200 tracking-widest uppercase transition-colors">No Projects Found</span>
-                    <span class="text-sm text-gray-500 mt-2 font-medium group-hover:text-indigo-300 transition-colors">Your command center is empty. Click to add a project.</span>
-                </div>
-
-                <div id="split-tables-container" class="px-8 pt-6 pb-4 flex flex-col gap-8 w-full">
-                    
-                    <div>
-                        <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                            Local Workspace
-                        </h3>
-                        <div class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-xl overflow-x-auto">
-                            <table class="w-full text-left border-collapse min-w-[900px]">
-                                <thead>
-                                    <tr class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold">
-                                        <th class="p-4 w-1/4">Project Name</th>
-                                        <th class="p-4 w-1/4">Path</th>
-                                        <th class="p-4 w-1/6">Status</th>
-                                        <th class="p-4 w-1/5">Resources</th>
-                                        <th class="p-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="local-project-list">
-                                    <tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">Loading local modules...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                            GitHub Repositories
-                        </h3>
-                        <div class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-xl overflow-x-auto">
-                            <table class="w-full text-left border-collapse min-w-[900px]">
-                                <thead>
-                                    <tr class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold">
-                                        <th class="p-4 w-1/4">Project Name</th>
-                                        <th class="p-4 w-1/4">Path</th>
-                                        <th class="p-4 w-1/6">Status</th>
-                                        <th class="p-4 w-1/5">Resources</th>
-                                        <th class="p-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="github-project-list">
-                                    <tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic">Loading remote modules...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div> 
-
-            <div id="horizontal-resizer" class="h-3 w-full cursor-row-resize bg-gray-900 hover:bg-indigo-600/40 transition-colors flex items-center justify-center group z-20 shrink-0 border-t border-b border-gray-800/80 relative">
-                <div class="w-16 h-1 bg-gray-600 group-hover:bg-indigo-300 rounded-full transition-colors"></div>
-            </div>
-
-            <div id="terminal-pane" class="px-8 pt-4 pb-8 flex flex-col shrink-0 min-h-[200px] w-full min-w-0 max-w-full" style="height: 40vh;">
-                <div class="bg-[#11151f]/90 backdrop-blur-xl rounded-2xl border border-gray-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.6)] flex flex-col h-full overflow-hidden relative w-full min-w-0">
-                    <div class="bg-[#0a0d14]/50 px-5 py-3 border-b border-gray-800/80 flex justify-between items-center shrink-0 z-10 overflow-x-auto no-scrollbar">
-                        <div class="flex items-center gap-3 shrink-0">
-                            <div class="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-md border border-indigo-500/20 shadow-inner">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                                </svg>
-                                COMMAND CENTER
-                            </div>
-                            
-                            <div id="minimized-tabs-container" class="flex items-center gap-2 overflow-x-auto no-scrollbar pl-3 ml-1 border-l border-gray-800/80 min-h-[28px]"></div>
-                        </div>
-                        <div class="flex items-center gap-3 pl-4 shrink-0">
-                            <button onclick="clearAllTerminals()" class="btn-action text-xs text-gray-400 hover:text-white hover:bg-gray-800 transition-colors bg-gray-900 border border-gray-700/50 px-3 py-1.5 rounded-md shadow-sm font-medium flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                                Clear All
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="terminals-grid" class="flex-1 w-full p-4 overflow-y-auto overflow-x-hidden relative min-w-0 max-w-full"></div>
-                </div>
-            </div> 
-
-        </div> 
-
-        <div id="settings-view" class="hidden flex-col flex-1 overflow-y-auto px-8 py-8">
-            <div class="max-w-3xl mx-auto w-full space-y-6">
-                <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter">
-                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3">Global Workspace</h2>
-                    <input type="text" id="setting-workspace" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm neon-focus shadow-inner">
-                </div>
-                <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-1">
-                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3">Global Environment Variables</h2>
-                    <textarea id="setting-global-env" rows="6" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-3 text-emerald-400 font-mono text-sm resize-y neon-focus-emerald shadow-inner"></textarea>
-                </div>
-                <div class="flex justify-end modal-enter anim-delay-2">
-                    <button id="save-settings-btn" onclick="saveSettings()" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50">Save Configuration</button>
-                </div>
-            </div>
+      <header
+        class="h-16 bg-[#11151f]/60 backdrop-blur-xl border-b border-gray-800/60 flex items-center justify-between px-8 z-10 sticky top-0 shrink-0"
+      >
+        <h1
+          id="view-title"
+          class="text-xl font-bold text-gray-100 tracking-wide drop-shadow-sm"
+        >
+          Active Library
+        </h1>
+        <div class="flex items-center gap-6">
+          <button
+            id="header-add-btn"
+            onclick="openModal()"
+            class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] font-medium flex items-center gap-2 border border-indigo-400/50"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+            Add Project
+          </button>
+          <div
+            class="flex items-center gap-2 text-sm text-gray-400 border-l border-gray-800 pl-6"
+          >
+            <div
+              class="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"
+            ></div>
+            System Status:
+            <span class="text-emerald-400 font-semibold drop-shadow-sm"
+              >Online</span
+            >
+          </div>
         </div>
+      </header>
+
+      <div
+        id="dashboard-view"
+        class="flex flex-col flex-1 overflow-hidden min-w-0"
+      >
+        <div
+          id="table-pane"
+          class="flex flex-col flex-1 overflow-y-auto relative min-h-[200px]"
+        >
+          <div
+            id="bulk-actions-container"
+            style="display: none"
+            class="px-8 pt-6 pb-0 justify-between items-end transition-all duration-300 shrink-0"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center gap-1.5"
+                id="bulk-tag-name"
+              >
+                <span class="text-indigo-500 font-bold opacity-75">✓</span>
+                Selected Items
+              </span>
+              <span
+                class="text-gray-400 text-sm font-medium"
+                id="bulk-project-count"
+                >0 projects</span
+              >
+            </div>
+            <div class="flex items-center gap-3">
+              <button
+                onclick="executeBulkAction('start')"
+                class="btn-action bg-emerald-600/90 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/50"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  ></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                Start Selected
+              </button>
+              <button
+                onclick="executeBulkAction('stop')"
+                class="btn-action bg-amber-600/90 hover:bg-amber-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-amber-500/50"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 10h6v4H9z"
+                  ></path>
+                </svg>
+                Stop Selected
+              </button>
+              <button
+                onclick="confirmBulkDelete()"
+                class="btn-action bg-red-600/90 hover:bg-red-500 text-white px-5 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-red-500/50"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  ></path>
+                </svg>
+                Delete Selected
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="global-empty-state"
+            onclick="openModal()"
+            class="hidden flex-col items-center justify-center p-16 mt-8 opacity-60 hover:opacity-100 cursor-pointer transition-all duration-300 group rounded-2xl border border-dashed border-gray-700/50 hover:border-indigo-500/50 hover:bg-[#11151f]/50 mx-8"
+          >
+            <svg
+              class="w-20 h-20 text-gray-500 group-hover:text-indigo-400 mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.2)] group-hover:drop-shadow-[0_0_15px_rgba(99,102,241,0.6)] transition-all transform group-hover:scale-110 duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+              ></path>
+            </svg>
+            <span
+              class="text-xl font-black text-gray-400 group-hover:text-gray-200 tracking-widest uppercase transition-colors"
+              >No Projects Found</span
+            >
+            <span
+              class="text-sm text-gray-500 mt-2 font-medium group-hover:text-indigo-300 transition-colors"
+              >Your command center is empty. Click to add a project.</span
+            >
+          </div>
+
+          <div
+            id="split-tables-container"
+            class="px-8 pt-6 pb-4 flex flex-col gap-8 w-full"
+          >
+            <div>
+              <h3
+                class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  ></path>
+                </svg>
+                Local Workspace
+              </h3>
+              <div
+                class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-xl overflow-x-auto"
+              >
+                <table class="w-full text-left border-collapse min-w-[900px]">
+                  <thead>
+                    <tr
+                      class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold"
+                    >
+                      <th class="p-4 w-1/4">Project Name</th>
+                      <th class="p-4 w-1/4">Path</th>
+                      <th class="p-4 w-1/6">Status</th>
+                      <th class="p-4 w-1/5">Resources</th>
+                      <th class="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="local-project-list">
+                    <tr>
+                      <td
+                        colspan="5"
+                        class="p-6 text-center text-gray-500 font-medium text-xs italic"
+                      >
+                        Loading local modules...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h3
+                class="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  ></path>
+                </svg>
+                GitHub Repositories
+              </h3>
+              <div
+                class="bg-[#11151f]/80 backdrop-blur-sm rounded-xl border border-gray-800/60 shadow-xl overflow-x-auto"
+              >
+                <table class="w-full text-left border-collapse min-w-[900px]">
+                  <thead>
+                    <tr
+                      class="bg-gray-900/40 text-gray-400 text-xs border-b border-gray-800/80 uppercase tracking-widest font-bold"
+                    >
+                      <th class="p-4 w-1/4">Project Name</th>
+                      <th class="p-4 w-1/4">Path</th>
+                      <th class="p-4 w-1/6">Status</th>
+                      <th class="p-4 w-1/5">Resources</th>
+                      <th class="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="github-project-list">
+                    <tr>
+                      <td
+                        colspan="5"
+                        class="p-6 text-center text-gray-500 font-medium text-xs italic"
+                      >
+                        Loading remote modules...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="horizontal-resizer"
+          class="h-3 w-full cursor-row-resize bg-gray-900 hover:bg-indigo-600/40 transition-colors flex items-center justify-center group z-20 shrink-0 border-t border-b border-gray-800/80 relative"
+        >
+          <div
+            class="w-16 h-1 bg-gray-600 group-hover:bg-indigo-300 rounded-full transition-colors"
+          ></div>
+        </div>
+
+        <div
+          id="terminal-pane"
+          class="px-8 pt-4 pb-8 flex flex-col shrink-0 min-h-[200px] w-full min-w-0 max-w-full"
+          style="height: 40vh"
+        >
+          <div
+            class="bg-[#11151f]/90 backdrop-blur-xl rounded-2xl border border-gray-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.6)] flex flex-col h-full overflow-hidden relative w-full min-w-0"
+          >
+            <div
+              class="bg-[#0a0d14]/50 px-5 py-3 border-b border-gray-800/80 flex justify-between items-center shrink-0 z-10 overflow-x-auto no-scrollbar"
+            >
+              <div class="flex items-center gap-3 shrink-0">
+                <div
+                  class="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-md border border-indigo-500/20 shadow-inner"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                    ></path>
+                  </svg>
+                  COMMAND CENTER
+                </div>
+
+                <div
+                  id="minimized-tabs-container"
+                  class="flex items-center gap-2 overflow-x-auto no-scrollbar pl-3 ml-1 border-l border-gray-800/80 min-h-[28px]"
+                ></div>
+              </div>
+              <div class="flex items-center gap-3 pl-4 shrink-0">
+                <button
+                  onclick="clearAllTerminals()"
+                  class="btn-action text-xs text-gray-400 hover:text-white hover:bg-gray-800 transition-colors bg-gray-900 border border-gray-700/50 px-3 py-1.5 rounded-md shadow-sm font-medium flex items-center gap-1.5"
+                >
+                  <svg
+                    class="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    ></path>
+                  </svg>
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="terminals-grid"
+              class="flex-1 w-full p-4 overflow-y-auto overflow-x-hidden relative min-w-0 max-w-full"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="settings-view"
+        class="hidden flex-col flex-1 overflow-y-auto px-8 py-8"
+      >
+        <div class="max-w-3xl mx-auto w-full space-y-6">
+          <div
+            class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter"
+          >
+            <h2
+              class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3"
+            >
+              Global Workspace
+            </h2>
+            <input
+              type="text"
+              id="setting-workspace"
+              class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm neon-focus shadow-inner"
+            />
+          </div>
+          <div
+            class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-1"
+          >
+            <h2
+              class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3"
+            >
+              Global Environment Variables
+            </h2>
+            <textarea
+              id="setting-global-env"
+              rows="6"
+              class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-3 text-emerald-400 font-mono text-sm resize-y neon-focus-emerald shadow-inner"
+            ></textarea>
+          </div>
+          <div class="flex justify-end modal-enter anim-delay-2">
+            <button
+              id="save-settings-btn"
+              onclick="saveSettings()"
+              class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50"
+            >
+              Save Configuration
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- TAG YÖNETİM MODALI -->
-    <div id="tagModal" class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-[150]">
-        <div class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-md mx-4 modal-enter flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2" id="tagModalTitle">Create Tag</h2>
-                <button onclick="closeTagModal()" class="text-gray-400 hover:text-rose-400 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1">
-                <form id="tagForm" onsubmit="submitTag(event)" class="space-y-5">
-                    <input type="hidden" id="tagOriginalName">
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tag Name</label>
-                        <input type="text" id="tagNewName" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner" required placeholder="e.g. Backend, Frontend, Databases">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Assigned Projects</label>
-                        <div id="tagProjectList" class="bg-[#0a0d14] border border-gray-800 rounded-xl shadow-inner p-3 max-h-60 overflow-y-auto flex flex-col gap-2">
-                        </div>
-                        <p class="text-[10px] text-gray-500 mt-1.5">Select the projects you want to group under this tag.</p>
-                    </div>
-
-                    <div class="pt-4 flex justify-between items-center border-t border-gray-800/80">
-                        <button type="button" id="btnDeleteTag" onclick="deleteTag()" class="text-rose-500 hover:text-rose-400 text-sm font-bold transition-colors hidden px-2 py-1 rounded hover:bg-rose-500/10">Delete Tag</button>
-                        <div class="flex gap-3 ml-auto">
-                            <button type="button" onclick="closeTagModal()" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
-                            <button type="submit" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50">Save Tag</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+    <div
+      id="tagModal"
+      class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-[150]"
+    >
+      <div
+        class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-md mx-4 modal-enter flex flex-col max-h-[90vh]"
+      >
+        <div
+          class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0"
+        >
+          <h2
+            class="text-lg font-bold text-white flex items-center gap-2"
+            id="tagModalTitle"
+          >
+            Create Tag
+          </h2>
+          <button
+            onclick="closeTagModal()"
+            class="text-gray-400 hover:text-rose-400 transition-colors"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
         </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <form id="tagForm" onsubmit="submitTag(event)" class="space-y-5">
+            <input type="hidden" id="tagOriginalName" />
+
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                >Tag Name</label
+              >
+              <input
+                type="text"
+                id="tagNewName"
+                class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner"
+                required
+                placeholder="e.g. Backend, Frontend, Databases"
+              />
+            </div>
+
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                >Assigned Projects</label
+              >
+              <div
+                id="tagProjectList"
+                class="bg-[#0a0d14] border border-gray-800 rounded-xl shadow-inner p-3 max-h-60 overflow-y-auto flex flex-col gap-2"
+              ></div>
+              <p class="text-[10px] text-gray-500 mt-1.5">
+                Select the projects you want to group under this tag.
+              </p>
+            </div>
+
+            <div
+              class="pt-4 flex justify-between items-center border-t border-gray-800/80"
+            >
+              <button
+                type="button"
+                id="btnDeleteTag"
+                onclick="deleteTag()"
+                class="text-rose-500 hover:text-rose-400 text-sm font-bold transition-colors hidden px-2 py-1 rounded hover:bg-rose-500/10"
+              >
+                Delete Tag
+              </button>
+              <div class="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  onclick="closeTagModal()"
+                  class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50"
+                >
+                  Save Tag
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- ADD MODAL -->
-    <div id="addModal" class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50">
-        <div class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-xl mx-4 modal-enter flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">Add New Project</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-rose-400 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1">
-                <form id="addForm" onsubmit="submitNewProject(event)" class="space-y-5">
-                    
-                    <div class="relative flex p-1 bg-[#0a0d14] rounded-lg border border-gray-800 shadow-inner z-0">
-                        <div id="tab-slider" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-gray-800 rounded-md tab-slider z-[-1]"></div>
-                        <label class="flex-1 text-center cursor-pointer relative z-10">
-                            <input type="radio" name="sourceMode" value="local" class="peer sr-only" onchange="toggleSourceMode()" checked>
-                            <div class="py-2 text-sm font-bold text-gray-500 peer-checked:text-white transition-colors">Local Directory</div>
-                        </label>
-                        <label class="flex-1 text-center cursor-pointer relative z-10">
-                            <input type="radio" name="sourceMode" value="github" class="peer sr-only" onchange="toggleSourceMode()">
-                            <div class="py-2 text-sm font-bold text-gray-500 peer-checked:text-white transition-colors">GitHub Clone</div>
-                        </label>
-                    </div>
-
-                    <div id="localFlowWrapper" class="space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Project Name</label>
-                            <input type="text" id="projName" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner" required>
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-end mb-1.5">
-                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Directory Path</label>
-                                <label class="flex items-center gap-1.5 cursor-pointer group">
-                                    <input type="checkbox" id="useWorkspace" class="rounded bg-[#0a0d14] border-gray-700 text-indigo-500 focus:ring-indigo-500 transition-all" checked onchange="toggleWorkspaceMode()">
-                                    <span class="text-xs font-bold text-indigo-400 hover:text-indigo-300">Use Workspace</span>
-                                </label>
-                            </div>
-                            <div class="flex shadow-inner">
-                                <span id="workspacePrefix" class="bg-gray-800 border border-r-0 border-gray-700 text-gray-300 px-3 py-2 rounded-l-lg text-sm font-mono truncate max-w-[200px]"></span>
-                                <input type="text" id="projPath" class="flex-1 bg-[#0a0d14] border border-gray-700 rounded-none px-3 py-2 text-white font-mono text-sm neon-focus" required>
-                                <button type="button" onclick="browseFolder('projPath')" class="bg-gray-800 border border-l-0 border-gray-700 text-gray-300 px-3 py-2 rounded-r-lg hover:bg-gray-700 hover:text-indigo-400 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="githubFlowWrapper" class="space-y-5 hidden">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Repository URL</label>
-                            <input type="text" id="repoUrl" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono neon-focus shadow-inner">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Start Command</label>
-                            <input type="text" id="projCmd" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono neon-focus shadow-inner" required>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tag</label>
-                            <input type="text" id="projTag" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner" autocomplete="off">
-                            <div id="tagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4">
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Environment (.env)</label>
-                        
-                        <div class="flex items-center gap-8 border-b border-gray-800/50 pb-4">
-                            <label class="flex items-center gap-3 cursor-pointer group">
-                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Global Env</span>
-                                <div class="relative flex items-center shrink-0">
-                                    <input type="checkbox" id="addEnvGlobal" class="sr-only peer" onchange="toggleAddEnvMode('global')">
-                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                                </div>
-                            </label>
-                            <label class="flex items-center gap-3 cursor-pointer group">
-                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Custom Env</span>
-                                <div class="relative flex items-center shrink-0">
-                                    <input type="checkbox" id="addEnvCustom" class="sr-only peer" onchange="toggleAddEnvMode('custom')">
-                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <div id="addEnvGlobalPreview" class="hidden bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-gray-500 font-mono text-xs opacity-70 h-20 overflow-y-auto pointer-events-none shadow-inner"></div>
-                        
-                        <div id="addEnvCustomWrapper" class="hidden">
-                            <textarea id="projInitialEnv" rows="2" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs neon-focus-emerald shadow-inner" placeholder="PORT=8080&#10;DEBUG=true"></textarea>
-                        </div>
-
-                        <div id="addEnvNoneWarning" class="flex bg-rose-500/5 border border-dashed border-rose-500/20 rounded-lg px-3 py-2 items-start gap-2">
-                            <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <p class="text-xs text-rose-300/80 font-medium leading-tight">No .env file will be created. The project will run with empty/default variables.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-3.5">
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">External Terminal</span>
-                                <span class="block text-[11px] font-medium text-indigo-400/60 mt-0.5">Launch in OS native window</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projInteractive" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Clear on Start</span>
-                                <span class="block text-[11px] font-medium text-cyan-400/60 mt-0.5">Wipe terminal logs before run</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projClearOnStart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-cyan-500 transition-colors border border-gray-700 peer-checked:border-cyan-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Start</span>
-                                <span class="block text-[11px] font-medium text-emerald-400/60 mt-0.5">Start automatically with DionyHub</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projAutoStart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-emerald-500 transition-colors border border-gray-700 peer-checked:border-emerald-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Restart</span>
-                                <span class="block text-[11px] font-medium text-amber-400/60 mt-0.5">Revive process automatically on crash</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projAutoRestart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-amber-500 transition-colors border border-gray-700 peer-checked:border-amber-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Close Terminal</span>
-                                <span class="block text-[11px] font-medium text-rose-400/60 mt-0.5">Minimize terminal tab when stopped</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="projAutoClose" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-500 transition-colors border border-gray-700 peer-checked:border-rose-400"></div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div class="pt-4 flex justify-end gap-3">
-                        <button type="button" onclick="closeModal()" class="px-5 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
-                        <button type="submit" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50">Save Project</button>
-                    </div>
-                </form>
-            </div>
+    <div
+      id="addModal"
+      class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-xl mx-4 modal-enter flex flex-col max-h-[90vh]"
+      >
+        <div
+          class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0"
+        >
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            Add New Project
+          </h2>
+          <button
+            onclick="closeModal()"
+            class="text-gray-400 hover:text-rose-400 transition-colors"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
         </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <form
+            id="addForm"
+            onsubmit="submitNewProject(event)"
+            class="space-y-5"
+          >
+            <div
+              class="relative flex p-1 bg-[#0a0d14] rounded-lg border border-gray-800 shadow-inner z-0"
+            >
+              <div
+                id="tab-slider"
+                class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-gray-800 rounded-md tab-slider z-[-1]"
+              ></div>
+              <label class="flex-1 text-center cursor-pointer relative z-10">
+                <input
+                  type="radio"
+                  name="sourceMode"
+                  value="local"
+                  class="peer sr-only"
+                  onchange="toggleSourceMode()"
+                  checked
+                />
+                <div
+                  class="py-2 text-sm font-bold text-gray-500 peer-checked:text-white transition-colors"
+                >
+                  Local Directory
+                </div>
+              </label>
+              <label class="flex-1 text-center cursor-pointer relative z-10">
+                <input
+                  type="radio"
+                  name="sourceMode"
+                  value="github"
+                  class="peer sr-only"
+                  onchange="toggleSourceMode()"
+                />
+                <div
+                  class="py-2 text-sm font-bold text-gray-500 peer-checked:text-white transition-colors"
+                >
+                  GitHub Clone
+                </div>
+              </label>
+            </div>
+
+            <div id="localFlowWrapper" class="space-y-5">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                  >Project Name</label
+                >
+                <input
+                  type="text"
+                  id="projName"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner"
+                  required
+                />
+              </div>
+              <div>
+                <div class="flex justify-between items-end mb-1.5">
+                  <label
+                    class="block text-xs font-bold text-gray-400 uppercase tracking-wider"
+                    >Directory Path</label
+                  >
+                  <label class="flex items-center gap-1.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      id="useWorkspace"
+                      class="rounded bg-[#0a0d14] border-gray-700 text-indigo-500 focus:ring-indigo-500 transition-all"
+                      checked
+                      onchange="toggleWorkspaceMode()"
+                    />
+                    <span
+                      class="text-xs font-bold text-indigo-400 hover:text-indigo-300"
+                      >Use Workspace</span
+                    >
+                  </label>
+                </div>
+                <div class="flex shadow-inner">
+                  <span
+                    id="workspacePrefix"
+                    class="bg-gray-800 border border-r-0 border-gray-700 text-gray-300 px-3 py-2 rounded-l-lg text-sm font-mono truncate max-w-[200px]"
+                  ></span>
+                  <input
+                    type="text"
+                    id="projPath"
+                    class="flex-1 bg-[#0a0d14] border border-gray-700 rounded-none px-3 py-2 text-white font-mono text-sm neon-focus"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onclick="browseFolder('projPath')"
+                    class="bg-gray-800 border border-l-0 border-gray-700 text-gray-300 px-3 py-2 rounded-r-lg hover:bg-gray-700 hover:text-indigo-400 transition-colors"
+                  >
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="githubFlowWrapper" class="space-y-5 hidden">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                  >Repository URL</label
+                >
+                <input
+                  type="text"
+                  id="repoUrl"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono neon-focus shadow-inner"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                  >Start Command</label
+                >
+                <input
+                  type="text"
+                  id="projCmd"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono neon-focus shadow-inner"
+                  required
+                />
+              </div>
+              <div class="relative">
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5"
+                  >Tag</label
+                >
+                <input
+                  type="text"
+                  id="projTag"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner"
+                  autocomplete="off"
+                />
+                <div
+                  id="tagDropdown"
+                  class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto"
+                ></div>
+              </div>
+            </div>
+
+            <div
+              class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4"
+            >
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider"
+                >Environment (.env)</label
+              >
+
+              <div
+                class="flex items-center gap-8 border-b border-gray-800/50 pb-4"
+              >
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <span
+                    class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors"
+                    >Global Env</span
+                  >
+                  <div class="relative flex items-center shrink-0">
+                    <input
+                      type="checkbox"
+                      id="addEnvGlobal"
+                      class="sr-only peer"
+                      onchange="toggleAddEnvMode('global')"
+                    />
+                    <div
+                      class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                    ></div>
+                  </div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <span
+                    class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors"
+                    >Custom Env</span
+                  >
+                  <div class="relative flex items-center shrink-0">
+                    <input
+                      type="checkbox"
+                      id="addEnvCustom"
+                      class="sr-only peer"
+                      onchange="toggleAddEnvMode('custom')"
+                    />
+                    <div
+                      class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                    ></div>
+                  </div>
+                </label>
+              </div>
+
+              <div
+                id="addEnvGlobalPreview"
+                class="hidden bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-gray-500 font-mono text-xs opacity-70 h-20 overflow-y-auto pointer-events-none shadow-inner"
+              ></div>
+
+              <div id="addEnvCustomWrapper" class="hidden">
+                <textarea
+                  id="projInitialEnv"
+                  rows="2"
+                  class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs neon-focus-emerald shadow-inner"
+                  placeholder="PORT=8080&#10;DEBUG=true"
+                ></textarea>
+              </div>
+
+              <div
+                id="addEnvNoneWarning"
+                class="flex bg-rose-500/5 border border-dashed border-rose-500/20 rounded-lg px-3 py-2 items-start gap-2"
+              >
+                <svg
+                  class="w-4 h-4 text-rose-400 shrink-0 mt-0.5 opacity-80"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <p class="text-xs text-rose-300/80 font-medium leading-tight">
+                  No .env file will be created. The project will run with
+                  empty/default variables.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-3.5"
+            >
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >External Terminal</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-indigo-400/60 mt-0.5"
+                    >Launch in OS native window</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="projInteractive"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Clear on Start</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-cyan-400/60 mt-0.5"
+                    >Wipe terminal logs before run</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="projClearOnStart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-cyan-500 transition-colors border border-gray-700 peer-checked:border-cyan-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Start</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-emerald-400/60 mt-0.5"
+                    >Start automatically with DionyHub</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="projAutoStart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-emerald-500 transition-colors border border-gray-700 peer-checked:border-emerald-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Restart</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-amber-400/60 mt-0.5"
+                    >Revive process automatically on crash</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="projAutoRestart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-amber-500 transition-colors border border-gray-700 peer-checked:border-amber-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Close Terminal</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-rose-400/60 mt-0.5"
+                    >Minimize terminal tab when stopped</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="projAutoClose"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-500 transition-colors border border-gray-700 peer-checked:border-rose-400"
+                  ></div>
+                </div>
+              </label>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onclick="closeModal()"
+                class="px-5 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50"
+              >
+                Save Project
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- EDIT MODAL -->
-    <div id="editModal" class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50">
-        <div class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-2xl w-full max-w-xl mx-4 modal-enter flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0">
-                <h2 class="text-lg font-bold text-white">Edit Project</h2>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-rose-400 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1">
-                <form id="editForm" onsubmit="submitEditProject(event)" class="space-y-4">
-                    <input type="hidden" id="editProjId">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Project Name</label>
-                        <input type="text" id="editProjName" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Directory Path</label>
-                        <div class="flex shadow-inner">
-                            <input type="text" id="editProjPath" class="flex-1 bg-[#0a0d14] border border-gray-700 rounded-l-lg px-3 py-2 text-white font-mono text-sm neon-focus" required>
-                            <button type="button" onclick="browseFolder('editProjPath', false)" class="bg-gray-800 border border-l-0 border-gray-700 text-gray-300 px-3 py-2 rounded-r-lg hover:bg-gray-700 hover:text-indigo-400 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Start Command</label>
-                            <input type="text" id="editProjCmd" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm neon-focus shadow-inner" required>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tag</label>
-                            <input type="text" id="editProjTag" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner" autocomplete="off">
-                            <div id="editTagDropdown" class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4">
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Environment (.env)</label>
-                        
-                        <div class="flex items-center gap-8 border-b border-gray-800/50 pb-4">
-                            <label class="flex items-center gap-3 cursor-pointer group">
-                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Global Env</span>
-                                <div class="relative flex items-center shrink-0">
-                                    <input type="checkbox" id="editEnvGlobal" class="sr-only peer" onchange="toggleEditEnvMode('global')">
-                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                                </div>
-                            </label>
-                            <label class="flex items-center gap-3 cursor-pointer group">
-                                <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors">Custom Env</span>
-                                <div class="relative flex items-center shrink-0">
-                                    <input type="checkbox" id="editEnvCustom" class="sr-only peer" onchange="toggleEditEnvMode('custom')">
-                                    <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <div id="editEnvGlobalPreview" class="hidden bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-gray-500 font-mono text-xs opacity-70 h-20 overflow-y-auto pointer-events-none shadow-inner"></div>
-                        
-                        <div id="editEnvCustomWrapper" class="hidden">
-                            <textarea id="editProjInitialEnv" rows="2" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs neon-focus-emerald shadow-inner" placeholder="PORT=8080&#10;DEBUG=true"></textarea>
-                        </div>
-
-                        <div id="editEnvNoneWarning" class="flex bg-rose-500/5 border border-dashed border-rose-500/20 rounded-lg px-3 py-2 items-start gap-2">
-                            <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <p class="text-xs text-rose-300/80 font-medium leading-tight">No Environment Variables.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 mt-2 flex flex-col gap-3.5">
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">External Terminal</span>
-                                <span class="block text-[11px] font-medium text-indigo-400/60 mt-0.5">Launch in OS native window</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjInteractive" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Clear on Start</span>
-                                <span class="block text-[11px] font-medium text-cyan-400/60 mt-0.5">Wipe terminal logs before run</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjClearOnStart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-cyan-500 transition-colors border border-gray-700 peer-checked:border-cyan-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Start</span>
-                                <span class="block text-[11px] font-medium text-emerald-400/60 mt-0.5">Start automatically with DionyHub</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjAutoStart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-emerald-500 transition-colors border border-gray-700 peer-checked:border-emerald-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Restart</span>
-                                <span class="block text-[11px] font-medium text-amber-400/60 mt-0.5">Revive process automatically on crash</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjAutoRestart" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-amber-500 transition-colors border border-gray-700 peer-checked:border-amber-400"></div>
-                            </div>
-                        </label>
-                        <div class="h-px bg-gray-800/50"></div>
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Auto-Close Terminal</span>
-                                <span class="block text-[11px] font-medium text-rose-400/60 mt-0.5">Minimize terminal tab when stopped</span>
-                            </div>
-                            <div class="relative flex items-center shrink-0">
-                                <input type="checkbox" id="editProjAutoClose" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-500 transition-colors border border-gray-700 peer-checked:border-rose-400"></div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div class="pt-4 flex justify-end gap-3">
-                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
-                        <button type="submit" class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50">Save Updates</button>
-                    </div>
-                </form>
-            </div>
+    <div
+      id="editModal"
+      class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-[#11151f] rounded-2xl border border-gray-700/50 shadow-2xl w-full max-w-xl mx-4 modal-enter flex flex-col max-h-[90vh]"
+      >
+        <div
+          class="flex justify-between items-center px-6 py-4 border-b border-gray-800 shrink-0"
+        >
+          <h2 class="text-lg font-bold text-white">Edit Project</h2>
+          <button
+            onclick="closeEditModal()"
+            class="text-gray-400 hover:text-rose-400 transition-colors"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
         </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <form
+            id="editForm"
+            onsubmit="submitEditProject(event)"
+            class="space-y-4"
+          >
+            <input type="hidden" id="editProjId" />
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1"
+                >Project Name</label
+              >
+              <input
+                type="text"
+                id="editProjName"
+                class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner"
+                required
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1"
+                >Directory Path</label
+              >
+              <div class="flex shadow-inner">
+                <input
+                  type="text"
+                  id="editProjPath"
+                  class="flex-1 bg-[#0a0d14] border border-gray-700 rounded-l-lg px-3 py-2 text-white font-mono text-sm neon-focus"
+                  required
+                />
+                <button
+                  type="button"
+                  onclick="browseFolder('editProjPath', false)"
+                  class="bg-gray-800 border border-l-0 border-gray-700 text-gray-300 px-3 py-2 rounded-r-lg hover:bg-gray-700 hover:text-indigo-400 transition-colors"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1"
+                  >Start Command</label
+                >
+                <input
+                  type="text"
+                  id="editProjCmd"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm neon-focus shadow-inner"
+                  required
+                />
+              </div>
+              <div class="relative">
+                <label
+                  class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1"
+                  >Tag</label
+                >
+                <input
+                  type="text"
+                  id="editProjTag"
+                  class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white neon-focus shadow-inner"
+                  autocomplete="off"
+                />
+                <div
+                  id="editTagDropdown"
+                  class="hidden absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto"
+                ></div>
+              </div>
+            </div>
+
+            <div
+              class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 flex flex-col gap-4"
+            >
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase tracking-wider"
+                >Environment (.env)</label
+              >
+
+              <div
+                class="flex items-center gap-8 border-b border-gray-800/50 pb-4"
+              >
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <span
+                    class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors"
+                    >Global Env</span
+                  >
+                  <div class="relative flex items-center shrink-0">
+                    <input
+                      type="checkbox"
+                      id="editEnvGlobal"
+                      class="sr-only peer"
+                      onchange="toggleEditEnvMode('global')"
+                    />
+                    <div
+                      class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                    ></div>
+                  </div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <span
+                    class="text-sm font-bold text-gray-400 group-hover:text-gray-300 transition-colors"
+                    >Custom Env</span
+                  >
+                  <div class="relative flex items-center shrink-0">
+                    <input
+                      type="checkbox"
+                      id="editEnvCustom"
+                      class="sr-only peer"
+                      onchange="toggleEditEnvMode('custom')"
+                    />
+                    <div
+                      class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                    ></div>
+                  </div>
+                </label>
+              </div>
+
+              <div
+                id="editEnvGlobalPreview"
+                class="hidden bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-gray-500 font-mono text-xs opacity-70 h-20 overflow-y-auto pointer-events-none shadow-inner"
+              ></div>
+
+              <div id="editEnvCustomWrapper" class="hidden">
+                <textarea
+                  id="editProjInitialEnv"
+                  rows="2"
+                  class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-emerald-400 font-mono text-xs neon-focus-emerald shadow-inner"
+                  placeholder="PORT=8080&#10;DEBUG=true"
+                ></textarea>
+              </div>
+
+              <div
+                id="editEnvNoneWarning"
+                class="flex bg-rose-500/5 border border-dashed border-rose-500/20 rounded-lg px-3 py-2 items-start gap-2"
+              >
+                <svg
+                  class="w-4 h-4 text-rose-400 shrink-0 mt-0.5 opacity-80"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <p class="text-xs text-rose-300/80 font-medium leading-tight">
+                  No Environment Variables.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="bg-[#0a0d14] rounded-xl border border-gray-800 shadow-inner p-4 mt-2 flex flex-col gap-3.5"
+            >
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >External Terminal</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-indigo-400/60 mt-0.5"
+                    >Launch in OS native window</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="editProjInteractive"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-indigo-500 transition-colors border border-gray-700 peer-checked:border-indigo-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Clear on Start</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-cyan-400/60 mt-0.5"
+                    >Wipe terminal logs before run</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="editProjClearOnStart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-cyan-500 transition-colors border border-gray-700 peer-checked:border-cyan-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Start</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-emerald-400/60 mt-0.5"
+                    >Start automatically with DionyHub</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="editProjAutoStart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-emerald-500 transition-colors border border-gray-700 peer-checked:border-emerald-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Restart</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-amber-400/60 mt-0.5"
+                    >Revive process automatically on crash</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="editProjAutoRestart"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-amber-500 transition-colors border border-gray-700 peer-checked:border-amber-400"
+                  ></div>
+                </div>
+              </label>
+              <div class="h-px bg-gray-800/50"></div>
+              <label
+                class="flex items-center justify-between cursor-pointer group"
+              >
+                <div>
+                  <span
+                    class="block text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                    >Auto-Close Terminal</span
+                  >
+                  <span
+                    class="block text-[11px] font-medium text-rose-400/60 mt-0.5"
+                    >Minimize terminal tab when stopped</span
+                  >
+                </div>
+                <div class="relative flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    id="editProjAutoClose"
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-500 transition-colors border border-gray-700 peer-checked:border-rose-400"
+                  ></div>
+                </div>
+              </label>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onclick="closeEditModal()"
+                class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.4)] font-bold border border-indigo-400/50"
+              >
+                Save Updates
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- BULK DELETE MODAL -->
-    <div id="bulkDeleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter flex flex-col">
-            <div class="p-6">
-                <h3 class="text-lg font-bold text-white text-center mb-2">Delete <span id="bulkDeleteCount" class="text-rose-500"></span> Projects?</h3>
-                
-                <div id="bulkDeleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all">
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <div class="relative flex items-center shrink-0">
-                            <input type="checkbox" id="bulkDeleteFilesFromDisk" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-rose-600 transition-colors border border-gray-700 peer-checked:border-rose-500"></div>
-                        </div>
-                        <div>
-                            <span class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors">Permanently delete files</span>
-                            <span class="block text-xs text-rose-400/60 mt-0.5">Warning: This action cannot be undone.</span>
-                        </div>
-                    </label>
-                </div>
-                <p id="bulkDeleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">Local projects selected. Permanent file deletion disabled for safety.</p>
+    <div
+      id="bulkDeleteModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter flex flex-col"
+      >
+        <div class="p-6">
+          <h3 class="text-lg font-bold text-white text-center mb-2">
+            Delete
+            <span id="bulkDeleteCount" class="text-rose-500"></span> Projects?
+          </h3>
 
-                <div id="bulkDeleteTagContainer" class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden">
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <div class="relative flex items-center shrink-0">
-                            <input type="checkbox" id="bulkDeleteOrphanedTags" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-indigo-600 transition-colors border border-gray-700 peer-checked:border-indigo-500"></div>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors">Clean up empty tags</span>
-                            <span class="block text-xs text-indigo-400/60 mt-0.5 truncate" id="bulkOrphanTagNames"></span>
-                        </div>
-                    </label>
-                </div>
+          <div
+            id="bulkDeleteFilesContainer"
+            class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all"
+          >
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <div class="relative flex items-center shrink-0">
+                <input
+                  type="checkbox"
+                  id="bulkDeleteFilesFromDisk"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-rose-600 transition-colors border border-gray-700 peer-checked:border-rose-500"
+                ></div>
+              </div>
+              <div>
+                <span
+                  class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors"
+                  >Permanently delete files</span
+                >
+                <span class="block text-xs text-rose-400/60 mt-0.5"
+                  >Warning: This action cannot be undone.</span
+                >
+              </div>
+            </label>
+          </div>
+          <p
+            id="bulkDeleteLocalWarning"
+            class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden"
+          >
+            Local projects selected. Permanent file deletion disabled for
+            safety.
+          </p>
 
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeBulkDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
-                    <button type="button" id="confirmBulkDeleteBtn" onclick="executeBulkDelete()" class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50">Delete Now</button>
-                </div>
-            </div>
+          <div
+            id="bulkDeleteTagContainer"
+            class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden"
+          >
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <div class="relative flex items-center shrink-0">
+                <input
+                  type="checkbox"
+                  id="bulkDeleteOrphanedTags"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 peer-checked:bg-indigo-600 transition-colors border border-gray-700 peer-checked:border-indigo-500"
+                ></div>
+              </div>
+              <div class="min-w-0">
+                <span
+                  class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors"
+                  >Clean up empty tags</span
+                >
+                <span
+                  class="block text-xs text-indigo-400/60 mt-0.5 truncate"
+                  id="bulkOrphanTagNames"
+                ></span>
+              </div>
+            </label>
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              type="button"
+              onclick="closeBulkDeleteModal()"
+              class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              id="confirmBulkDeleteBtn"
+              onclick="executeBulkDelete()"
+              class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50"
+            >
+              Delete Now
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- SINGLE DELETE MODAL -->
-    <div id="deleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter">
-            <div class="p-6">
-                <h3 class="text-lg font-bold text-white text-center mb-2">Delete Project?</h3>
-                
-                <div id="deleteFilesContainer" class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all">
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <div class="relative flex items-center shrink-0">
-                            <input type="checkbox" id="deleteFilesFromDisk" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-600 transition-colors duration-300 border border-gray-700 peer-checked:border-rose-500"></div>
-                        </div>
-                        <div>
-                            <span class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors">Permanently delete files</span>
-                            <span class="block text-xs text-rose-400/60 mt-0.5">Warning: This action cannot be undone.</span>
-                        </div>
-                    </label>
-                </div>
-                <p id="deleteLocalWarning" class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden">This is a local project. Permanent file deletion is disabled for safety. Only the DionyHub link will be removed.</p>
+    <div
+      id="deleteModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-[#11151f] rounded-2xl border border-rose-900/50 shadow-[0_0_40px_rgba(225,29,72,0.2)] w-full max-w-md mx-4 modal-enter"
+      >
+        <div class="p-6">
+          <h3 class="text-lg font-bold text-white text-center mb-2">
+            Delete Project?
+          </h3>
 
-                <div id="deleteTagContainer" class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden">
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <div class="relative flex items-center shrink-0">
-                            <input type="checkbox" id="deleteOrphanedTag" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-600 transition-colors duration-300 border border-gray-700 peer-checked:border-indigo-500"></div>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors truncate">Delete empty tag: <span id="orphanTagName"></span></span>
-                            <span class="block text-xs text-indigo-400/60 mt-0.5">This tag will have no projects left.</span>
-                        </div>
-                    </label>
-                </div>
+          <div
+            id="deleteFilesContainer"
+            class="bg-[#0a0d14] border border-rose-500/20 rounded-xl p-4 mb-4 shadow-inner transition-all"
+          >
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <div class="relative flex items-center shrink-0">
+                <input
+                  type="checkbox"
+                  id="deleteFilesFromDisk"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 after:ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-checked:bg-rose-600 transition-colors duration-300 border border-gray-700 peer-checked:border-rose-500"
+                ></div>
+              </div>
+              <div>
+                <span
+                  class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors"
+                  >Permanently delete files</span
+                >
+                <span class="block text-xs text-rose-400/60 mt-0.5"
+                  >Warning: This action cannot be undone.</span
+                >
+              </div>
+            </label>
+          </div>
+          <p
+            id="deleteLocalWarning"
+            class="text-xs text-amber-500/80 mb-4 text-center font-medium hidden"
+          >
+            This is a local project. Permanent file deletion is disabled for
+            safety. Only the DionyHub link will be removed.
+          </p>
 
-                <div class="flex gap-3">
-                    <button onclick="closeDeleteModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700">Cancel</button>
-                    <button id="confirmDeleteBtn" onclick="executeDelete()" class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50">Delete Now</button>
-                </div>
-            </div>
+          <div
+            id="deleteTagContainer"
+            class="bg-[#0a0d14] border border-indigo-500/20 rounded-xl p-4 mb-6 shadow-inner transition-all hidden"
+          >
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <div class="relative flex items-center shrink-0">
+                <input
+                  type="checkbox"
+                  id="deleteOrphanedTag"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-indigo-600 transition-colors duration-300 border border-gray-700 peer-checked:border-indigo-500"
+                ></div>
+              </div>
+              <div class="min-w-0">
+                <span
+                  class="block text-sm font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors truncate"
+                  >Delete empty tag: <span id="orphanTagName"></span
+                ></span>
+                <span class="block text-xs text-indigo-400/60 mt-0.5"
+                  >This tag will have no projects left.</span
+                >
+              </div>
+            </label>
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              onclick="closeDeleteModal()"
+              class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors border border-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              id="confirmDeleteBtn"
+              onclick="executeDelete()"
+              class="btn-action flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg shadow-[0_0_15px_rgba(225,29,72,0.4)] border border-rose-500/50"
+            >
+              Delete Now
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- COMMAND PALETTE -->
-    <div id="cmdPalette" class="fixed inset-0 bg-[#0a0d14]/60 backdrop-blur-md hidden items-start pt-[15vh] justify-center z-[100] opacity-0 transition-opacity duration-300">
-        <div class="bg-[#11151f]/95 backdrop-blur-xl rounded-2xl border border-indigo-500/30 shadow-[0_0_60px_rgba(79,70,229,0.25)] w-full max-w-2xl mx-4 overflow-hidden transform scale-95 transition-transform duration-200" id="cmdPaletteBox">
-            <div class="flex items-center px-5 py-4 border-b border-gray-800">
-                <svg class="w-5 h-5 text-indigo-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <input type="text" id="cmdInput" class="w-full bg-transparent text-lg text-white focus:outline-none placeholder-gray-500 font-mono" placeholder="Type a command or search projects..." autocomplete="off">
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] text-gray-500 font-bold bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">ENTER</span>
-                    <span class="text-[10px] text-gray-500 font-bold bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">ESC</span>
-                </div>
-            </div>
-            <div class="max-h-80 overflow-y-auto p-2" id="cmdResults"></div>
+    <div
+      id="cmdPalette"
+      class="fixed inset-0 bg-[#0a0d14]/60 backdrop-blur-md hidden items-start pt-[15vh] justify-center z-[100] opacity-0 transition-opacity duration-300"
+    >
+      <div
+        class="bg-[#11151f]/95 backdrop-blur-xl rounded-2xl border border-indigo-500/30 shadow-[0_0_60px_rgba(79,70,229,0.25)] w-full max-w-2xl mx-4 overflow-hidden transform scale-95 transition-transform duration-200"
+        id="cmdPaletteBox"
+      >
+        <div class="flex items-center px-5 py-4 border-b border-gray-800">
+          <svg
+            class="w-5 h-5 text-indigo-400 mr-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            ></path>
+          </svg>
+          <input
+            type="text"
+            id="cmdInput"
+            class="w-full bg-transparent text-lg text-white focus:outline-none placeholder-gray-500 font-mono"
+            placeholder="Type a command or search projects..."
+            autocomplete="off"
+          />
+          <div class="flex items-center gap-2 shrink-0">
+            <span
+              class="text-[10px] text-gray-500 font-bold bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700"
+              >ENTER</span
+            >
+            <span
+              class="text-[10px] text-gray-500 font-bold bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700"
+              >ESC</span
+            >
+          </div>
         </div>
+        <div class="max-h-80 overflow-y-auto p-2" id="cmdResults"></div>
+      </div>
     </div>
 
-    <div id="contextMenu" class="fixed hidden z-[110] w-56 bg-[#11151f]/95 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-1.5 flex flex-col text-sm font-medium text-gray-300 transform transition-all duration-200 scale-95 opacity-0 origin-top-left"></div>
+    <div
+      id="contextMenu"
+      class="fixed hidden z-[110] w-56 bg-[#11151f]/95 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-1.5 flex flex-col text-sm font-medium text-gray-300 transform transition-all duration-200 scale-95 opacity-0 origin-top-left"
+    ></div>
 
-    <div id="toast-container" class="fixed bottom-6 right-6 z-[120] flex flex-col gap-3 pointer-events-none"></div>
+    <div
+      id="toast-container"
+      class="fixed bottom-6 right-6 z-[120] flex flex-col gap-3 pointer-events-none"
+    ></div>
 
     <script src="/js/app.js?v=4.0.0"></script>
-</body>
+  </body>
 </html>

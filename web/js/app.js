@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (grid) grid.style.transition = 'none';
             e.preventDefault();
         });
+
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const dashRect = dashboardView.getBoundingClientRect();
@@ -65,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             terminalPane.style.height = `${newHeight}px`;
             terminalPane.style.flex = 'none'; 
         });
+
         document.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
@@ -87,6 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 tabsContainer.insertBefore(draggingTab, afterElement);
             }
         });
+        
         tabsContainer.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -188,6 +191,7 @@ function showContextMenu(e, pId, pName, status) {
     menu.innerHTML = ''; 
 
     const isRunning = status === 'running';
+
     const items = [
         { label: 'Start Project', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z', color: 'text-emerald-400', action: () => startProject(pId, pName, null), disabled: isRunning },
         { label: 'Restart Project', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'text-blue-400', action: () => restartProject(pId, pName, null), disabled: !isRunning },
@@ -273,22 +277,41 @@ function closeCmdPalette() {
     setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
+// YENİ: Cmd (Arama) menüsü çok daha akıllı ve yetenekli hale getirildi.
 function handleCmdSearch(e) {
     const query = e.target.value.toLowerCase().replace(/\s+/g, '');
+    
     const allActions = [
-        { name: "Settings > Open Configurations", searchKey: "settingsopenconfigurations", icon: "⚙️", action: () => { switchView('settings'); } },
-        { name: "Dashboard > View Projects", searchKey: "dashboardviewprojects", icon: "📊", action: () => { switchView('dashboard'); } },
-        { name: "Project > Add New", searchKey: "projectaddnew", icon: "➕", action: () => { openModal(); } },
-        { name: "Terminal > Clear All", searchKey: "terminalclearall", icon: "🧹", action: () => { clearAllTerminals(); } }
+        { name: "Global > Open Dashboard", searchKey: "globalopendashboardviewprojects", icon: "📊", action: () => { switchView('dashboard'); } },
+        { name: "Global > Open Settings", searchKey: "globalopensettingsconfigurations", icon: "⚙️", action: () => { switchView('settings'); } },
+        { name: "Project > Add New", searchKey: "projectaddnewcreate", icon: "➕", action: () => { openModal(); } },
+        { name: "Terminal > Clear All Logs", searchKey: "terminalclearalllogs", icon: "🧹", action: () => { clearAllTerminals(); } },
+        { name: "Filter > Show All Projects", searchKey: "filtershowallprojectsclear", icon: "🌐", action: () => { setFilter(null); } }
     ];
 
-    cachedProjects.forEach(p => {
-        allActions.push({ name: `Start Project: ${p.name}`, searchKey: `startproject${p.name.toLowerCase()}`, icon: "▶️", action: () => { startProject(p.id, p.name, null); }});
-        allActions.push({ name: `Stop Project: ${p.name}`, searchKey: `stopproject${p.name.toLowerCase()}`, icon: "⏹️", action: () => { stopProject(p.id, null); }});
-        allActions.push({ name: `Edit Project: ${p.name}`, searchKey: `editproject${p.name.toLowerCase()}`, icon: "✏️", action: () => { openEditModal(p.id); }});
+    availableTags.forEach(tag => {
+        allActions.push({ name: `Filter by Tag: #${tag}`, searchKey: `filtertag${tag.toLowerCase()}`, icon: "🏷️", action: () => { setFilter(tag); }});
     });
 
-    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 10);
+    cachedProjects.forEach(p => {
+        const pId = p.id || p.ID;
+        const safeName = p.name || p.Name;
+        const isRunning = p.status === 'running';
+
+        allActions.push({ name: `Start: ${safeName}`, searchKey: `startprojectrun${safeName.toLowerCase()}`, icon: "▶️", action: () => { startProject(pId, safeName, null); }});
+        
+        if (isRunning) {
+            allActions.push({ name: `Stop: ${safeName}`, searchKey: `stopprojectkill${safeName.toLowerCase()}`, icon: "⏹️", action: () => { stopProject(pId, null); }});
+            allActions.push({ name: `Restart: ${safeName}`, searchKey: `restartprojectreboot${safeName.toLowerCase()}`, icon: "🔄", action: () => { restartProject(pId, safeName, null); }});
+            allActions.push({ name: `Focus Terminal: ${safeName}`, searchKey: `focusterminalviewlogs${safeName.toLowerCase()}`, icon: "📟", action: () => { restoreTerminal(pId); }});
+            allActions.push({ name: `Export Logs: ${safeName}`, searchKey: `exportlogsdownload${safeName.toLowerCase()}`, icon: "💾", action: () => { exportTerminalLogs(pId, safeName); }});
+        }
+        
+        allActions.push({ name: `Edit Config & Env: ${safeName}`, searchKey: `editprojectconfigenv${safeName.toLowerCase()}`, icon: "✏️", action: () => { openEditModal(pId); }});
+        allActions.push({ name: `Delete: ${safeName}`, searchKey: `deleteprojectremove${safeName.toLowerCase()}`, icon: "🗑️", action: () => { openDeleteModal(pId); }});
+    });
+
+    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 12);
     cmdSelectedIndex = 0;
     renderCmdResults();
 }
@@ -453,7 +476,6 @@ function getOrCreateTerminal(id, name) {
     };
     terminalPool[id] = termInstance;
 
-    // YENİ: id === 'system' de olsa arka plandan gidip dionyhub_system.log dosyasını çekecek
     fetch(`/api/projects/logs?id=${id}`)
         .then(res => {
             if(res.ok) return res.json();
@@ -643,6 +665,10 @@ function connectWebSocket() {
                 const statsArray = JSON.parse(msg.data);
                 if (!statsArray) return; 
                 statsArray.forEach(stat => {
+                    // YENİ: cachedProjects içindeki durumu da anlık güncelle
+                    const proj = cachedProjects.find(x => (x.id || x.ID) === stat.id);
+                    if (proj) proj.status = stat.status;
+
                     const badge = document.getElementById('status-' + stat.id);
                     const statsDiv = document.getElementById('stats-' + stat.id);
                     if (!badge) return;
@@ -870,7 +896,7 @@ function renderSidebarTags(projects) {
     availableTags = [...new Set([...projects.map(p => p.tag).filter(t => t && t.trim() !== ''), ...globalSavedTags])].sort();
     const tagList = document.getElementById('tag-list'); if (!tagList) return;
     
-    tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn"><svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg><span class="font-semibold tracking-wide">All Projects</span></button>`;
+    tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn"><svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg><span class="font-semibold tracking-wide">All Projects</span></button>`;
     
     availableTags.forEach(tag => { 
         const isActive = currentTagFilter === tag; 
