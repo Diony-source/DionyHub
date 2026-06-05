@@ -1,7 +1,8 @@
+// Package process manager.go
+// Handles the core lifecycle operations (Start, Stop, Write Input) of underlying OS processes.
 package process
 
 import (
-	"archive/zip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,131 +11,42 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/Diony-source/DionyHub/internal/logger"
 )
 
-type RotatingLogWriter struct {
-	mu       sync.Mutex
-	logPath  string
-	maxBytes int64
-	file     *os.File
-	size     int64
-}
-
-func NewRotatingLogWriter(logPath string, maxMB int) (*RotatingLogWriter, error) {
-	rlw := &RotatingLogWriter{
-		logPath:  logPath,
-		maxBytes: int64(maxMB) * 1024 * 1024,
-	}
-	err := rlw.open()
-	return rlw, err
-}
-
-func (w *RotatingLogWriter) open() error {
-	info, err := os.Stat(w.logPath)
-	if err == nil {
-		w.size = info.Size()
-	}
-	f, err := os.OpenFile(w.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	w.file = f
-	return nil
-}
-
-func (w *RotatingLogWriter) Write(p []byte) (n int, err error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if w.size+int64(len(p)) > w.maxBytes {
-		w.rotate()
-	}
-
-	if w.file != nil {
-		n, err = w.file.Write(p)
-		w.size += int64(n)
-		return n, err
-	}
-	return 0, errors.New("log file is not open")
-}
-
-func (w *RotatingLogWriter) rotate() {
-	if w.file != nil {
-		w.file.Close()
-	}
-
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	archivePath := w.logPath + "." + timestamp + ".log"
-	os.Rename(w.logPath, archivePath)
-
-	w.size = 0
-	w.open()
-
-	go func(src string) {
-		zipPath := src + ".zip"
-		zipFile, err := os.Create(zipPath)
-		if err != nil {
-			return
-		}
-		defer zipFile.Close()
-
-		archive := zip.NewWriter(zipFile)
-		defer archive.Close()
-
-		writer, err := archive.Create(filepath.Base(src))
-		if err == nil {
-			f, err := os.Open(src)
-			if err == nil {
-				io.Copy(writer, f)
-				f.Close()
-				os.Remove(src)
-			}
-		}
-	}(archivePath)
-}
-
-func (w *RotatingLogWriter) Close() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.file != nil {
-		return w.file.Close()
-	}
-	return nil
-}
-
+// Process represents a running system command and its associated IO streams.
 type Process struct {
 	ID           string
 	Name         string
 	Path         string
 	Cmd          *exec.Cmd
 	Stdin        io.WriteCloser
-	LogWriter    *RotatingLogWriter
+	LogWriter    *logger.RotatingLogWriter
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
 	StartTime    time.Time
 }
 
+// Manager orchestrates process execution, routing their outputs to the correct WebSockets and log files.
 type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*Process
 	console   io.Writer
 	ws        io.Writer
-	sysLogger *RotatingLogWriter // YENİ: Sistem loglarını diske yazacak olan motor
+	sysLogger *logger.RotatingLogWriter
 
 	OnExit func(id string, name string, uptime time.Duration, isCrash bool)
 }
 
+// NewManager initializes the process orchestrator and global system audit logger.
 func NewManager(console io.Writer, ws io.Writer) *Manager {
-	// YENİ: Başlangıçta ana dizinde dionyhub_system.log dosyasını oluşturur
-	sysLogger, _ := NewRotatingLogWriter("dionyhub_system.log", 10)
+	sysLogger, _ := logger.NewRotatingLogWriter("dionyhub_system.log", 10)
 	return &Manager{
 		processes: make(map[string]*Process),
 		console:   console,
@@ -143,7 +55,7 @@ func NewManager(console io.Writer, ws io.Writer) *Manager {
 	}
 }
 
-// YENİ: Sistem loglarını hem websockete hem de diske yazan ortak fonksiyon
+// WriteSystemLog broadcasts a message to the WebSocket and persists it in the system audit log.
 func (m *Manager) WriteSystemLog(message string) {
 	type WSLog struct {
 		ID   string `json:"id"`
@@ -169,8 +81,6 @@ func (m *Manager) sysLog(id, name, message string) {
 	m.ws.Write(wsMsgProj)
 
 	sysAuditMsg := fmt.Sprintf("\x1b[36m[AUDIT]\x1b[0m \x1b[33m%s\x1b[0m -> %s\n", name, message)
-
-	// YENİ: Sadece WS'e değil, artık diske de kaydediyoruz
 	m.WriteSystemLog(sysAuditMsg)
 }
 
@@ -219,70 +129,6 @@ func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer
 	}
 }
 
-func (m *Manager) Recover(id, name, path string) bool {
-	pidFile := filepath.Join(path, ".diony_hub.pid")
-	data, err := os.ReadFile(pidFile)
-	if err != nil {
-		return false
-	}
-
-	pidStr := strings.TrimSpace(string(data))
-	pid, err := strconv.Atoi(pidStr)
-	if err != nil {
-		return false
-	}
-
-	exists, err := process.PidExists(int32(pid))
-	if err != nil || !exists {
-		os.Remove(pidFile)
-		return false
-	}
-
-	m.mu.Lock()
-	m.processes[id] = &Process{
-		ID:           id,
-		Name:         name,
-		Path:         path,
-		RecoveredPID: pid,
-		Running:      true,
-		StartTime:    time.Now(),
-	}
-	m.mu.Unlock()
-
-	m.sysLog(id, name, fmt.Sprintf("🔄 \x1b[36mRecovered orphaned process (PID: %d)\x1b[0m", pid))
-
-	go func() {
-		for {
-			time.Sleep(2 * time.Second)
-			alive, _ := process.PidExists(int32(pid))
-			if !alive {
-				m.mu.Lock()
-				var intended bool
-				var start time.Time
-				if p, ok := m.processes[id]; ok && p.RecoveredPID == pid {
-					p.Running = false
-					intended = p.IntendedStop
-					start = p.StartTime
-				}
-				m.mu.Unlock()
-
-				os.Remove(pidFile)
-
-				uptime := time.Since(start)
-				isCrash := !intended
-				if m.OnExit != nil {
-					m.OnExit(id, name, uptime, isCrash)
-				}
-
-				m.sysLog(id, name, "⚪ Recovered process exited.")
-				break
-			}
-		}
-	}()
-
-	return true
-}
-
 func (m *Manager) WriteInput(id string, input string) error {
 	m.mu.RLock()
 	p, exists := m.processes[id]
@@ -314,14 +160,14 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 	var cmd *exec.Cmd
 	var stdinPipe io.WriteCloser
-	var logWriter *RotatingLogWriter
+	var logWriter *logger.RotatingLogWriter
 
 	if !interactive {
 		logDir := filepath.Join(path, "dionyhub_log")
 		os.MkdirAll(logDir, 0755)
 		logPath := filepath.Join(logDir, "output.log")
 
-		logWriter, _ = NewRotatingLogWriter(logPath, 10)
+		logWriter, _ = logger.NewRotatingLogWriter(logPath, 10)
 	}
 
 	if interactive {
@@ -487,37 +333,6 @@ func (m *Manager) IsRunning(id string) bool {
 	defer m.mu.RUnlock()
 	p, exists := m.processes[id]
 	return exists && p.Running
-}
-
-func (m *Manager) GetStats(id string) (cpu float64, ram float64, uptime int64) {
-	m.mu.RLock()
-	p, exists := m.processes[id]
-	m.mu.RUnlock()
-
-	if !exists || !p.Running {
-		return 0, 0, 0
-	}
-
-	var pid int
-	if p.Cmd != nil && p.Cmd.Process != nil {
-		pid = p.Cmd.Process.Pid
-	} else {
-		pid = p.RecoveredPID
-	}
-
-	proc, err := process.NewProcess(int32(pid))
-	if err != nil {
-		return 0, 0, int64(time.Since(p.StartTime).Seconds())
-	}
-
-	cpuPercent, _ := proc.CPUPercent()
-	memInfo, _ := proc.MemoryInfo()
-
-	if memInfo != nil {
-		ram = float64(memInfo.RSS) / (1024 * 1024)
-	}
-
-	return cpuPercent, ram, int64(time.Since(p.StartTime).Seconds())
 }
 
 func (m *Manager) StopAll() {

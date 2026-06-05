@@ -1,173 +1,3 @@
-let projectToDelete = null;
-let currentTagFilter = null;
-let draggedRow = null;
-let availableTags = [];
-let cachedProjects = [];
-
-let globalWorkspace = "C:/DionyHub/apps";
-let globalSavedTags = [];
-let globalEnvText = ""; 
-
-let selectedProjectIds = new Set();
-let lastSelectedIdx = -1;
-let activeSelectionSource = null; 
-
-let tagToOrphan = null;
-let tagsToOrphanBulk = [];
-
-const statsHistory = {}; 
-const terminalPool = {}; 
-let maximizedTerminalId = null;
-
-let cmdSelectedIndex = 0;
-let currentCmdActions = [];
-
-let isResizing = false;
-const terminalResizeObserver = new ResizeObserver((entries) => {
-    requestAnimationFrame(() => {
-        for (const entry of entries) {
-            const id = entry.target.dataset.termId;
-            if (id && terminalPool[id] && !terminalPool[id].minimized) {
-                try { terminalPool[id].fitAddon.fit(); } catch(e) {}
-            }
-        }
-    });
-});
-
-document.addEventListener("DOMContentLoaded", async () => {
-    getOrCreateTerminal("system", "DionyHub System Logs");
-    await loadSettings();
-    loadProjects();
-    connectWebSocket();
-    initTagAutocomplete('projTag', 'tagDropdown'); 
-    initTagAutocomplete('editProjTag', 'editTagDropdown'); 
-    switchView('dashboard');
-
-    const resizer = document.getElementById('horizontal-resizer');
-    const terminalPane = document.getElementById('terminal-pane');
-    const dashboardView = document.getElementById('dashboard-view');
-    const grid = document.getElementById('terminals-grid');
-    const tabsContainer = document.getElementById('minimized-tabs-container');
-
-    if (resizer && terminalPane && dashboardView) {
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.style.cursor = 'row-resize';
-            if (grid) grid.style.transition = 'none';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const dashRect = dashboardView.getBoundingClientRect();
-            let newHeight = dashRect.bottom - e.clientY;
-            if (newHeight < 150) newHeight = 150;
-            if (newHeight > dashRect.height - 200) newHeight = dashRect.height - 200;
-            terminalPane.style.height = `${newHeight}px`;
-            terminalPane.style.flex = 'none'; 
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                if (grid) grid.style.transition = ''; 
-            }
-        });
-    }
-
-    if (tabsContainer) {
-        tabsContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); 
-            const draggingTab = document.querySelector('.dragging-tab');
-            if (!draggingTab) return;
-            const afterElement = getDragAfterElement(tabsContainer, e.clientX);
-            if (afterElement == null) {
-                tabsContainer.appendChild(draggingTab);
-            } else {
-                tabsContainer.insertBefore(draggingTab, afterElement);
-            }
-        });
-        
-        tabsContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-    }
-
-    if (terminalPane) {
-        terminalPane.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (e.target.closest('#minimized-tabs-container')) return; 
-            terminalPane.classList.add('ring-2', 'ring-indigo-500/50');
-        });
-        terminalPane.addEventListener('dragleave', (e) => {
-            terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
-        });
-        terminalPane.addEventListener('drop', (e) => {
-            e.preventDefault();
-            terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
-            if (e.target.closest('#minimized-tabs-container')) return;
-            const minId = e.dataTransfer.getData('application/diony-min-term');
-            if (minId && terminalPool[minId] && terminalPool[minId].minimized) {
-                restoreTerminal(minId);
-            }
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#contextMenu')) hideContextMenu();
-        if (e.target.id === 'cmdPalette') closeCmdPalette();
-        const isOutsideClick =  !e.target.closest('tr') && !e.target.closest('#bulk-actions-container') && !e.target.closest('.btn-action') && !e.target.closest('.tag-filter-btn') && !e.target.closest('.cursor-pointer') && !e.target.closest('#tagModal');
-       if (isOutsideClick && selectedProjectIds.size > 0) {
-           selectedProjectIds.clear();
-           activeSelectionSource = null;
-           applySelectionStyles();
-           updateBulkActionBar(cachedProjects.length);
-       }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault();
-            toggleCmdPalette();
-        }
-        if (e.key === 'Escape') {
-            closeCmdPalette();
-            hideContextMenu();
-        }
-    });
-
-    const cmdInput = document.getElementById('cmdInput');
-    if (cmdInput) {
-        cmdInput.addEventListener('input', handleCmdSearch);
-        cmdInput.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (currentCmdActions.length > 0) {
-                    cmdSelectedIndex = (cmdSelectedIndex + 1) % currentCmdActions.length;
-                    updateCmdSelection();
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (currentCmdActions.length > 0) {
-                    cmdSelectedIndex = (cmdSelectedIndex - 1 + currentCmdActions.length) % currentCmdActions.length;
-                    updateCmdSelection();
-                }
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (currentCmdActions[cmdSelectedIndex]) {
-                    closeCmdPalette();
-                    currentCmdActions[cmdSelectedIndex].action();
-                }
-            }
-        });
-    }
-});
-
-window.addEventListener('resize', () => { setTimeout(refreshAllTerminalFits, 50); });
-
 function drawSparkline(id, cpuVal) {
     if(!statsHistory[id]) statsHistory[id] = Array(20).fill(0); 
     statsHistory[id].push(cpuVal);
@@ -277,7 +107,6 @@ function closeCmdPalette() {
     setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
-// YENİ: Cmd (Arama) menüsü çok daha akıllı ve yetenekli hale getirildi.
 function handleCmdSearch(e) {
     const query = e.target.value.toLowerCase().replace(/\s+/g, '');
     
@@ -355,185 +184,6 @@ function renderCmdResults() {
     updateCmdSelection();
 }
 
-function getOrCreateTerminal(id, name) {
-    if (terminalPool[id]) return terminalPool[id];
-    const grid = document.getElementById('terminals-grid');
-    if (!grid) return null;
-
-    const wrapper = document.createElement('div');
-    wrapper.id = `tmux-wrapper-${id}`;
-    wrapper.className = "flex flex-col border border-gray-700/50 shadow-2xl rounded-xl overflow-hidden relative group bg-[#0a0d14] ring-1 ring-black/50 transition opacity transform duration-300 scale-95 opacity-0 min-w-0 max-w-full";
-
-    const header = document.createElement('div');
-    header.className = "bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-700/50 shadow-sm z-10 shrink-0";
-    
-    const titleSpan = document.createElement('div');
-    titleSpan.className = `text-xs font-bold font-mono tracking-wide flex items-center gap-2.5`;
-    const isSystem = id === 'system';
-    const dotColor = isSystem ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
-    const textColor = isSystem ? 'text-indigo-300' : 'text-gray-300';
-    titleSpan.innerHTML = `<div class="w-2 h-2 rounded-full ${dotColor}"></div><span class="${textColor} drop-shadow-md truncate">${name}</span>`;
-    
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
-
-    const searchInput = document.createElement('input');
-    searchInput.type = "text"; 
-    searchInput.id = `search-input-${id}`;
-    searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 neon-focus shadow-inner";
-    searchInput.placeholder = "Find in logs...";
-
-    const searchBtn = document.createElement('button');
-    searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
-    searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
-    searchBtn.title = "Search Logs";
-    searchBtn.onclick = () => {
-        if (searchInput.classList.contains('hidden')) { 
-            searchInput.classList.remove('hidden'); searchInput.focus(); 
-        } else { 
-            searchInput.classList.add('hidden'); searchInput.value = ''; 
-            if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); 
-        }
-    };
-
-    const exportBtn = document.createElement('button');
-    exportBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
-    exportBtn.className = "text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors";
-    exportBtn.title = "Export Logs to .txt";
-    exportBtn.onclick = () => exportTerminalLogs(id, name);
-
-    const minBtn = document.createElement('button');
-    minBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>`;
-    minBtn.className = "text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors";
-    minBtn.title = "Minimize Terminal";
-    minBtn.onclick = () => minimizeTerminal(id, name);
-
-    const maxBtn = document.createElement('button');
-    maxBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>`;
-    maxBtn.className = "text-gray-400 hover:text-white hover:bg-gray-700/80 p-1.5 rounded-lg transition-colors";
-    maxBtn.title = "Toggle Fullscreen";
-    maxBtn.onclick = () => toggleMaximizeTerminal(id);
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
-    closeBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors";
-    closeBtn.title = "Close Terminal";
-    closeBtn.onclick = () => closeTerminal(id);
-    
-    const clearBtn = document.createElement('button');
-    clearBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
-    clearBtn.className = "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors ml-1 border-l border-gray-700 pl-2";
-    clearBtn.title = "Clear Logs";
-    clearBtn.onclick = () => terminalPool[id].term.clear();
-
-    actionsDiv.appendChild(searchInput); 
-    actionsDiv.appendChild(searchBtn); 
-    actionsDiv.appendChild(exportBtn); 
-    actionsDiv.appendChild(minBtn); 
-    actionsDiv.appendChild(maxBtn); 
-    actionsDiv.appendChild(closeBtn); 
-    actionsDiv.appendChild(clearBtn);
-    header.appendChild(titleSpan); 
-    header.appendChild(actionsDiv);
-
-    const xtermWrapper = document.createElement('div');
-    xtermWrapper.className = "flex-1 relative w-full min-w-0 min-h-[150px] overflow-hidden";
-    xtermWrapper.dataset.termId = id;
-
-    const termContainer = document.createElement('div');
-    termContainer.id = `tmux-term-${id}`;
-    termContainer.className = "absolute inset-0 bg-[#0a0d14] p-2 overflow-hidden";
-    
-    xtermWrapper.appendChild(termContainer);
-    wrapper.appendChild(header); 
-    wrapper.appendChild(xtermWrapper); 
-    grid.appendChild(wrapper);
-
-    terminalResizeObserver.observe(xtermWrapper);
-    requestAnimationFrame(() => {
-        wrapper.classList.remove('scale-95', 'opacity-0');
-        wrapper.classList.add('scale-100', 'opacity-100');
-    });
-
-    const term = new Terminal({
-        theme: { 
-            background: '#0a0d14', foreground: '#e5e7eb', cursor: '#6366f1', selection: '#6366f140', 
-            black: '#1f2937', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#3b82f6', 
-            magenta: '#d946ef', cyan: '#06b6d4', white: '#f9fafb' 
-        },
-        fontFamily: 'Consolas, "Courier New", monospace', fontSize: 13, cursorBlink: true, scrollback: 5000, convertEol: true
-    });
-
-    const fitAddon = new FitAddon.FitAddon(); 
-    term.loadAddon(fitAddon);
-    const searchAddon = new SearchAddon.SearchAddon(); 
-    term.loadAddon(searchAddon);
-    term.open(termContainer);
-
-    const termInstance = { 
-        term: term, fitAddon: fitAddon, searchAddon: searchAddon, container: wrapper, 
-        currentLine: "", minimized: false, lastStatus: 'stopped'
-    };
-    terminalPool[id] = termInstance;
-
-    fetch(`/api/projects/logs?id=${id}`)
-        .then(res => {
-            if(res.ok) return res.json();
-            return { logs: "" };
-        })
-        .then(data => {
-            if (data && data.logs) {
-                term.write(data.logs);
-            }
-        })
-        .catch(err => console.error("Failed to fetch historical logs:", err));
-
-    term.attachCustomKeyEventHandler((e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.type === 'keydown') {
-            e.preventDefault(); searchInput.classList.remove('hidden'); searchInput.focus(); return false;
-        }
-        return true;
-    });
-
-    searchInput.addEventListener('input', (e) => { 
-        if(e.target.value) searchAddon.findNext(e.target.value, { decorations: true }); 
-    });
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { 
-            if (e.shiftKey) searchAddon.findPrevious(e.target.value, { decorations: true }); 
-            else searchAddon.findNext(e.target.value, { decorations: true }); 
-        }
-    });
-
-    if (id !== 'system') {
-        term.onData(data => {
-            for (let i = 0; i < data.length; i++) {
-                const char = data[i]; 
-                const code = char.charCodeAt(0);
-                if (code === 13 || code === 10) { 
-                    term.write('\r\n'); 
-                    const payload = termInstance.currentLine + '\r\n';
-                    fetch('/api/projects/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, data: payload }) }).catch(err => console.error(err));
-                    termInstance.currentLine = ""; 
-                } else if (code === 127 || code === 8) { 
-                    if (termInstance.currentLine.length > 0) { 
-                        termInstance.currentLine = termInstance.currentLine.slice(0, -1); term.write('\b \b'); 
-                    }
-                } else { 
-                    termInstance.currentLine += char; term.write(char); 
-                }
-            }
-        });
-    }
-
-    if (id === 'system') {
-        term.writeln('\x1b[35m=== DionyHub Engine Connected ===\x1b[0m');
-    }
-    
-    updateGridCSS(); 
-    return termInstance;
-}
-
 function getDragAfterElement(container, x) {
     const draggableElements = [...container.querySelectorAll('.min-tab:not(.dragging-tab)')];
     return draggableElements.reduce((closest, child) => {
@@ -542,176 +192,6 @@ function getDragAfterElement(container, x) {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-function exportTerminalLogs(id, name) {
-    const term = terminalPool[id].term; 
-    term.selectAll(); 
-    const text = term.getSelection(); 
-    term.clearSelection();
-    if (!text || text.trim() === "") { showToast("Terminal is empty.", "error"); return; }
-    
-    const blob = new Blob([text], { type: 'text/plain' }); 
-    const url = URL.createObjectURL(blob); 
-    const a = document.createElement('a');
-    a.href = url; a.download = `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_logs_${new Date().getTime()}.txt`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    showToast(`${name} logs exported successfully!`, "success");
-}
-
-function minimizeTerminal(id, name) {
-    if (!terminalPool[id]) return;
-    if (terminalPool[id].minimized) return; 
-    terminalPool[id].minimized = true;
-    
-    const tabsContainer = document.getElementById('minimized-tabs-container');
-    if (!document.getElementById(`min-tab-${id}`)) {
-        const tab = document.createElement('div');
-        tab.id = `min-tab-${id}`;
-        tab.draggable = true;
-        tab.className = "min-tab flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0 select-none";
-        const dotColor = id === 'system' ? 'bg-indigo-500' : 'bg-emerald-500';
-        tab.innerHTML = `
-            <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div><span class="truncate max-w-[120px] font-bold">${name}</span>
-            <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                <button type="button" class="hover:text-indigo-400 transition-colors p-0.5 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg></button>
-                <button type="button" class="hover:text-rose-400 transition-colors p-0.5 focus:outline-none" onclick="closeTerminal('${id}'); event.stopPropagation();" title="Close"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>`;
-        tab.ondragstart = (e) => { e.dataTransfer.setData('application/diony-min-term', id); tab.classList.add('opacity-50', 'dragging-tab'); };
-        tab.ondragend = (e) => { tab.classList.remove('opacity-50', 'dragging-tab'); };
-        tab.onclick = (e) => { if (e.target.closest('button')) return; restoreTerminal(id); };
-        tabsContainer.appendChild(tab);
-    }
-    updateGridCSS();
-}
-
-function restoreTerminal(id) {
-    if (!terminalPool[id]) return;
-    terminalPool[id].minimized = false;
-    const tab = document.getElementById(`min-tab-${id}`);
-    if (tab) tab.remove();
-    if (maximizedTerminalId === id) toggleMaximizeTerminal(id); 
-    updateGridCSS();
-}
-
-function closeTerminal(id) {
-    const termInstance = terminalPool[id];
-    if (!termInstance) return;
-    if (id === 'system') { minimizeTerminal(id, "DionyHub System Logs"); return; }
-    if (termInstance.lastStatus === 'running') {
-        if (!termInstance.minimized) {
-            const p = cachedProjects.find(x => (x.id || x.ID) === id);
-            const pName = p ? (p.name || p.Name) : id;
-            minimizeTerminal(id, pName);
-            showToast("Terminal kapatılamadı: Proje şu anda çalışıyor. Sekmeye küçültüldü.", "error");
-        } else showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
-        return;
-    }
-    termInstance.term.dispose(); 
-    termInstance.container.remove();
-    const tab = document.getElementById(`min-tab-${id}`);
-    if (tab) tab.remove();
-    delete terminalPool[id];
-    if (maximizedTerminalId === id) maximizedTerminalId = null;
-    updateGridCSS();
-}
-
-function updateGridCSS() {
-    const grid = document.getElementById('terminals-grid'); 
-    if (!grid) return;
-    const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
-    const count = activeIds.length;
-    grid.style.display = 'flex'; grid.style.flexWrap = 'wrap'; grid.style.alignContent = 'stretch'; grid.style.alignItems = 'stretch'; grid.style.gap = '16px'; grid.style.overflowX = 'hidden'; grid.style.width = '100%'; grid.style.minWidth = '0';
-    Object.keys(terminalPool).forEach(id => { if (terminalPool[id].minimized) terminalPool[id].container.style.display = 'none'; });
-
-    if (maximizedTerminalId && terminalPool[maximizedTerminalId] && !terminalPool[maximizedTerminalId].minimized) {
-        activeIds.forEach(id => { 
-            const wrapper = terminalPool[id].container;
-            if (id !== maximizedTerminalId) wrapper.style.display = 'none'; 
-            else { wrapper.style.display = 'flex'; wrapper.style.flex = '1 1 100%'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '250px'; wrapper.style.maxWidth = '100%'; }
-        });
-    } else {
-        activeIds.forEach(id => {
-            const wrapper = terminalPool[id].container;
-            wrapper.style.display = 'flex'; wrapper.style.maxWidth = '100%'; 
-            if (count === 1) wrapper.style.flex = '1 1 100%';
-            else if (count <= 4) wrapper.style.flex = '1 1 calc(50% - 16px)';
-            else wrapper.style.flex = '1 1 400px'; 
-            wrapper.style.height = 'auto'; wrapper.style.minHeight = '200px'; 
-        });
-    }
-}
-
-function refreshAllTerminalFits() { Object.values(terminalPool).forEach(instance => { if (!instance.container.classList.contains('hidden') && instance.container.style.display !== 'none') { try { instance.fitAddon.fit(); } catch(e) {} } }); }
-
-function toggleMaximizeTerminal(id) { 
-    if (maximizedTerminalId === id) maximizedTerminalId = null; else maximizedTerminalId = id;
-    updateGridCSS(); 
-    if (maximizedTerminalId && !terminalPool[id].minimized) terminalPool[id].term.focus(); 
-}
-
-function clearAllTerminals() { Object.values(terminalPool).forEach(instance => { instance.term.clear(); }); }
-
-function connectWebSocket() {
-    const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    socket.onmessage = (e) => {
-        try {
-            const msg = JSON.parse(e.data);
-            if (msg.action === 'clear') {
-                if (terminalPool[msg.id]) terminalPool[msg.id].term.clear();
-                return;
-            }
-            if (msg.id === 'metrics') {
-                const statsArray = JSON.parse(msg.data);
-                if (!statsArray) return; 
-                statsArray.forEach(stat => {
-                    // YENİ: cachedProjects içindeki durumu da anlık güncelle
-                    const proj = cachedProjects.find(x => (x.id || x.ID) === stat.id);
-                    if (proj) proj.status = stat.status;
-
-                    const badge = document.getElementById('status-' + stat.id);
-                    const statsDiv = document.getElementById('stats-' + stat.id);
-                    if (!badge) return;
-                    let prevStatus = terminalPool[stat.id] ? terminalPool[stat.id].lastStatus : null;
-                    if (terminalPool[stat.id]) terminalPool[stat.id].lastStatus = stat.status;
-
-                    if (stat.status === 'running') {
-                        badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors';
-                        badge.innerText = 'Running';
-                        if (statsDiv) {
-                            const hrs = Math.floor(stat.uptime / 3600); const mins = Math.floor((stat.uptime % 3600) / 60); const secs = stat.uptime % 60;
-                            const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
-                            const sparkHtml = drawSparkline(stat.id, stat.cpu);
-                            statsDiv.innerHTML = `<div class="flex flex-col gap-0.5"><div class="flex gap-2"><span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span></div><span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span></div> ${sparkHtml}`;
-                        }
-                        if (!terminalPool[stat.id]) { const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id); if(p) getOrCreateTerminal(p.id || p.ID, p.name || p.Name); }
-                    } else {
-                        badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-bold transition-colors';
-                        badge.innerText = 'Stopped';
-                        if (statsDiv) statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
-                        if (prevStatus === 'running' && terminalPool[stat.id]) {
-                            const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id);
-                            if (p && (p.auto_close || p.AutoClose)) minimizeTerminal(stat.id, p.name || p.Name);
-                        }
-                    }
-                });
-                return; 
-            }
-            let projName = "Unknown";
-            if (msg.id === 'system') projName = "DionyHub System Logs";
-            else { const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); projName = p ? (p.name || p.Name) : msg.id; }
-            
-            const termInstance = getOrCreateTerminal(msg.id, projName);
-            if (msg.id === 'system') termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m');
-            else termInstance.term.write(msg.data); 
-        } catch (err) {
-            if(terminalPool['system']) terminalPool['system'].term.write(e.data);
-        }
-    };
-    socket.onclose = () => {
-        if (terminalPool['system']) terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
-        setTimeout(connectWebSocket, 3000);
-    };
 }
 
 function showToast(message, type = 'success') {
@@ -877,13 +357,6 @@ function applySelectionStyles() {
     });
 }
 
-async function loadProjects() {
-    try {
-        const response = await fetch('/api/projects'); if (!response.ok) throw new Error("API error");
-        cachedProjects = await response.json(); renderSidebarTags(cachedProjects); renderProjects();
-    } catch (e) { console.error("Projeler yüklenemedi:", e); }
-}
-
 function setFilter(tag) {
     currentTagFilter = tag; selectedProjectIds.clear(); activeSelectionSource = null; loadProjects();
     document.querySelectorAll('.tag-filter-btn').forEach(btn => { btn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 pr-8 truncate group/btn"; });
@@ -922,27 +395,6 @@ function openTagModal(tag = null) {
 
 function closeTagModal() { document.getElementById('tagModal').classList.remove('flex'); document.getElementById('tagModal').classList.add('hidden'); document.getElementById('tagForm').reset(); }
 
-async function submitTag(e) {
-    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
-    const originalTag = document.getElementById('tagOriginalName').value; const newTag = document.getElementById('tagNewName').value;
-    const projectIds = Array.from(document.querySelectorAll('input[name="tagProjectIds"]:checked')).map(cb => cb.value);
-
-    try {
-        const res = await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: originalTag, new_tag: newTag, project_ids: projectIds }) });
-        if (res.ok) { closeTagModal(); if (currentTagFilter === originalTag) currentTagFilter = newTag || null; await loadSettings(); await loadProjects(); showToast("Tag configured successfully", "success"); } 
-        else { const err = await res.json(); showToast(err.error || "Failed to configure tag", "error"); }
-    } catch (err) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function deleteTag() {
-    const originalTag = document.getElementById('tagOriginalName').value; if (!originalTag) return;
-    try {
-        const res = await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: originalTag, new_tag: "", project_ids: [] }) });
-        if (res.ok) { closeTagModal(); if (currentTagFilter === originalTag) currentTagFilter = null; await loadSettings(); await loadProjects(); showToast("Tag deleted", "success"); } 
-        else { const err = await res.json(); showToast(err.error || "Failed to delete tag", "error"); }
-    } catch (err) { showToast("Network error", "error"); }
-}
-
 function initTagAutocomplete(inputId, dropdownId) {
     const input = document.getElementById(inputId); const dropdown = document.getElementById(dropdownId); if (!input || !dropdown) return;
     input.addEventListener('focus', () => update(input.value)); input.addEventListener('input', (e) => update(e.target.value)); input.addEventListener('blur', () => setTimeout(() => dropdown.classList.add('hidden'), 200));
@@ -969,16 +421,6 @@ function toggleWorkspaceMode() {
     }
 }
 
-async function browseFolder(inputId, handleWorkspace = true) {
-    try {
-        const res = await fetch('/api/system/browse'); const data = await res.json();
-        if (data.path && data.path !== "") {
-            document.getElementById(inputId).value = data.path;
-            if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
-        }
-    } catch (e) { showToast("Failed to open native folder picker.", "error"); }
-}
-
 function toggleSourceMode() {
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
     const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
@@ -989,31 +431,6 @@ function toggleSourceMode() {
     } else {
         localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden'); projName.required = false; projPath.required = false; repoUrl.required = true;
     }
-}
-
-async function loadSettings() {
-    try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-            const settings = await response.json();
-            globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
-            document.getElementById('setting-workspace').value = globalWorkspace;
-            if (settings.global_env) { document.getElementById('setting-global-env').value = settings.global_env; globalEnvText = settings.global_env; } else globalEnvText = "";
-            globalSavedTags = settings.saved_tags || [];
-            toggleWorkspaceMode(); 
-        }
-    } catch (e) { console.error("Settings load error", e); }
-}
-
-async function saveSettings() {
-    const btn = document.getElementById('save-settings-btn'); const originalHTML = toggleButtonLoading(btn, true);
-    globalWorkspace = document.getElementById('setting-workspace').value;
-    const globalEnv = document.getElementById('setting-global-env').value; globalEnvText = globalEnv; 
-    try {
-        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, log_buffer: false, global_env: globalEnv }) });
-        if (response.ok) { showToast("System settings applied.", "success"); toggleWorkspaceMode(); } 
-        else { const err = await response.json(); showToast(err.error, "error"); }
-    } catch (e) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 function toggleAddEnvMode(clickedType) {
@@ -1037,40 +454,6 @@ function openModal() {
 }
 
 function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); document.getElementById('addForm').reset(); }
-
-async function submitNewProject(e) {
-    e.preventDefault(); 
-    const btn = e.target.querySelector('button[type="submit"]'); 
-    const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
-    
-    const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
-    let finalEnv = ""; let createEnv = true;
-    
-    if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } else if (customCb && customCb.checked) { finalEnv = document.getElementById('projInitialEnv').value; } else { finalEnv = ""; createEnv = false; }
-    const clearOnStart = document.getElementById('projClearOnStart') ? document.getElementById('projClearOnStart').checked : false;
-
-    try {
-        if (sourceMode === 'local') {
-            let finalPath = document.getElementById('projPath').value.trim(); const useWs = document.getElementById('useWorkspace').checked;
-            if (useWs) { const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/'); finalPath = formattedWs + finalPath; }
-            
-            const data = { 
-                name: document.getElementById('projName').value, path: finalPath, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, 
-                interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv
-            };
-            const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-            if (res.ok) { closeModal(); loadProjects(); showToast("Workspace created!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
-        } else {
-            const data = { 
-                repo_url: document.getElementById('repoUrl').value, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, 
-                interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv
-            };
-            const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
-            if (res.ok) { closeModal(); loadProjects(); showToast("Repo cloned!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
-        }
-    } catch (err) { showToast("Connection failed.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
 
 function toggleEditEnvMode(clickedType) {
     const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
@@ -1125,30 +508,6 @@ function closeEditModal() { document.getElementById('editModal').classList.remov
 function openEnvModal(id) { openEditModal(id); }
 function closeEnvModal() { closeEditModal(); }
 
-async function submitEditProject(event) {
-    event.preventDefault(); 
-    const btn = event.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
-    const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
-
-    let finalEnv = ""; let createEnv = true; let deleteEnv = false;
-
-    if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } 
-    else if (customCb && customCb.checked) { finalEnv = document.getElementById('editProjInitialEnv').value; } 
-    else { finalEnv = ""; createEnv = false; deleteEnv = true; }
-
-    const updatedProject = { 
-        id: document.getElementById('editProjId').value, name: document.getElementById('editProjName').value, path: document.getElementById('editProjPath').value, command: document.getElementById('editProjCmd').value, 
-        tag: document.getElementById('editProjTag').value, interactive: document.getElementById('editProjInteractive').checked, auto_start: document.getElementById('editProjAutoStart').checked, auto_restart: document.getElementById('editProjAutoRestart').checked, 
-        auto_close: document.getElementById('editProjAutoClose').checked, clear_on_start: document.getElementById('editProjClearOnStart').checked, initial_env: finalEnv, create_env: createEnv, delete_env: deleteEnv
-    };
-    
-    try {
-        const response = await fetch('/api/projects/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedProject) });
-        if (response.ok) { closeEditModal(); loadProjects(); showToast("Project settings & environment updated successfully!", "success"); } 
-        else { const err = await response.json(); showToast(err.error, "error"); }
-    } catch (e) { showToast("Server error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
 function openDeleteModal(id) { 
     const project = cachedProjects.find(p => p.id === id || p.ID === id); const source = project ? (project.source || project.Source || 'local') : 'local'; const tag = project ? (project.tag || project.Tag) : null;
     const checkboxContainer = document.getElementById('deleteFilesContainer'); const warningText = document.getElementById('deleteLocalWarning'); const checkbox = document.getElementById('deleteFilesFromDisk');
@@ -1175,26 +534,6 @@ function closeDeleteModal() {
     const diskCb = document.getElementById('deleteFilesFromDisk'); if (diskCb) diskCb.checked = false; 
     const tagCb = document.getElementById('deleteOrphanedTag'); if (tagCb) tagCb.checked = false;
     tagToOrphan = null; projectToDelete = null; 
-}
-
-async function executeDelete() { 
-    const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); 
-    const diskCb = document.getElementById('deleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false;
-    const deleteTagCheckbox = document.getElementById('deleteOrphanedTag'); const tagContainer = document.getElementById('deleteTagContainer'); const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
-    
-    try {
-        const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
-        if(res.ok) { 
-            if (shouldDeleteTag && tagToOrphan) {
-                await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: tagToOrphan, new_tag: "", project_ids: [] }) });
-                if (currentTagFilter === tagToOrphan) currentTagFilter = null; await loadSettings();
-            }
-            closeDeleteModal(); selectedProjectIds.delete(projectToDelete); loadProjects(); 
-            if (deleteFiles) showToast("Files deleted", "success"); else showToast("Project removed", "success"); 
-        } else { const data = await res.json(); showToast(data.error, "error"); closeDeleteModal(); }
-    } catch (err) { showToast("Failed to delete", "error"); closeDeleteModal(); } finally { 
-        toggleButtonLoading(btn, false, originalHTML); if (diskCb) diskCb.checked = false; if (deleteTagCheckbox) deleteTagCheckbox.checked = false;
-    }
 }
 
 function confirmBulkDelete() {
@@ -1234,46 +573,6 @@ function closeBulkDeleteModal() {
     const c = document.getElementById('bulkDeleteFilesFromDisk'); if(c) c.checked = false; 
     const t = document.getElementById('bulkDeleteOrphanedTags'); if(t) t.checked = false; tagsToOrphanBulk = [];
 }
- 
-async function executeBulkDelete() {
-    let idsToProcess = [];
-    if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
-    if (idsToProcess.length === 0) return;
-
-    const diskCb = document.getElementById('bulkDeleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false;
-    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags'); const tagContainer = document.getElementById('bulkDeleteTagContainer'); const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
-
-    const btn = document.getElementById('confirmBulkDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch('/api/projects/delete-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles }) });
-        if(res.ok) {
-            if (shouldDeleteTags && tagsToOrphanBulk.length > 0) {
-                for (const t of tagsToOrphanBulk) { await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: t, new_tag: "", project_ids: [] }) }); if (currentTagFilter === t) currentTagFilter = null; }
-                await loadSettings();
-            }
-            closeBulkDeleteModal(); selectedProjectIds.clear(); loadProjects(); showToast("Projeler başarıyla silindi", "success");
-        } else { const data = await res.json(); showToast(data.error, "error"); closeBulkDeleteModal(); }
-    } catch (err) { showToast("Bağlantı hatası", "error"); closeBulkDeleteModal(); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function executeBulkAction(action) {
-    let idsToProcess = [];
-    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
-    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID); }
-    if (idsToProcess.length === 0) return;
-
-    const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';
-    const actionText = action === 'start' ? 'Başlatılıyor...' : 'Durduruluyor...';
-    showToast(`${idsToProcess.length} proje ${actionText}`, "success");
-    
-    try {
-        if (action === 'start') { idsToProcess.forEach(id => { const p = cachedProjects.find(x => (x.id || x.ID) === id); if (p) getOrCreateTerminal(id, p.name || p.Name); }); }
-        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(idsToProcess) });
-        if (res.ok) { const data = await res.json(); showToast(data.message || "İşlem başarılı", "success"); } 
-        else { const err = await res.json(); showToast(err.error || "İşlem başarısız", "error"); }
-    } catch (e) { showToast("Bağlantı hatası", "error"); }
-}
 
 function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
 function handleDragOver(e) { e.preventDefault(); return false; }
@@ -1291,52 +590,3 @@ function handleDrop(e) {
     return false;
 }
 function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
-
-async function saveNewOrder() {
-    const localBody = document.getElementById('local-project-list'); const githubBody = document.getElementById('github-project-list');
-    const localIDs = localBody ? Array.from(localBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
-    const githubIDs = githubBody ? Array.from(githubBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
-    const newOrderIDs = [...localIDs, ...githubIDs];
-    try {
-        const res = await fetch('/api/projects/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrderIDs) });
-        if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
-    } catch(e) { showToast("Network error", "error"); }
-}
-
-async function startProject(id, name, btn) { 
-    getOrCreateTerminal(id, name); const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
-        else { showToast("Project started", "success"); }
-    } catch (e) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function restartProject(id, name, btn) {
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        showToast("Restart sequence initiated...", "success"); await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to restart", "error"); } 
-        else { showToast("Project restarted successfully", "success"); getOrCreateTerminal(id, name); }
-    } catch (e) { showToast("Network error during restart", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function stopProject(id, btn) { 
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); if (!data.error.includes("not currently running")) { showToast(data.error || "Failed to stop", "error"); } } 
-        else { showToast("Project stopped", "success"); }
-    } catch (e) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}
-
-async function backupProject(id, btn) {
-    const originalHTML = toggleButtonLoading(btn, true);
-    try {
-        const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
-        const data = await res.json();
-        if (res.ok) { showToast(data.message, "success"); } else { showToast(data.error || "Backup failed", "error"); }
-    } catch (e) { showToast("Network error during backup", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
-}

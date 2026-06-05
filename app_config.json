@@ -1,5 +1,6 @@
 {
   "workspace": "C:/Users/Diony/Desktop/DionyHub/apps",
   "log_buffer": false,
-  "global_env": "TEST_GLOBAL_KEY=BenimGizliSifrem123"
+  "global_env": "TEST_VAR=HarikaCalisiyor",
+  "saved_tags": null
 }
