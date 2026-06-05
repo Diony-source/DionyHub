@@ -1,10 +1,9 @@
-// Package api provides HTTP handlers and WebSocket broadcasting for DionyHub.
+// Package api provides HTTP handlers, WebSocket broadcasting, and core server configurations for DionyHub.
 package api
 
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -28,6 +27,7 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 		broadcaster: b,
 	}
 
+	// Setup global crash and exit detection hook
 	s.manager.OnExit = func(id string, name string, uptime time.Duration, isCrash bool) {
 		uptimeStr := ""
 		hrs := int(uptime.Hours())
@@ -54,49 +54,9 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
 		projLog, _ := json.Marshal(map[string]string{"id": id, "data": projMsg})
 		s.broadcaster.Write(projLog)
 
+		// Diske de kaydet (Audit Log)
 		s.manager.WriteSystemLog(sysMsg + "\r\n")
 	}
 
 	return s
-}
-
-// startMetricsPusher periodically gathers CPU/RAM stats and pushes them to the frontend.
-func (s *Server) startMetricsPusher() {
-	for {
-		time.Sleep(2 * time.Second)
-		s.mu.RLock()
-
-		stats := make([]map[string]interface{}, 0)
-		for _, p := range s.projects {
-			if s.manager.IsRunning(p.ID) {
-				cpu, ram, uptime := s.manager.GetStats(p.ID)
-
-				if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
-					cpu = 0
-				}
-				if math.IsNaN(ram) || math.IsInf(ram, 0) {
-					ram = 0
-				}
-
-				stats = append(stats, map[string]interface{}{
-					"id": p.ID, "status": "running", "cpu": cpu, "ram": ram, "uptime": uptime,
-				})
-			} else {
-				stats = append(stats, map[string]interface{}{
-					"id": p.ID, "status": "stopped",
-				})
-			}
-		}
-		s.mu.RUnlock()
-
-		payload, _ := json.Marshal(stats)
-
-		type WSLog struct {
-			ID   string `json:"id"`
-			Data string `json:"data"`
-		}
-
-		wsMsg, _ := json.Marshal(WSLog{ID: "metrics", Data: string(payload)})
-		s.broadcaster.Write(wsMsg)
-	}
 }

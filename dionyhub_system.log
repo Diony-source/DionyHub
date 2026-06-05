@@ -25,3 +25,6 @@
 [36m[AUDIT][0m [33mnoteapp[0m -> 🚀 [32mProject started successfully (PID: 29328).[0m
 [1;31m[CRASH][0m Project 'noteapp' crashed after 2s.
 [36m[AUDIT][0m [33mnoteapp[0m -> ⚪ Process exited normally.
+[36m[AUDIT][0m [33mnoteapp[0m -> 🚀 [32mProject started successfully (PID: 23120).[0m
+[1;31m[CRASH][0m Project 'noteapp' crashed after 5s.
+[36m[AUDIT][0m [33mnoteapp[0m -> ⚪ Process exited normally.
