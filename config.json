@@ -1,16 +1,16 @@
 [
   {
-    "id": "1780591488979",
-    "name": "hangman",
-    "path": "C:/DionyHub/apps/hangman",
+    "id": "1780618949493",
+    "name": "noteapp",
+    "path": "C:/Users/Diony/Desktop/noteapp",
     "command": "go run main.go",
-    "tag": "hangman",
-    "interactive": false,
+    "tag": "",
+    "interactive": true,
     "auto_start": false,
     "auto_restart": false,
     "auto_close": false,
     "clear_on_start": false,
-    "source": "github",
+    "source": "local",
     "status": "stopped",
     "order": 0
   },
@@ -75,21 +75,6 @@
     "order": 4
   },
   {
-    "id": "1780618949493",
-    "name": "noteapp",
-    "path": "C:/Users/Diony/Desktop/noteapp",
-    "command": "go run main.go",
-    "tag": "",
-    "interactive": false,
-    "auto_start": false,
-    "auto_restart": false,
-    "auto_close": false,
-    "clear_on_start": false,
-    "source": "local",
-    "status": "stopped",
-    "order": 5
-  },
-  {
     "id": "1780618967389",
     "name": "soru_test",
     "path": "C:/Users/Diony/Desktop/soru_test",
@@ -102,7 +87,7 @@
     "clear_on_start": false,
     "source": "local",
     "status": "stopped",
-    "order": 6
+    "order": 5
   },
   {
     "id": "1780618980983",
@@ -116,6 +101,21 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
+    "status": "stopped",
+    "order": 6
+  },
+  {
+    "id": "1780591488979",
+    "name": "hangman",
+    "path": "C:/DionyHub/apps/hangman",
+    "command": "go run main.go",
+    "tag": "hangman",
+    "interactive": false,
+    "auto_start": false,
+    "auto_restart": false,
+    "auto_close": false,
+    "clear_on_start": false,
+    "source": "github",
     "status": "stopped",
     "order": 7
   }

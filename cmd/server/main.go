@@ -16,6 +16,7 @@ import (
 
 	"github.com/Diony-source/DionyHub/internal/api"
 	"github.com/Diony-source/DionyHub/internal/config"
+	"github.com/Diony-source/DionyHub/internal/logger"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
@@ -51,6 +52,7 @@ func (s *SystemLogWrapper) Write(p []byte) (n int, err error) {
 }
 
 func main() {
+	logger.InitGlobalLogger()
 	clearHubPort()
 
 	broadcaster := api.NewBroadcaster()

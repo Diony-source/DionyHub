@@ -23,3 +23,14 @@ let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
 let isResizing = false;
+
+const terminalResizeObserver = new ResizeObserver((entries) => {
+    requestAnimationFrame(() => {
+        for (const entry of entries) {
+            const id = entry.target.dataset.termId;
+            if (id && terminalPool[id] && !terminalPool[id].minimized) {
+                try { terminalPool[id].fitAddon.fit(); } catch(e) {}
+            }
+        }
+    });
+});
