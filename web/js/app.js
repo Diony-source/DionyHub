@@ -56,20 +56,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (grid) grid.style.transition = 'none';
             e.preventDefault();
         });
-
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
-            
             const dashRect = dashboardView.getBoundingClientRect();
             let newHeight = dashRect.bottom - e.clientY;
-            
             if (newHeight < 150) newHeight = 150;
             if (newHeight > dashRect.height - 200) newHeight = dashRect.height - 200;
-            
             terminalPane.style.height = `${newHeight}px`;
             terminalPane.style.flex = 'none'; 
         });
-
         document.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
@@ -83,10 +78,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         tabsContainer.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation(); 
-            
             const draggingTab = document.querySelector('.dragging-tab');
             if (!draggingTab) return;
-            
             const afterElement = getDragAfterElement(tabsContainer, e.clientX);
             if (afterElement == null) {
                 tabsContainer.appendChild(draggingTab);
@@ -94,7 +87,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 tabsContainer.insertBefore(draggingTab, afterElement);
             }
         });
-        
         tabsContainer.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -114,7 +106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             e.preventDefault();
             terminalPane.classList.remove('ring-2', 'ring-indigo-500/50');
             if (e.target.closest('#minimized-tabs-container')) return;
-            
             const minId = e.dataTransfer.getData('application/diony-min-term');
             if (minId && terminalPool[minId] && terminalPool[minId].minimized) {
                 restoreTerminal(minId);
@@ -125,14 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#contextMenu')) hideContextMenu();
         if (e.target.id === 'cmdPalette') closeCmdPalette();
-        
-        const isOutsideClick =  !e.target.closest('tr') && 
-                                !e.target.closest('#bulk-actions-container') && 
-                                !e.target.closest('.btn-action') && 
-                                !e.target.closest('.tag-filter-btn') && 
-                                !e.target.closest('.cursor-pointer') &&
-                                !e.target.closest('#tagModal');
-
+        const isOutsideClick =  !e.target.closest('tr') && !e.target.closest('#bulk-actions-container') && !e.target.closest('.btn-action') && !e.target.closest('.tag-filter-btn') && !e.target.closest('.cursor-pointer') && !e.target.closest('#tagModal');
        if (isOutsideClick && selectedProjectIds.size > 0) {
            selectedProjectIds.clear();
            activeSelectionSource = null;
@@ -155,7 +139,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cmdInput = document.getElementById('cmdInput');
     if (cmdInput) {
         cmdInput.addEventListener('input', handleCmdSearch);
-        
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -200,20 +183,18 @@ function drawSparkline(id, cpuVal) {
 function showContextMenu(e, pId, pName, status) {
     e.preventDefault();
     closeCmdPalette(); 
-    
     const menu = document.getElementById('contextMenu');
     if (!menu) return;
     menu.innerHTML = ''; 
 
     const isRunning = status === 'running';
-
     const items = [
         { label: 'Start Project', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z', color: 'text-emerald-400', action: () => startProject(pId, pName, null), disabled: isRunning },
         { label: 'Restart Project', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'text-blue-400', action: () => restartProject(pId, pName, null), disabled: !isRunning },
         { label: 'Stop Project', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10h6v4H9z', color: 'text-rose-400', action: () => stopProject(pId, null), disabled: !isRunning },
         { label: 'divider' },
         { label: 'Edit Project', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'text-gray-400', action: () => openEditModal(pId), disabled: false },
-        { label: 'Environment (.env)', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', color: 'text-teal-400', action: () => openEnvModal(pId), disabled: false },
+        { label: 'Environment (.env)', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', color: 'text-teal-400', action: () => openEditModal(pId), disabled: false },
         { label: 'Export Backup', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4', color: 'text-amber-400', action: () => backupProject(pId, null), disabled: false },
         { label: 'divider' },
         { label: 'Delete', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', color: 'text-rose-500', action: () => openDeleteModal(pId), disabled: false },
@@ -226,7 +207,6 @@ function showContextMenu(e, pId, pName, status) {
             menu.appendChild(divider);
             return;
         }
-        
         const btn = document.createElement('button');
         const baseColor = item.disabled ? 'text-gray-600' : item.color;
         const hoverClass = item.disabled ? 'cursor-not-allowed' : 'hover:bg-gray-700/50 group';
@@ -234,12 +214,7 @@ function showContextMenu(e, pId, pName, status) {
         const iconScale = item.disabled ? '' : 'group-hover:scale-110';
         
         btn.className = `w-full text-left px-4 py-2 transition-colors flex items-center gap-3 ${hoverClass}`;
-        btn.innerHTML = `
-            <svg class="w-4 h-4 ${baseColor} ${iconScale} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path>
-            </svg> 
-            <span class="${textClass} transition-colors">${item.label}</span>
-        `;
+        btn.innerHTML = `<svg class="w-4 h-4 ${baseColor} ${iconScale} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg><span class="${textClass} transition-colors">${item.label}</span>`;
         
         btn.addEventListener('mousedown', (ev) => { 
             ev.preventDefault();
@@ -254,9 +229,7 @@ function showContextMenu(e, pId, pName, status) {
     menu.style.display = 'flex';
     menu.style.flexDirection = 'column';
     menu.style.pointerEvents = 'auto';
-    
     void menu.offsetWidth; 
-    
     menu.style.left = `${e.pageX}px`;
     menu.style.top = `${e.pageY}px`;
     menu.classList.remove('scale-95', 'opacity-0');
@@ -275,10 +248,8 @@ function toggleCmdPalette() {
     const pal = document.getElementById('cmdPalette');
     const box = document.getElementById('cmdPaletteBox');
     const input = document.getElementById('cmdInput');
-    
     if (!pal || !box || !input) return;
     hideContextMenu(); 
-
     if (pal.classList.contains('hidden')) {
         pal.classList.replace('hidden', 'flex');
         input.value = '';
@@ -304,7 +275,6 @@ function closeCmdPalette() {
 
 function handleCmdSearch(e) {
     const query = e.target.value.toLowerCase().replace(/\s+/g, '');
-    
     const allActions = [
         { name: "Settings > Open Configurations", searchKey: "settingsopenconfigurations", icon: "⚙️", action: () => { switchView('settings'); } },
         { name: "Dashboard > View Projects", searchKey: "dashboardviewprojects", icon: "📊", action: () => { switchView('dashboard'); } },
@@ -327,7 +297,6 @@ function updateCmdSelection() {
     const resultsDiv = document.getElementById('cmdResults');
     if (!resultsDiv) return;
     const allBtns = resultsDiv.querySelectorAll('.cmd-item');
-    
     allBtns.forEach((btn, idx) => {
         const iconSpan = btn.querySelector('.cmd-icon');
         if (idx === cmdSelectedIndex) {
@@ -347,40 +316,24 @@ function renderCmdResults() {
     const resultsDiv = document.getElementById('cmdResults');
     if (!resultsDiv) return;
     resultsDiv.innerHTML = '';
-
     if (currentCmdActions.length === 0) {
         resultsDiv.innerHTML = `<div class="px-4 py-3 text-gray-500 text-sm text-center font-bold">No matching commands found.</div>`;
         return;
     }
-
     currentCmdActions.forEach((a, idx) => {
         const btn = document.createElement('button');
         const isActive = idx === cmdSelectedIndex;
-        
         btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 transition-colors group ${isActive ? 'bg-indigo-500/20 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
         btn.innerHTML = `<span class="cmd-icon text-lg opacity-70 transition-transform ${isActive ? 'scale-110' : ''}">${a.icon}</span> <span class="font-mono text-sm font-bold tracking-wide">${a.name}</span>`;
-        
-        btn.addEventListener('mouseenter', () => {
-            cmdSelectedIndex = idx;
-            updateCmdSelection();
-        });
-        
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            closeCmdPalette();
-            a.action();
-        });
-        
+        btn.addEventListener('mouseenter', () => { cmdSelectedIndex = idx; updateCmdSelection(); });
+        btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); closeCmdPalette(); a.action(); });
         resultsDiv.appendChild(btn);
     });
-    
     updateCmdSelection();
 }
 
 function getOrCreateTerminal(id, name) {
     if (terminalPool[id]) return terminalPool[id];
-
     const grid = document.getElementById('terminals-grid');
     if (!grid) return null;
 
@@ -396,7 +349,6 @@ function getOrCreateTerminal(id, name) {
     const isSystem = id === 'system';
     const dotColor = isSystem ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
     const textColor = isSystem ? 'text-indigo-300' : 'text-gray-300';
-    
     titleSpan.innerHTML = `<div class="w-2 h-2 rounded-full ${dotColor}"></div><span class="${textColor} drop-shadow-md truncate">${name}</span>`;
     
     const actionsDiv = document.createElement('div');
@@ -414,11 +366,9 @@ function getOrCreateTerminal(id, name) {
     searchBtn.title = "Search Logs";
     searchBtn.onclick = () => {
         if (searchInput.classList.contains('hidden')) { 
-            searchInput.classList.remove('hidden'); 
-            searchInput.focus(); 
+            searchInput.classList.remove('hidden'); searchInput.focus(); 
         } else { 
-            searchInput.classList.add('hidden'); 
-            searchInput.value = ''; 
+            searchInput.classList.add('hidden'); searchInput.value = ''; 
             if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); 
         }
     };
@@ -460,7 +410,6 @@ function getOrCreateTerminal(id, name) {
     actionsDiv.appendChild(maxBtn); 
     actionsDiv.appendChild(closeBtn); 
     actionsDiv.appendChild(clearBtn);
-    
     header.appendChild(titleSpan); 
     header.appendChild(actionsDiv);
 
@@ -478,7 +427,6 @@ function getOrCreateTerminal(id, name) {
     grid.appendChild(wrapper);
 
     terminalResizeObserver.observe(xtermWrapper);
-
     requestAnimationFrame(() => {
         wrapper.classList.remove('scale-95', 'opacity-0');
         wrapper.classList.add('scale-100', 'opacity-100');
@@ -495,46 +443,43 @@ function getOrCreateTerminal(id, name) {
 
     const fitAddon = new FitAddon.FitAddon(); 
     term.loadAddon(fitAddon);
-    
     const searchAddon = new SearchAddon.SearchAddon(); 
     term.loadAddon(searchAddon);
-    
     term.open(termContainer);
 
     const termInstance = { 
-        term: term, 
-        fitAddon: fitAddon, 
-        searchAddon: searchAddon, 
-        container: wrapper, 
-        currentLine: "",
-        minimized: false,
-        lastStatus: 'stopped'
+        term: term, fitAddon: fitAddon, searchAddon: searchAddon, container: wrapper, 
+        currentLine: "", minimized: false, lastStatus: 'stopped'
     };
     terminalPool[id] = termInstance;
 
+    // YENİ: id === 'system' de olsa arka plandan gidip dionyhub_system.log dosyasını çekecek
+    fetch(`/api/projects/logs?id=${id}`)
+        .then(res => {
+            if(res.ok) return res.json();
+            return { logs: "" };
+        })
+        .then(data => {
+            if (data && data.logs) {
+                term.write(data.logs);
+            }
+        })
+        .catch(err => console.error("Failed to fetch historical logs:", err));
+
     term.attachCustomKeyEventHandler((e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.type === 'keydown') {
-            e.preventDefault(); 
-            searchInput.classList.remove('hidden'); 
-            searchInput.focus(); 
-            return false;
+            e.preventDefault(); searchInput.classList.remove('hidden'); searchInput.focus(); return false;
         }
         return true;
     });
 
     searchInput.addEventListener('input', (e) => { 
-        if(e.target.value) {
-            searchAddon.findNext(e.target.value, { decorations: true }); 
-        }
+        if(e.target.value) searchAddon.findNext(e.target.value, { decorations: true }); 
     });
-    
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { 
-            if (e.shiftKey) {
-                searchAddon.findPrevious(e.target.value, { decorations: true }); 
-            } else {
-                searchAddon.findNext(e.target.value, { decorations: true }); 
-            }
+            if (e.shiftKey) searchAddon.findPrevious(e.target.value, { decorations: true }); 
+            else searchAddon.findNext(e.target.value, { decorations: true }); 
         }
     });
 
@@ -543,26 +488,17 @@ function getOrCreateTerminal(id, name) {
             for (let i = 0; i < data.length; i++) {
                 const char = data[i]; 
                 const code = char.charCodeAt(0);
-                
                 if (code === 13 || code === 10) { 
                     term.write('\r\n'); 
                     const payload = termInstance.currentLine + '\r\n';
-                    
-                    fetch('/api/projects/input', { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ id: id, data: payload }) 
-                    }).catch(err => console.error("Send failed:", err));
-                    
+                    fetch('/api/projects/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, data: payload }) }).catch(err => console.error(err));
                     termInstance.currentLine = ""; 
                 } else if (code === 127 || code === 8) { 
                     if (termInstance.currentLine.length > 0) { 
-                        termInstance.currentLine = termInstance.currentLine.slice(0, -1); 
-                        term.write('\b \b'); 
+                        termInstance.currentLine = termInstance.currentLine.slice(0, -1); term.write('\b \b'); 
                     }
                 } else { 
-                    termInstance.currentLine += char; 
-                    term.write(char); 
+                    termInstance.currentLine += char; term.write(char); 
                 }
             }
         });
@@ -581,11 +517,8 @@ function getDragAfterElement(container, x) {
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = x - box.left - box.width / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
@@ -594,31 +527,19 @@ function exportTerminalLogs(id, name) {
     term.selectAll(); 
     const text = term.getSelection(); 
     term.clearSelection();
-    
-    if (!text || text.trim() === "") { 
-        showToast("Terminal is empty.", "error"); 
-        return; 
-    }
+    if (!text || text.trim() === "") { showToast("Terminal is empty.", "error"); return; }
     
     const blob = new Blob([text], { type: 'text/plain' }); 
     const url = URL.createObjectURL(blob); 
     const a = document.createElement('a');
-    
-    a.href = url; 
-    a.download = `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_logs_${new Date().getTime()}.txt`;
-    
-    document.body.appendChild(a); 
-    a.click(); 
-    document.body.removeChild(a); 
-    URL.revokeObjectURL(url);
-    
+    a.href = url; a.download = `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_logs_${new Date().getTime()}.txt`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     showToast(`${name} logs exported successfully!`, "success");
 }
 
 function minimizeTerminal(id, name) {
     if (!terminalPool[id]) return;
     if (terminalPool[id].minimized) return; 
-
     terminalPool[id].minimized = true;
     
     const tabsContainer = document.getElementById('minimized-tabs-container');
@@ -627,46 +548,26 @@ function minimizeTerminal(id, name) {
         tab.id = `min-tab-${id}`;
         tab.draggable = true;
         tab.className = "min-tab flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing text-xs text-gray-300 font-mono transition-colors shadow-sm group shrink-0 select-none";
-        
         const dotColor = id === 'system' ? 'bg-indigo-500' : 'bg-emerald-500';
-        
         tab.innerHTML = `
-            <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div>
-            <span class="truncate max-w-[120px] font-bold">${name}</span>
+            <div class="w-1.5 h-1.5 rounded-full ${dotColor}"></div><span class="truncate max-w-[120px] font-bold">${name}</span>
             <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                <button type="button" class="hover:text-indigo-400 transition-colors p-0.5 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
-                </button>
-                <button type="button" class="hover:text-rose-400 transition-colors p-0.5 focus:outline-none" onclick="closeTerminal('${id}'); event.stopPropagation();" title="Close">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-        `;
-        
-        tab.ondragstart = (e) => {
-            e.dataTransfer.setData('application/diony-min-term', id);
-            tab.classList.add('opacity-50', 'dragging-tab');
-        };
-        tab.ondragend = (e) => {
-            tab.classList.remove('opacity-50', 'dragging-tab');
-        };
-        tab.onclick = (e) => {
-            if (e.target.closest('button')) return; 
-            restoreTerminal(id);
-        };
+                <button type="button" class="hover:text-indigo-400 transition-colors p-0.5 focus:outline-none" onclick="restoreTerminal('${id}'); event.stopPropagation();" title="Restore"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg></button>
+                <button type="button" class="hover:text-rose-400 transition-colors p-0.5 focus:outline-none" onclick="closeTerminal('${id}'); event.stopPropagation();" title="Close"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>`;
+        tab.ondragstart = (e) => { e.dataTransfer.setData('application/diony-min-term', id); tab.classList.add('opacity-50', 'dragging-tab'); };
+        tab.ondragend = (e) => { tab.classList.remove('opacity-50', 'dragging-tab'); };
+        tab.onclick = (e) => { if (e.target.closest('button')) return; restoreTerminal(id); };
         tabsContainer.appendChild(tab);
     }
-    
     updateGridCSS();
 }
 
 function restoreTerminal(id) {
     if (!terminalPool[id]) return;
     terminalPool[id].minimized = false;
-    
     const tab = document.getElementById(`min-tab-${id}`);
     if (tab) tab.remove();
-    
     if (maximizedTerminalId === id) toggleMaximizeTerminal(id); 
     updateGridCSS();
 }
@@ -674,216 +575,115 @@ function restoreTerminal(id) {
 function closeTerminal(id) {
     const termInstance = terminalPool[id];
     if (!termInstance) return;
-
-    if (id === 'system') {
-        minimizeTerminal(id, "DionyHub System Logs");
-        return;
-    }
-
+    if (id === 'system') { minimizeTerminal(id, "DionyHub System Logs"); return; }
     if (termInstance.lastStatus === 'running') {
         if (!termInstance.minimized) {
             const p = cachedProjects.find(x => (x.id || x.ID) === id);
             const pName = p ? (p.name || p.Name) : id;
             minimizeTerminal(id, pName);
-            showToast("Terminal kapatılamadı: Proje şu anda çalışıyor. Sekmeye küçültüldü, tamamen kapatmak için önce durdurun.", "error");
-        } else {
-            showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
-        }
+            showToast("Terminal kapatılamadı: Proje şu anda çalışıyor. Sekmeye küçültüldü.", "error");
+        } else showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
         return;
     }
-
     termInstance.term.dispose(); 
     termInstance.container.remove();
-    
     const tab = document.getElementById(`min-tab-${id}`);
     if (tab) tab.remove();
-    
     delete terminalPool[id];
     if (maximizedTerminalId === id) maximizedTerminalId = null;
-    
     updateGridCSS();
 }
 
 function updateGridCSS() {
     const grid = document.getElementById('terminals-grid'); 
     if (!grid) return;
-    
     const activeIds = Object.keys(terminalPool).filter(id => !terminalPool[id].minimized); 
     const count = activeIds.length;
-    
-    grid.style.display = 'flex'; 
-    grid.style.flexWrap = 'wrap'; 
-    grid.style.alignContent = 'stretch';  
-    grid.style.alignItems = 'stretch';
-    grid.style.gap = '16px'; 
-    grid.style.overflowX = 'hidden'; 
-    grid.style.width = '100%';
-    grid.style.minWidth = '0';
-    
-    Object.keys(terminalPool).forEach(id => {
-        if (terminalPool[id].minimized) {
-            terminalPool[id].container.style.display = 'none';
-        }
-    });
+    grid.style.display = 'flex'; grid.style.flexWrap = 'wrap'; grid.style.alignContent = 'stretch'; grid.style.alignItems = 'stretch'; grid.style.gap = '16px'; grid.style.overflowX = 'hidden'; grid.style.width = '100%'; grid.style.minWidth = '0';
+    Object.keys(terminalPool).forEach(id => { if (terminalPool[id].minimized) terminalPool[id].container.style.display = 'none'; });
 
     if (maximizedTerminalId && terminalPool[maximizedTerminalId] && !terminalPool[maximizedTerminalId].minimized) {
         activeIds.forEach(id => { 
             const wrapper = terminalPool[id].container;
-            if (id !== maximizedTerminalId) {
-                wrapper.style.display = 'none'; 
-            } else {
-                wrapper.style.display = 'flex';
-                wrapper.style.flex = '1 1 100%';
-                wrapper.style.height = 'auto'; 
-                wrapper.style.minHeight = '250px';
-                wrapper.style.maxWidth = '100%';
-            }
+            if (id !== maximizedTerminalId) wrapper.style.display = 'none'; 
+            else { wrapper.style.display = 'flex'; wrapper.style.flex = '1 1 100%'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '250px'; wrapper.style.maxWidth = '100%'; }
         });
     } else {
         activeIds.forEach(id => {
             const wrapper = terminalPool[id].container;
-            wrapper.style.display = 'flex';
-            wrapper.style.maxWidth = '100%'; 
-            
-            if (count === 1) { 
-                wrapper.style.flex = '1 1 100%';
-            } else if (count === 2) { 
-                wrapper.style.flex = '1 1 calc(50% - 16px)';
-            } else if (count <= 4) { 
-                wrapper.style.flex = '1 1 calc(50% - 16px)';
-            } else { 
-                wrapper.style.flex = '1 1 400px'; 
-            }
-            
-            wrapper.style.height = 'auto'; 
-            wrapper.style.minHeight = '200px'; 
+            wrapper.style.display = 'flex'; wrapper.style.maxWidth = '100%'; 
+            if (count === 1) wrapper.style.flex = '1 1 100%';
+            else if (count <= 4) wrapper.style.flex = '1 1 calc(50% - 16px)';
+            else wrapper.style.flex = '1 1 400px'; 
+            wrapper.style.height = 'auto'; wrapper.style.minHeight = '200px'; 
         });
     }
 }
 
-function refreshAllTerminalFits() { 
-    Object.values(terminalPool).forEach(instance => { 
-        if (!instance.container.classList.contains('hidden') && instance.container.style.display !== 'none') { 
-            try { instance.fitAddon.fit(); } catch(e) {} 
-        } 
-    }); 
-}
+function refreshAllTerminalFits() { Object.values(terminalPool).forEach(instance => { if (!instance.container.classList.contains('hidden') && instance.container.style.display !== 'none') { try { instance.fitAddon.fit(); } catch(e) {} } }); }
 
 function toggleMaximizeTerminal(id) { 
-    if (maximizedTerminalId === id) {
-        maximizedTerminalId = null; 
-    } else {
-        maximizedTerminalId = id;
-    }
-    
+    if (maximizedTerminalId === id) maximizedTerminalId = null; else maximizedTerminalId = id;
     updateGridCSS(); 
-    
-    if (maximizedTerminalId && !terminalPool[id].minimized) { 
-        terminalPool[id].term.focus(); 
-    } 
+    if (maximizedTerminalId && !terminalPool[id].minimized) terminalPool[id].term.focus(); 
 }
 
-function clearAllTerminals() { 
-    Object.values(terminalPool).forEach(instance => { 
-        instance.term.clear(); 
-    }); 
-}
+function clearAllTerminals() { Object.values(terminalPool).forEach(instance => { instance.term.clear(); }); }
 
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    
     socket.onmessage = (e) => {
         try {
             const msg = JSON.parse(e.data);
-            
+            if (msg.action === 'clear') {
+                if (terminalPool[msg.id]) terminalPool[msg.id].term.clear();
+                return;
+            }
             if (msg.id === 'metrics') {
                 const statsArray = JSON.parse(msg.data);
                 if (!statsArray) return; 
-                
                 statsArray.forEach(stat => {
                     const badge = document.getElementById('status-' + stat.id);
                     const statsDiv = document.getElementById('stats-' + stat.id);
-                    
                     if (!badge) return;
-
                     let prevStatus = terminalPool[stat.id] ? terminalPool[stat.id].lastStatus : null;
                     if (terminalPool[stat.id]) terminalPool[stat.id].lastStatus = stat.status;
 
                     if (stat.status === 'running') {
                         badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors';
                         badge.innerText = 'Running';
-                        
                         if (statsDiv) {
-                            const hrs = Math.floor(stat.uptime / 3600); 
-                            const mins = Math.floor((stat.uptime % 3600) / 60); 
-                            const secs = stat.uptime % 60;
-                            
+                            const hrs = Math.floor(stat.uptime / 3600); const mins = Math.floor((stat.uptime % 3600) / 60); const secs = stat.uptime % 60;
                             const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
                             const sparkHtml = drawSparkline(stat.id, stat.cpu);
-                            
-                            statsDiv.innerHTML = `
-                                <div class="flex flex-col gap-0.5">
-                                    <div class="flex gap-2">
-                                        <span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span>
-                                        <span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span>
-                                    </div>
-                                    <span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span>
-                                </div> 
-                                ${sparkHtml}
-                            `;
+                            statsDiv.innerHTML = `<div class="flex flex-col gap-0.5"><div class="flex gap-2"><span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span></div><span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span></div> ${sparkHtml}`;
                         }
-                        
-                        if (!terminalPool[stat.id]) { 
-                            const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id); 
-                            if(p) getOrCreateTerminal(p.id || p.ID, p.name || p.Name); 
-                        }
+                        if (!terminalPool[stat.id]) { const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id); if(p) getOrCreateTerminal(p.id || p.ID, p.name || p.Name); }
                     } else {
                         badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-bold transition-colors';
                         badge.innerText = 'Stopped';
-                        
-                        if (statsDiv) {
-                            statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
-                        }
-
+                        if (statsDiv) statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
                         if (prevStatus === 'running' && terminalPool[stat.id]) {
                             const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id);
-                            if (p && (p.auto_close || p.AutoClose)) {
-                                minimizeTerminal(stat.id, p.name || p.Name);
-                            }
+                            if (p && (p.auto_close || p.AutoClose)) minimizeTerminal(stat.id, p.name || p.Name);
                         }
                     }
                 });
                 return; 
             }
-
             let projName = "Unknown";
-            
-            if (msg.id === 'system') {
-                projName = "DionyHub System Logs";
-            } else { 
-                const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); 
-                projName = p ? (p.name || p.Name) : msg.id; 
-            }
+            if (msg.id === 'system') projName = "DionyHub System Logs";
+            else { const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); projName = p ? (p.name || p.Name) : msg.id; }
             
             const termInstance = getOrCreateTerminal(msg.id, projName);
-            
-            if (msg.id === 'system') {
-                termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m');
-            } else { 
-                termInstance.term.write(msg.data); 
-            }
-            
+            if (msg.id === 'system') termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m');
+            else termInstance.term.write(msg.data); 
         } catch (err) {
-            if(terminalPool['system']) {
-                terminalPool['system'].term.write(e.data);
-            }
+            if(terminalPool['system']) terminalPool['system'].term.write(e.data);
         }
     };
-    
     socket.onclose = () => {
-        if (terminalPool['system']) {
-            terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
-        }
+        if (terminalPool['system']) terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
         setTimeout(connectWebSocket, 3000);
     };
 }
@@ -891,95 +691,49 @@ function connectWebSocket() {
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
-
-    while (container.childElementCount >= 3) { 
-        container.removeChild(container.firstChild); 
-    }
-
+    while (container.childElementCount >= 3) { container.removeChild(container.firstChild); }
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-rose-500/10 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]';
-    
-    const icon = type === 'error' 
-        ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` 
-        : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-
+    const icon = type === 'error' ? `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
     toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto ${bgColor} bg-[#11151f]`;
     toast.innerHTML = `${icon} <span class="text-sm font-bold drop-shadow-md">${message}</span>`;
-    
     container.appendChild(toast);
-
-    requestAnimationFrame(() => { 
-        toast.classList.remove('translate-x-full', 'opacity-0'); 
-    });
-    
-    setTimeout(() => { 
-        toast.classList.add('translate-x-full', 'opacity-0'); 
-        setTimeout(() => toast.remove(), 300); 
-    }, 3000);
+    requestAnimationFrame(() => { toast.classList.remove('translate-x-full', 'opacity-0'); });
+    setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
 function formatWorkspacePath(path) {
-    const maxLength = 22; 
-    let cleanPath = path.replace(/\\/g, '/'); 
-    
-    if (!cleanPath.endsWith('/')) {
-        cleanPath += '/';
-    }
-    
+    const maxLength = 22; let cleanPath = path.replace(/\\/g, '/'); 
+    if (!cleanPath.endsWith('/')) cleanPath += '/';
     if (cleanPath.length <= maxLength) return cleanPath;
-    
-    const startPart = cleanPath.substring(0, 3); 
-    const endPartLength = maxLength - startPart.length - 3; 
+    const startPart = cleanPath.substring(0, 3); const endPartLength = maxLength - startPart.length - 3; 
     return startPart + '...' + cleanPath.substring(cleanPath.length - endPartLength);
 }
 
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
     if (!btn || !(btn instanceof Element)) return originalContent;
-    
     if (isLoading) {
         const currentContent = btn.innerHTML;
-        btn.disabled = true; 
-        btn.classList.add('opacity-75', 'cursor-not-allowed');
-        
-        btn.innerHTML = `
-            <svg class="animate-spin h-4 w-4 mx-auto inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        `;
+        btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 mx-auto inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
         return currentContent;
     } else {
-        btn.disabled = false; 
-        btn.classList.remove('opacity-75', 'cursor-not-allowed');
-        btn.innerHTML = originalContent; 
+        btn.disabled = false; btn.classList.remove('opacity-75', 'cursor-not-allowed'); btn.innerHTML = originalContent; 
         return '';
     }
 }
 
 function switchView(viewName) {
-    const dashboardView = document.getElementById('dashboard-view'); 
-    const settingsView = document.getElementById('settings-view');
-    const viewTitle = document.getElementById('view-title'); 
-    const addBtn = document.getElementById('header-add-btn');
-    const navDashboard = document.getElementById('nav-dashboard'); 
-    const navSettings = document.getElementById('nav-settings');
-
+    const dashboardView = document.getElementById('dashboard-view'); const settingsView = document.getElementById('settings-view');
+    const viewTitle = document.getElementById('view-title'); const addBtn = document.getElementById('header-add-btn');
+    const navDashboard = document.getElementById('nav-dashboard'); const navSettings = document.getElementById('nav-settings');
     if (viewName === 'dashboard') {
-        dashboardView.classList.remove('hidden'); 
-        settingsView.classList.add('hidden');
-        viewTitle.innerText = "Active Library"; 
-        addBtn.classList.remove('hidden');
-        
+        dashboardView.classList.remove('hidden'); settingsView.classList.add('hidden'); viewTitle.innerText = "Active Library"; addBtn.classList.remove('hidden');
         if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all shadow-[inset_3px_0_0_#6366f1] group";
         if (navSettings) navSettings.className = "w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold text-left mt-6 group";
-        
         setTimeout(refreshAllTerminalFits, 100);
     } else if (viewName === 'settings') {
-        dashboardView.classList.add('hidden'); 
-        settingsView.classList.remove('hidden');
-        viewTitle.innerText = "System Settings"; 
-        addBtn.classList.add('hidden');
-        
+        dashboardView.classList.add('hidden'); settingsView.classList.remove('hidden'); viewTitle.innerText = "System Settings"; addBtn.classList.add('hidden');
         if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold group";
         if (navSettings) navSettings.className = "w-full flex items-center gap-3 px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all mt-6 shadow-[inset_3px_0_0_#6366f1] group";
     }
@@ -987,60 +741,31 @@ function switchView(viewName) {
 
 function createProjectRow(p, index, sourceArray) {
     const tr = document.createElement('tr');
-    const pId = p.id || p.ID; 
-    const pSource = (p.source || p.Source) === 'github' ? 'github' : 'local';
+    const pId = p.id || p.ID; const pSource = (p.source || p.Source) === 'github' ? 'github' : 'local';
     const isSelected = selectedProjectIds.has(pId);
-    
     tr.className = `border-b border-gray-800/60 transition-colors group cursor-pointer ${isSelected ? 'bg-indigo-500/30 shadow-[inset_4px_0_0_rgba(99,102,241,1)]' : 'bg-[#0f111a]/30 hover:bg-gray-800/40'}`;
-    tr.setAttribute('draggable', 'true'); 
-    tr.dataset.id = pId;
+    tr.setAttribute('draggable', 'true'); tr.dataset.id = pId;
 
     tr.addEventListener('click', (e) => {
         if (e.target.closest('button') || e.target.closest('.cursor-grab')) return;
-       
-        if (activeSelectionSource !== null && activeSelectionSource !== pSource && selectedProjectIds.size > 0) {
-            selectedProjectIds.clear();
-        }
+        if (activeSelectionSource !== null && activeSelectionSource !== pSource && selectedProjectIds.size > 0) selectedProjectIds.clear();
         activeSelectionSource = pSource;
-
         if (e.ctrlKey || e.metaKey) {
-            if (selectedProjectIds.has(pId)) selectedProjectIds.delete(pId);
-            else selectedProjectIds.add(pId);
+            if (selectedProjectIds.has(pId)) selectedProjectIds.delete(pId); else selectedProjectIds.add(pId);
             lastSelectedIdx = index;
         } else if (e.shiftKey && lastSelectedIdx !== -1) {
-            e.preventDefault(); 
-            document.getSelection().removeAllRanges();
-           
-            const start = Math.min(lastSelectedIdx, index);
-            const end = Math.max(lastSelectedIdx, index);
-           
+            e.preventDefault(); document.getSelection().removeAllRanges();
+            const start = Math.min(lastSelectedIdx, index); const end = Math.max(lastSelectedIdx, index);
             if (!e.ctrlKey && !e.metaKey) selectedProjectIds.clear();
-           
-            for (let i = start; i <= end; i++) {
-                const iterId = sourceArray[i].id || sourceArray[i].ID;
-                if(iterId) selectedProjectIds.add(iterId);
-            }
+            for (let i = start; i <= end; i++) { const iterId = sourceArray[i].id || sourceArray[i].ID; if(iterId) selectedProjectIds.add(iterId); }
         } else {
-            selectedProjectIds.clear();
-            selectedProjectIds.add(pId);
-            lastSelectedIdx = index;
+            selectedProjectIds.clear(); selectedProjectIds.add(pId); lastSelectedIdx = index;
         }
-       
-        applySelectionStyles();
-        updateBulkActionBar(cachedProjects.length);
+        applySelectionStyles(); updateBulkActionBar(cachedProjects.length);
     });
 
-    tr.addEventListener('contextmenu', (e) => {
-        const status = cachedProjects.find(x => (x.id || x.ID) === pId)?.status || 'stopped';
-        showContextMenu(e, pId, p.name || p.Name, status);
-    });
-
-    tr.addEventListener('dragstart', handleDragStart); 
-    tr.addEventListener('dragover', handleDragOver);
-    tr.addEventListener('dragenter', handleDragEnter); 
-    tr.addEventListener('dragleave', handleDragLeave);
-    tr.addEventListener('drop', handleDrop); 
-    tr.addEventListener('dragend', handleDragEnd);
+    tr.addEventListener('contextmenu', (e) => { const status = cachedProjects.find(x => (x.id || x.ID) === pId)?.status || 'stopped'; showContextMenu(e, pId, p.name || p.Name, status); });
+    tr.addEventListener('dragstart', handleDragStart); tr.addEventListener('dragover', handleDragOver); tr.addEventListener('dragenter', handleDragEnter); tr.addEventListener('dragleave', handleDragLeave); tr.addEventListener('drop', handleDrop); tr.addEventListener('dragend', handleDragEnd);
     
     const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
     const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
@@ -1049,9 +774,7 @@ function createProjectRow(p, index, sourceArray) {
 
     tr.innerHTML = `
         <td class="p-4 font-bold text-gray-200 flex items-center gap-4">
-            <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-            </div>
+            <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
             <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${safeName.charAt(0).toUpperCase()}</div>
             <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
         </td>
@@ -1066,18 +789,10 @@ function createProjectRow(p, index, sourceArray) {
                     <button onclick="stopProject('${pId}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <button onclick="backupProject('${pId}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    </button>
-                    <button onclick="openEnvModal('${pId}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                    </button>
-                    <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    </button>
-                    <button onclick="openDeleteModal('${pId}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                    <button onclick="backupProject('${pId}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+                    <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
+                    <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                    <button onclick="openDeleteModal('${pId}')" class="btn-action bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(225,29,72,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                 </div>
             </div>
         </td>
@@ -1090,358 +805,163 @@ function renderProjects() {
     const githubTbody = document.getElementById('github-project-list');
     const tableContainer = document.getElementById('split-tables-container');
     const emptyState = document.getElementById('global-empty-state');
-
     if (!localTbody || !githubTbody) return;
     
-    localTbody.innerHTML = '';
-    githubTbody.innerHTML = '';
-
+    localTbody.innerHTML = ''; githubTbody.innerHTML = '';
     const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
-
     updateBulkActionBar(filteredProjects.length);
 
     if (filteredProjects.length === 0) { 
-        tableContainer.classList.add('hidden');
-        emptyState.classList.remove('hidden');
-        emptyState.classList.add('flex');
-        return; 
+        tableContainer.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex'); return; 
     } else {
-        tableContainer.classList.remove('hidden');
-        emptyState.classList.add('hidden');
-        emptyState.classList.remove('flex');
+        tableContainer.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
     }
 
     const localProjects = filteredProjects.filter(p => (p.source || p.Source) !== 'github');
     const githubProjects = filteredProjects.filter(p => (p.source || p.Source) === 'github');
 
-    if (localProjects.length === 0) {
-        localTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-indigo-400 transition-colors">No local projects found. Click here to add one.</td></tr>`;
-    } else {
-        localProjects.forEach((p, index) => {
-            localTbody.appendChild(createProjectRow(p, index, localProjects));
-        });
-    }
+    if (localProjects.length === 0) localTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-indigo-400 transition-colors">No local projects found. Click here to add one.</td></tr>`;
+    else localProjects.forEach((p, index) => { localTbody.appendChild(createProjectRow(p, index, localProjects)); });
 
-    if (githubProjects.length === 0) {
-        githubTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-emerald-400 transition-colors">No GitHub repositories found. Click here to clone one.</td></tr>`;
-    } else {
-        githubProjects.forEach((p, index) => {
-            githubTbody.appendChild(createProjectRow(p, index, githubProjects));
-        });
-    }
-
+    if (githubProjects.length === 0) githubTbody.innerHTML = `<tr onclick="openModal()" class="cursor-pointer hover:bg-gray-800/40 transition-colors group"><td colspan="5" class="p-6 text-center text-gray-500 font-medium text-xs italic group-hover:text-emerald-400 transition-colors">No GitHub repositories found. Click here to clone one.</td></tr>`;
+    else githubProjects.forEach((p, index) => { githubTbody.appendChild(createProjectRow(p, index, githubProjects)); });
     applySelectionStyles();
 }
 
 function updateBulkActionBar(filteredCount) {
-    const container = document.getElementById('bulk-actions-container');
-    const name = document.getElementById('bulk-tag-name');
-    const count = document.getElementById('bulk-project-count');
-    
+    const container = document.getElementById('bulk-actions-container'); const name = document.getElementById('bulk-tag-name'); const count = document.getElementById('bulk-project-count');
     if (!container || !name || !count) return;
-
     if (selectedProjectIds.size > 0) {
-        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`;
-        count.innerText = `${selectedProjectIds.size} proje`;
-        container.style.display = '';
-        container.classList.remove('hidden');
-        container.classList.add('flex');
+        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">✓</span> Seçilen Ögeler`; count.innerText = `${selectedProjectIds.size} proje`; container.style.display = ''; container.classList.remove('hidden'); container.classList.add('flex');
     } else if (currentTagFilter !== null) {
-        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`;
-        count.innerText = `${filteredCount} proje`;
-        container.style.display = '';
-        container.classList.remove('hidden');
-        container.classList.add('flex');
+        name.innerHTML = `<span class="text-indigo-500 font-bold opacity-75">#</span> ${currentTagFilter}`; count.innerText = `${filteredCount} proje`; container.style.display = ''; container.classList.remove('hidden'); container.classList.add('flex');
     } else {
-        container.style.display = 'none';
-        container.classList.remove('flex');
-        container.classList.add('hidden');
+        container.style.display = 'none'; container.classList.remove('flex'); container.classList.add('hidden');
     }
 }
  
 function applySelectionStyles() {
     ['local-project-list', 'github-project-list'].forEach(tbodyId => {
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody) return;
-        
+        const tbody = document.getElementById(tbodyId); if (!tbody) return;
         Array.from(tbody.children).forEach(tr => {
-            const id = tr.dataset.id;
-            if (!id) return; 
-            
-            if (selectedProjectIds.has(id)) {
-                tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
-                tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10', 'bg-indigo-500/20');
-            } else {
-                tr.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10', 'bg-indigo-500/20');
-                tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
-            }
+            const id = tr.dataset.id; if (!id) return; 
+            if (selectedProjectIds.has(id)) { tr.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]'); tr.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40', 'bg-indigo-500/10', 'bg-indigo-500/20'); } 
+            else { tr.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]', 'bg-indigo-500/10', 'bg-indigo-500/20'); tr.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40'); }
         });
     });
 }
 
 async function loadProjects() {
     try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error("API error");
-        
-        cachedProjects = await response.json();
-        renderSidebarTags(cachedProjects);
-        renderProjects();
-    } catch (e) {
-        console.error("Projeler yüklenemedi:", e);
-    }
+        const response = await fetch('/api/projects'); if (!response.ok) throw new Error("API error");
+        cachedProjects = await response.json(); renderSidebarTags(cachedProjects); renderProjects();
+    } catch (e) { console.error("Projeler yüklenemedi:", e); }
 }
 
 function setFilter(tag) {
-    currentTagFilter = tag; 
-    selectedProjectIds.clear();
-    activeSelectionSource = null;
-    loadProjects();
-    
-    document.querySelectorAll('.tag-filter-btn').forEach(btn => { 
-        btn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 pr-8 truncate group/btn";
-    });
-    
-    const activeId = tag === null ? 'btn-filter-all' : `btn-filter-${tag}`; 
-    const activeBtn = document.getElementById(activeId);
-    
-    if (activeBtn) { 
-        activeBtn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-indigo-500/20 flex items-center gap-2 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1] pr-8 truncate group/btn";
-    }
+    currentTagFilter = tag; selectedProjectIds.clear(); activeSelectionSource = null; loadProjects();
+    document.querySelectorAll('.tag-filter-btn').forEach(btn => { btn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 pr-8 truncate group/btn"; });
+    const activeBtn = document.getElementById(tag === null ? 'btn-filter-all' : `btn-filter-${tag}`); 
+    if (activeBtn) activeBtn.className = "flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-indigo-500/20 flex items-center gap-2 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1] pr-8 truncate group/btn";
 }
 
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
-    const dynamicTags = projects.map(p => p.tag).filter(t => t && t.trim() !== '');
+    availableTags = [...new Set([...projects.map(p => p.tag).filter(t => t && t.trim() !== ''), ...globalSavedTags])].sort();
+    const tagList = document.getElementById('tag-list'); if (!tagList) return;
     
-    availableTags = [...new Set([...dynamicTags, ...globalSavedTags])].sort();
-    
-    const tagList = document.getElementById('tag-list'); 
-    if (!tagList) return;
-    
-    tagList.innerHTML = `
-        <button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn">
-            <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-            <span class="font-semibold tracking-wide">All Projects</span>
-        </button>
-    `;
+    tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn"><svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg><span class="font-semibold tracking-wide">All Projects</span></button>`;
     
     availableTags.forEach(tag => { 
         const isActive = currentTagFilter === tag; 
-        tagList.innerHTML += `
-            <div class="flex items-center group relative mb-1">
-                <button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 ${isActive ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} pr-8 truncate group/btn">
-                    <span class="text-indigo-500/50 font-black text-lg leading-none group-hover/btn:text-indigo-400 transition-colors">#</span> 
-                    <span class="font-semibold tracking-wide">${tag}</span>
-                </button>
-                <button onclick="openTagModal('${tag}')" class="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-indigo-400 transition-all rounded-md bg-[#11151f] border border-gray-700 hover:bg-gray-800 hover:scale-110 shadow-lg z-10" title="Manage Tag">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </button>
-            </div>
-        `; 
+        tagList.innerHTML += `<div class="flex items-center group relative mb-1"><button id="btn-filter-${tag}" onclick="setFilter('${tag}')" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 ${isActive ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} pr-8 truncate group/btn"><span class="text-indigo-500/50 font-black text-lg leading-none group-hover/btn:text-indigo-400 transition-colors">#</span> <span class="font-semibold tracking-wide">${tag}</span></button><button onclick="openTagModal('${tag}')" class="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-indigo-400 transition-all rounded-md bg-[#11151f] border border-gray-700 hover:bg-gray-800 hover:scale-110 shadow-lg z-10" title="Manage Tag"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button></div>`; 
     });
 }
 
 function openTagModal(tag = null) {
     document.getElementById('tagModalTitle').innerText = tag ? `Manage: #${tag}` : 'Create New Tag';
-    document.getElementById('tagOriginalName').value = tag || '';
-    document.getElementById('tagNewName').value = tag || '';
+    document.getElementById('tagOriginalName').value = tag || ''; document.getElementById('tagNewName').value = tag || '';
+    const btnDelete = document.getElementById('btnDeleteTag'); if (tag) btnDelete.classList.remove('hidden'); else btnDelete.classList.add('hidden');
+    const projectList = document.getElementById('tagProjectList'); projectList.innerHTML = '';
     
-    const btnDelete = document.getElementById('btnDeleteTag');
-    if (tag) btnDelete.classList.remove('hidden');
-    else btnDelete.classList.add('hidden');
-
-    const projectList = document.getElementById('tagProjectList');
-    projectList.innerHTML = '';
-    
-    if (cachedProjects.length === 0) {
-        projectList.innerHTML = '<span class="text-xs text-gray-500 italic">No projects available.</span>';
-    } else {
+    if (cachedProjects.length === 0) projectList.innerHTML = '<span class="text-xs text-gray-500 italic">No projects available.</span>';
+    else {
         cachedProjects.forEach(p => {
-            const isAssigned = p.tag === tag;
-            const pId = p.id || p.ID;
-            const safeName = p.name || p.Name;
-            
-            projectList.innerHTML += `
-                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors border border-transparent hover:border-gray-700/50">
-                    <div class="relative flex items-center shrink-0">
-                        <input type="checkbox" name="tagProjectIds" value="${pId}" class="sr-only peer" ${isAssigned ? 'checked' : ''}>
-                        <div class="w-5 h-5 bg-gray-900 border border-gray-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-400 transition-colors flex items-center justify-center">
-                            <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                        </div>
-                    </div>
-                    <span class="text-sm font-bold text-gray-300 select-none">${safeName}</span>
-                </label>
-            `;
+            const isAssigned = p.tag === tag; const pId = p.id || p.ID; const safeName = p.name || p.Name;
+            projectList.innerHTML += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors border border-transparent hover:border-gray-700/50"><div class="relative flex items-center shrink-0"><input type="checkbox" name="tagProjectIds" value="${pId}" class="sr-only peer" ${isAssigned ? 'checked' : ''}><div class="w-5 h-5 bg-gray-900 border border-gray-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-400 transition-colors flex items-center justify-center"><svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></div><span class="text-sm font-bold text-gray-300 select-none">${safeName}</span></label>`;
         });
     }
-    
-    document.getElementById('tagModal').classList.remove('hidden');
-    document.getElementById('tagModal').classList.add('flex');
+    document.getElementById('tagModal').classList.remove('hidden'); document.getElementById('tagModal').classList.add('flex');
 }
 
-function closeTagModal() {
-    document.getElementById('tagModal').classList.remove('flex');
-    document.getElementById('tagModal').classList.add('hidden');
-    document.getElementById('tagForm').reset();
-}
+function closeTagModal() { document.getElementById('tagModal').classList.remove('flex'); document.getElementById('tagModal').classList.add('hidden'); document.getElementById('tagForm').reset(); }
 
 async function submitTag(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalHTML = toggleButtonLoading(btn, true);
-
-    const originalTag = document.getElementById('tagOriginalName').value;
-    const newTag = document.getElementById('tagNewName').value;
-    const checkboxes = document.querySelectorAll('input[name="tagProjectIds"]:checked');
-    const projectIds = Array.from(checkboxes).map(cb => cb.value);
+    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
+    const originalTag = document.getElementById('tagOriginalName').value; const newTag = document.getElementById('tagNewName').value;
+    const projectIds = Array.from(document.querySelectorAll('input[name="tagProjectIds"]:checked')).map(cb => cb.value);
 
     try {
-        const res = await fetch('/api/tags/manage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ original_tag: originalTag, new_tag: newTag, project_ids: projectIds })
-        });
-        
-        if (res.ok) {
-            closeTagModal();
-            if (currentTagFilter === originalTag) currentTagFilter = newTag || null;
-            await loadSettings(); 
-            await loadProjects(); 
-            showToast("Tag configured successfully", "success");
-        } else {
-            const err = await res.json();
-            showToast(err.error || "Failed to configure tag", "error");
-        }
-    } catch (err) {
-        showToast("Network error", "error");
-    } finally {
-        toggleButtonLoading(btn, false, originalHTML);
-    }
+        const res = await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: originalTag, new_tag: newTag, project_ids: projectIds }) });
+        if (res.ok) { closeTagModal(); if (currentTagFilter === originalTag) currentTagFilter = newTag || null; await loadSettings(); await loadProjects(); showToast("Tag configured successfully", "success"); } 
+        else { const err = await res.json(); showToast(err.error || "Failed to configure tag", "error"); }
+    } catch (err) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 async function deleteTag() {
-    const originalTag = document.getElementById('tagOriginalName').value;
-    if (!originalTag) return;
-    
+    const originalTag = document.getElementById('tagOriginalName').value; if (!originalTag) return;
     try {
-        const res = await fetch('/api/tags/manage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ original_tag: originalTag, new_tag: "", project_ids: [] })
-        });
-        
-        if (res.ok) {
-            closeTagModal();
-            if (currentTagFilter === originalTag) currentTagFilter = null;
-            await loadSettings();
-            await loadProjects();
-            showToast("Tag deleted", "success");
-        } else {
-            const err = await res.json();
-            showToast(err.error || "Failed to delete tag", "error");
-        }
-    } catch (err) {
-        showToast("Network error", "error");
-    }
+        const res = await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: originalTag, new_tag: "", project_ids: [] }) });
+        if (res.ok) { closeTagModal(); if (currentTagFilter === originalTag) currentTagFilter = null; await loadSettings(); await loadProjects(); showToast("Tag deleted", "success"); } 
+        else { const err = await res.json(); showToast(err.error || "Failed to delete tag", "error"); }
+    } catch (err) { showToast("Network error", "error"); }
 }
 
 function initTagAutocomplete(inputId, dropdownId) {
-    const input = document.getElementById(inputId); 
-    const dropdown = document.getElementById(dropdownId); 
-    if (!input || !dropdown) return;
-    
-    input.addEventListener('focus', () => update(input.value)); 
-    input.addEventListener('input', (e) => update(e.target.value)); 
-    input.addEventListener('blur', () => setTimeout(() => dropdown.classList.add('hidden'), 200));
-    
+    const input = document.getElementById(inputId); const dropdown = document.getElementById(dropdownId); if (!input || !dropdown) return;
+    input.addEventListener('focus', () => update(input.value)); input.addEventListener('input', (e) => update(e.target.value)); input.addEventListener('blur', () => setTimeout(() => dropdown.classList.add('hidden'), 200));
     function update(text) {
         const filtered = availableTags.filter(t => t.toLowerCase().includes(text.toLowerCase()));
-        
-        if (filtered.length === 0) { 
-            dropdown.classList.add('hidden'); 
-            return; 
-        }
-        
+        if (filtered.length === 0) { dropdown.classList.add('hidden'); return; }
         dropdown.innerHTML = '';
         filtered.forEach(tag => {
-            const div = document.createElement('div'); 
-            div.className = 'px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white cursor-pointer'; 
-            div.textContent = tag;
-            div.onmousedown = (e) => { 
-                e.preventDefault(); 
-                input.value = tag; 
-                dropdown.classList.add('hidden'); 
-            }; 
-            dropdown.appendChild(div);
+            const div = document.createElement('div'); div.className = 'px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white cursor-pointer'; div.textContent = tag;
+            div.onmousedown = (e) => { e.preventDefault(); input.value = tag; dropdown.classList.add('hidden'); }; dropdown.appendChild(div);
         }); 
         dropdown.classList.remove('hidden');
     }
 }
 
 function toggleWorkspaceMode() {
-    const useWs = document.getElementById('useWorkspace').checked;
-    const prefix = document.getElementById('workspacePrefix'); 
-    const input = document.getElementById('projPath');
-    
+    const useWs = document.getElementById('useWorkspace').checked; const prefix = document.getElementById('workspacePrefix'); const input = document.getElementById('projPath');
     if(useWs) {
-        prefix.classList.remove('hidden'); 
-        input.classList.remove('rounded-l-lg'); 
-        input.classList.add('border-l-0');
-        
+        prefix.classList.remove('hidden'); input.classList.remove('rounded-l-lg'); input.classList.add('border-l-0');
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        prefix.title = formattedWs; 
-        prefix.innerText = formatWorkspacePath(globalWorkspace); 
-        input.placeholder = "folder_name";
+        prefix.title = formattedWs; prefix.innerText = formatWorkspacePath(globalWorkspace); input.placeholder = "folder_name";
     } else {
-        prefix.classList.add('hidden'); 
-        input.classList.add('rounded-l-lg'); 
-        input.classList.remove('border-l-0');
-        input.placeholder = "C:/Users/Diony/Desktop/bot";
+        prefix.classList.add('hidden'); input.classList.add('rounded-l-lg'); input.classList.remove('border-l-0'); input.placeholder = "C:/Users/Diony/Desktop/bot";
     }
 }
 
 async function browseFolder(inputId, handleWorkspace = true) {
     try {
-        const res = await fetch('/api/system/browse'); 
-        const data = await res.json();
-        
+        const res = await fetch('/api/system/browse'); const data = await res.json();
         if (data.path && data.path !== "") {
             document.getElementById(inputId).value = data.path;
-            
-            if (handleWorkspace) { 
-                const wsCheckbox = document.getElementById('useWorkspace'); 
-                if (wsCheckbox.checked) { 
-                    wsCheckbox.checked = false; 
-                    toggleWorkspaceMode(); 
-                } 
-            }
+            if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
         }
-    } catch (e) { 
-        showToast("Failed to open native folder picker.", "error"); 
-    }
+    } catch (e) { showToast("Failed to open native folder picker.", "error"); }
 }
 
 function toggleSourceMode() {
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const localWrapper = document.getElementById('localFlowWrapper'); 
-    const githubWrapper = document.getElementById('githubFlowWrapper');
-    const projName = document.getElementById('projName'); 
-    const projPath = document.getElementById('projPath'); 
-    const repoUrl = document.getElementById('repoUrl');
+    const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
+    const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
 
     if (mode === 'local') {
-        localWrapper.classList.remove('hidden'); 
-        githubWrapper.classList.add('hidden');
-        projName.required = true; 
-        projPath.required = true; 
-        repoUrl.required = false;
+        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden'); projName.required = true; projPath.required = true; repoUrl.required = false;
     } else {
-        localWrapper.classList.add('hidden'); 
-        githubWrapper.classList.remove('hidden');
-        projName.required = false; 
-        projPath.required = false; 
-        repoUrl.required = true;
+        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden'); projName.required = false; projPath.required = false; repoUrl.required = true;
     }
 }
 
@@ -1452,97 +972,45 @@ async function loadSettings() {
             const settings = await response.json();
             globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
             document.getElementById('setting-workspace').value = globalWorkspace;
-            
-            if (settings.global_env) {
-                document.getElementById('setting-global-env').value = settings.global_env;
-                globalEnvText = settings.global_env;
-            } else {
-                globalEnvText = "";
-            }
-            
+            if (settings.global_env) { document.getElementById('setting-global-env').value = settings.global_env; globalEnvText = settings.global_env; } else globalEnvText = "";
             globalSavedTags = settings.saved_tags || [];
-            
             toggleWorkspaceMode(); 
         }
-    } catch (e) {
-        console.error("Settings load error", e);
-    }
+    } catch (e) { console.error("Settings load error", e); }
 }
 
 async function saveSettings() {
-    const btn = document.getElementById('save-settings-btn'); 
-    const originalHTML = toggleButtonLoading(btn, true);
-    
+    const btn = document.getElementById('save-settings-btn'); const originalHTML = toggleButtonLoading(btn, true);
     globalWorkspace = document.getElementById('setting-workspace').value;
-    const globalEnv = document.getElementById('setting-global-env').value;
-    globalEnvText = globalEnv; 
-    
+    const globalEnv = document.getElementById('setting-global-env').value; globalEnvText = globalEnv; 
     try {
-        const response = await fetch('/api/settings', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ workspace: globalWorkspace, log_buffer: false, global_env: globalEnv }) 
-        });
-        
-        if (response.ok) { 
-            showToast("System settings applied.", "success"); 
-            toggleWorkspaceMode(); 
-        } else { 
-            const err = await response.json(); 
-            showToast(err.error, "error"); 
-        }
-    } catch (e) { 
-        showToast("Server error.", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, log_buffer: false, global_env: globalEnv }) });
+        if (response.ok) { showToast("System settings applied.", "success"); toggleWorkspaceMode(); } 
+        else { const err = await response.json(); showToast(err.error, "error"); }
+    } catch (e) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
-// YENİ: Checkbox bazlı Add Env Toggle mantığı
 function toggleAddEnvMode(clickedType) {
-    const globalCb = document.getElementById('addEnvGlobal');
-    const customCb = document.getElementById('addEnvCustom');
+    const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
+    if (clickedType === 'global' && globalCb && globalCb.checked) { if(customCb) customCb.checked = false; } 
+    else if (clickedType === 'custom' && customCb && customCb.checked) { if(globalCb) globalCb.checked = false; }
     
-    if (clickedType === 'global' && globalCb && globalCb.checked) {
-        if(customCb) customCb.checked = false;
-    } else if (clickedType === 'custom' && customCb && customCb.checked) {
-        if(globalCb) globalCb.checked = false;
-    }
+    const globalPreview = document.getElementById('addEnvGlobalPreview'); const customWrapper = document.getElementById('addEnvCustomWrapper'); const noneWarning = document.getElementById('addEnvNoneWarning');
+    if (globalPreview) globalPreview.classList.add('hidden'); if (customWrapper) customWrapper.classList.add('hidden'); if (noneWarning) { noneWarning.classList.add('hidden'); noneWarning.classList.remove('flex'); }
     
-    const globalPreview = document.getElementById('addEnvGlobalPreview');
-    const customWrapper = document.getElementById('addEnvCustomWrapper');
-    const noneWarning = document.getElementById('addEnvNoneWarning');
-    
-    if (globalPreview) globalPreview.classList.add('hidden');
-    if (customWrapper) customWrapper.classList.add('hidden');
-    if (noneWarning) noneWarning.classList.add('hidden');
-    
-    if (globalCb && globalCb.checked) {
-        globalPreview.classList.remove('hidden');
-        globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings.";
-    } else if (customCb && customCb.checked) {
-        customWrapper.classList.remove('hidden');
-    } else {
-        noneWarning.classList.remove('hidden');
-    }
+    if (globalCb && globalCb.checked) { if (globalPreview) { globalPreview.classList.remove('hidden'); globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings."; } } 
+    else if (customCb && customCb.checked) { if (customWrapper) { customWrapper.classList.remove('hidden'); } } 
+    else { if (noneWarning) { noneWarning.classList.remove('hidden'); noneWarning.classList.add('flex'); } }
 }
 
 function openModal() { 
-    document.getElementById('addModal').classList.replace('hidden', 'flex'); 
-    toggleSourceMode(); 
-    toggleWorkspaceMode(); 
-    
-    const globalCb = document.getElementById('addEnvGlobal');
-    const customCb = document.getElementById('addEnvCustom');
-    if (globalCb) globalCb.checked = false;
-    if (customCb) customCb.checked = true;
+    document.getElementById('addModal').classList.replace('hidden', 'flex'); toggleSourceMode(); toggleWorkspaceMode(); 
+    const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
+    if (globalCb) globalCb.checked = false; if (customCb) customCb.checked = false; 
     toggleAddEnvMode();
 }
 
-function closeModal() { 
-    document.getElementById('addModal').classList.replace('flex', 'hidden'); 
-    document.getElementById('addForm').reset(); 
-}
+function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); document.getElementById('addForm').reset(); }
 
 async function submitNewProject(e) {
     e.preventDefault(); 
@@ -1550,88 +1018,49 @@ async function submitNewProject(e) {
     const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value;
     const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
     
-    const globalCb = document.getElementById('addEnvGlobal');
-    const customCb = document.getElementById('addEnvCustom');
-    let finalEnv = "";
-    let createEnv = true;
+    const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
+    let finalEnv = ""; let createEnv = true;
     
-    if (globalCb && globalCb.checked) {
-        finalEnv = globalEnvText;
-    } else if (customCb && customCb.checked) {
-        finalEnv = document.getElementById('projInitialEnv').value;
-    } else {
-        finalEnv = ""; 
-        createEnv = false; 
-    }
-    
+    if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } else if (customCb && customCb.checked) { finalEnv = document.getElementById('projInitialEnv').value; } else { finalEnv = ""; createEnv = false; }
+    const clearOnStart = document.getElementById('projClearOnStart') ? document.getElementById('projClearOnStart').checked : false;
+
     try {
         if (sourceMode === 'local') {
-            let finalPath = document.getElementById('projPath').value.trim(); 
-            const useWs = document.getElementById('useWorkspace').checked;
-            
-            if (useWs) { 
-                const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/'); 
-                finalPath = formattedWs + finalPath; 
-            }
+            let finalPath = document.getElementById('projPath').value.trim(); const useWs = document.getElementById('useWorkspace').checked;
+            if (useWs) { const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/'); finalPath = formattedWs + finalPath; }
             
             const data = { 
-                name: document.getElementById('projName').value, 
-                path: finalPath, 
-                command: document.getElementById('projCmd').value, 
-                tag: document.getElementById('projTag').value, 
-                interactive: document.getElementById('projInteractive').checked, 
-                auto_start: document.getElementById('projAutoStart').checked, 
-                auto_restart: document.getElementById('projAutoRestart').checked,
-                auto_close: document.getElementById('projAutoClose').checked,
-                initial_env: finalEnv,
-                create_env: createEnv
+                name: document.getElementById('projName').value, path: finalPath, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, 
+                interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv
             };
-            
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-            
-            if (res.ok) { 
-                closeModal(); 
-                loadProjects(); 
-                showToast("Workspace created!", "success"); 
-            } else { 
-                const err = await res.json(); 
-                showToast(err.error, "error"); 
-            }
+            if (res.ok) { closeModal(); loadProjects(); showToast("Workspace created!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
         } else {
             const data = { 
-                repo_url: document.getElementById('repoUrl').value, 
-                command: document.getElementById('projCmd').value, 
-                tag: document.getElementById('projTag').value, 
-                interactive: document.getElementById('projInteractive').checked, 
-                auto_start: document.getElementById('projAutoStart').checked, 
-                auto_restart: document.getElementById('projAutoRestart').checked,
-                auto_close: document.getElementById('projAutoClose').checked,
-                initial_env: finalEnv,
-                create_env: createEnv
+                repo_url: document.getElementById('repoUrl').value, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, 
+                interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv
             };
-            
             const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
-            
-            if (res.ok) { 
-                closeModal(); 
-                loadProjects(); 
-                showToast("Repo cloned!", "success"); 
-            } else { 
-                const err = await res.json(); 
-                showToast(err.error, "error"); 
-            }
+            if (res.ok) { closeModal(); loadProjects(); showToast("Repo cloned!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
         }
-    } catch (err) { 
-        showToast("Connection failed.", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+    } catch (err) { showToast("Connection failed.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
+}
+
+function toggleEditEnvMode(clickedType) {
+    const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
+    if (clickedType === 'global' && globalCb && globalCb.checked) { if(customCb) customCb.checked = false; } 
+    else if (clickedType === 'custom' && customCb && customCb.checked) { if(globalCb) globalCb.checked = false; }
+    
+    const globalPreview = document.getElementById('editEnvGlobalPreview'); const customWrapper = document.getElementById('editEnvCustomWrapper'); const noneWarning = document.getElementById('editEnvNoneWarning');
+    if (globalPreview) globalPreview.classList.add('hidden'); if (customWrapper) { customWrapper.classList.add('hidden'); customWrapper.classList.remove('flex'); } if (noneWarning) { noneWarning.classList.add('hidden'); noneWarning.classList.remove('flex'); }
+    
+    if (globalCb && globalCb.checked) { if (globalPreview) { globalPreview.classList.remove('hidden'); globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings."; } } 
+    else if (customCb && customCb.checked) { if (customWrapper) { customWrapper.classList.remove('hidden'); customWrapper.classList.add('flex'); } } 
+    else { if (noneWarning) { noneWarning.classList.remove('hidden'); noneWarning.classList.add('flex'); } }
 }
 
 function openEditModal(id) {
-    const project = cachedProjects.find(p => p.id === id || p.ID === id); 
-    if (!project) return;
-    
+    const project = cachedProjects.find(p => p.id === id || p.ID === id); if (!project) return;
     document.getElementById('editProjId').value = project.id || project.ID; 
     document.getElementById('editProjName').value = project.name || project.Name; 
     document.getElementById('editProjPath').value = project.path || project.Path; 
@@ -1641,153 +1070,104 @@ function openEditModal(id) {
     document.getElementById('editProjAutoStart').checked = project.auto_start || project.AutoStart || false; 
     document.getElementById('editProjAutoRestart').checked = project.auto_restart || project.AutoRestart || false;
     document.getElementById('editProjAutoClose').checked = project.auto_close || project.AutoClose || false;
+    document.getElementById('editProjClearOnStart').checked = project.clear_on_start || project.ClearOnStart || false;
     
-    const modal = document.getElementById('editModal'); 
-    modal.classList.remove('hidden'); 
-    modal.classList.add('flex');
+    const textArea = document.getElementById('editProjInitialEnv');
+    if (textArea) textArea.value = "Loading...";
+
+    fetch(`/api/projects/env?id=${id}`)
+        .then(res => { if (res.ok) return res.json(); throw new Error("Failed"); })
+        .then(data => {
+            if (textArea) textArea.value = data.content;
+            const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
+            if (data.content.trim() === "") { if(globalCb) globalCb.checked = false; if(customCb) customCb.checked = false; } 
+            else if (data.content.trim() === globalEnvText.trim() && globalEnvText.trim() !== "") { if(globalCb) globalCb.checked = true; if(customCb) customCb.checked = false; } 
+            else { if(globalCb) globalCb.checked = false; if(customCb) customCb.checked = true; }
+            toggleEditEnvMode();
+        })
+        .catch(err => {
+            if (textArea) textArea.value = "";
+            const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
+            if(globalCb) globalCb.checked = false; if(customCb) customCb.checked = false;
+            toggleEditEnvMode();
+        });
+
+    const modal = document.getElementById('editModal'); modal.classList.remove('hidden'); modal.classList.add('flex');
 }
 
-function closeEditModal() { 
-    document.getElementById('editModal').classList.add('hidden'); 
-}
+function closeEditModal() { document.getElementById('editModal').classList.remove('flex'); document.getElementById('editModal').classList.add('hidden'); }
+function openEnvModal(id) { openEditModal(id); }
+function closeEnvModal() { closeEditModal(); }
 
 async function submitEditProject(event) {
     event.preventDefault(); 
-    const btn = event.target.querySelector('button[type="submit"]'); 
-    const originalHTML = toggleButtonLoading(btn, true);
-    
+    const btn = event.target.querySelector('button[type="submit"]'); const originalHTML = toggleButtonLoading(btn, true);
+    const globalCb = document.getElementById('editEnvGlobal'); const customCb = document.getElementById('editEnvCustom');
+
+    let finalEnv = ""; let createEnv = true; let deleteEnv = false;
+
+    if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } 
+    else if (customCb && customCb.checked) { finalEnv = document.getElementById('editProjInitialEnv').value; } 
+    else { finalEnv = ""; createEnv = false; deleteEnv = true; }
+
     const updatedProject = { 
-        id: document.getElementById('editProjId').value, 
-        name: document.getElementById('editProjName').value, 
-        path: document.getElementById('editProjPath').value, 
-        command: document.getElementById('editProjCmd').value, 
-        tag: document.getElementById('editProjTag').value, 
-        interactive: document.getElementById('editProjInteractive').checked, 
-        auto_start: document.getElementById('editProjAutoStart').checked, 
-        auto_restart: document.getElementById('editProjAutoRestart').checked,
-        auto_close: document.getElementById('editProjAutoClose').checked
+        id: document.getElementById('editProjId').value, name: document.getElementById('editProjName').value, path: document.getElementById('editProjPath').value, command: document.getElementById('editProjCmd').value, 
+        tag: document.getElementById('editProjTag').value, interactive: document.getElementById('editProjInteractive').checked, auto_start: document.getElementById('editProjAutoStart').checked, auto_restart: document.getElementById('editProjAutoRestart').checked, 
+        auto_close: document.getElementById('editProjAutoClose').checked, clear_on_start: document.getElementById('editProjClearOnStart').checked, initial_env: finalEnv, create_env: createEnv, delete_env: deleteEnv
     };
     
     try {
-        const response = await fetch('/api/projects/update', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(updatedProject) 
-        });
-        
-        if (response.ok) { 
-            closeEditModal(); 
-            loadProjects(); 
-            showToast("Project updated!", "success"); 
-        } else { 
-            const err = await response.json(); 
-            showToast(err.error, "error"); 
-        }
-    } catch (e) { 
-        showToast("Server error", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        const response = await fetch('/api/projects/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedProject) });
+        if (response.ok) { closeEditModal(); loadProjects(); showToast("Project settings & environment updated successfully!", "success"); } 
+        else { const err = await response.json(); showToast(err.error, "error"); }
+    } catch (e) { showToast("Server error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 function openDeleteModal(id) { 
-    const project = cachedProjects.find(p => p.id === id || p.ID === id);
-    const source = project ? (project.source || project.Source || 'local') : 'local';
-    const tag = project ? (project.tag || project.Tag) : null;
-    
-    const checkboxContainer = document.getElementById('deleteFilesContainer');
-    const warningText = document.getElementById('deleteLocalWarning');
-    const checkbox = document.getElementById('deleteFilesFromDisk');
+    const project = cachedProjects.find(p => p.id === id || p.ID === id); const source = project ? (project.source || project.Source || 'local') : 'local'; const tag = project ? (project.tag || project.Tag) : null;
+    const checkboxContainer = document.getElementById('deleteFilesContainer'); const warningText = document.getElementById('deleteLocalWarning'); const checkbox = document.getElementById('deleteFilesFromDisk');
     
     if (checkboxContainer && warningText && checkbox) {
-        if (source === 'github') {
-            checkboxContainer.classList.remove('hidden');
-            warningText.classList.add('hidden');
-        } else {
-            checkboxContainer.classList.add('hidden');
-            warningText.classList.remove('hidden');
-            checkbox.checked = false;
-        }
+        if (source === 'github') { checkboxContainer.classList.remove('hidden'); warningText.classList.add('hidden'); } 
+        else { checkboxContainer.classList.add('hidden'); warningText.classList.remove('hidden'); checkbox.checked = false; }
     }
 
-    const tagContainer = document.getElementById('deleteTagContainer');
-    const tagCheckbox = document.getElementById('deleteOrphanedTag');
-    const tagNameSpan = document.getElementById('orphanTagName');
-    
+    const tagContainer = document.getElementById('deleteTagContainer'); const tagCheckbox = document.getElementById('deleteOrphanedTag'); const tagNameSpan = document.getElementById('orphanTagName');
     tagToOrphan = null;
     if (tagContainer && tagCheckbox && tagNameSpan) {
         if (tag) {
             const remaining = cachedProjects.filter(p => (p.tag === tag || p.Tag === tag) && (p.id !== id && p.ID !== id));
-            if (remaining.length === 0) {
-                tagToOrphan = tag;
-                tagNameSpan.innerText = `#${tag}`;
-                tagContainer.classList.remove('hidden');
-                tagCheckbox.checked = false; 
-            } else {
-                tagContainer.classList.add('hidden');
-                tagCheckbox.checked = false;
-            }
-        } else {
-            tagContainer.classList.add('hidden');
-            tagCheckbox.checked = false;
-        }
+            if (remaining.length === 0) { tagToOrphan = tag; tagNameSpan.innerText = `#${tag}`; tagContainer.classList.remove('hidden'); tagCheckbox.checked = false; } 
+            else { tagContainer.classList.add('hidden'); tagCheckbox.checked = false; }
+        } else { tagContainer.classList.add('hidden'); tagCheckbox.checked = false; }
     }
-
-    projectToDelete = id; 
-    document.getElementById('deleteModal').classList.replace('hidden', 'flex'); 
+    projectToDelete = id; document.getElementById('deleteModal').classList.replace('hidden', 'flex'); 
 }
 
 function closeDeleteModal() { 
     document.getElementById('deleteModal').classList.replace('flex', 'hidden'); 
-    const diskCb = document.getElementById('deleteFilesFromDisk');
-    if (diskCb) diskCb.checked = false; 
-    const tagCb = document.getElementById('deleteOrphanedTag');
-    if (tagCb) tagCb.checked = false;
-    tagToOrphan = null;
-    projectToDelete = null; 
+    const diskCb = document.getElementById('deleteFilesFromDisk'); if (diskCb) diskCb.checked = false; 
+    const tagCb = document.getElementById('deleteOrphanedTag'); if (tagCb) tagCb.checked = false;
+    tagToOrphan = null; projectToDelete = null; 
 }
 
 async function executeDelete() { 
-    const btn = document.getElementById('confirmDeleteBtn'); 
-    const originalHTML = toggleButtonLoading(btn, true); 
-    const diskCb = document.getElementById('deleteFilesFromDisk');
-    const deleteFiles = diskCb ? diskCb.checked : false;
-    
-    const deleteTagCheckbox = document.getElementById('deleteOrphanedTag');
-    const tagContainer = document.getElementById('deleteTagContainer');
-    const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
+    const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); 
+    const diskCb = document.getElementById('deleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false;
+    const deleteTagCheckbox = document.getElementById('deleteOrphanedTag'); const tagContainer = document.getElementById('deleteTagContainer'); const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
     
     try {
         const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
-        
         if(res.ok) { 
             if (shouldDeleteTag && tagToOrphan) {
-                await fetch('/api/tags/manage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ original_tag: tagToOrphan, new_tag: "", project_ids: [] })
-                });
-                if (currentTagFilter === tagToOrphan) currentTagFilter = null;
-                await loadSettings();
+                await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: tagToOrphan, new_tag: "", project_ids: [] }) });
+                if (currentTagFilter === tagToOrphan) currentTagFilter = null; await loadSettings();
             }
-
-            closeDeleteModal(); 
-            selectedProjectIds.delete(projectToDelete);
-            loadProjects(); 
-            if (deleteFiles) showToast("Files deleted", "success"); 
-            else showToast("Project removed", "success"); 
-        } else { 
-            const data = await res.json(); 
-            showToast(data.error, "error"); 
-            closeDeleteModal(); 
-        }
-    } catch (err) { 
-        showToast("Failed to delete", "error"); 
-        closeDeleteModal(); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-        if (diskCb) diskCb.checked = false; 
-        if (deleteTagCheckbox) deleteTagCheckbox.checked = false;
+            closeDeleteModal(); selectedProjectIds.delete(projectToDelete); loadProjects(); 
+            if (deleteFiles) showToast("Files deleted", "success"); else showToast("Project removed", "success"); 
+        } else { const data = await res.json(); showToast(data.error, "error"); closeDeleteModal(); }
+    } catch (err) { showToast("Failed to delete", "error"); closeDeleteModal(); } finally { 
+        toggleButtonLoading(btn, false, originalHTML); if (diskCb) diskCb.checked = false; if (deleteTagCheckbox) deleteTagCheckbox.checked = false;
     }
 }
 
@@ -1795,314 +1175,135 @@ function confirmBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
-    
     if (idsToProcess.length === 0) return;
 
-    let hasLocal = false;
-    const processSet = new Set(idsToProcess);
-    const tagCounts = {}; 
-    const tagDeletes = {}; 
-
+    let hasLocal = false; const processSet = new Set(idsToProcess); const tagCounts = {}; const tagDeletes = {}; 
     cachedProjects.forEach(p => {
-        const pId = p.id || p.ID;
-        const source = p.source || p.Source || 'local';
-        const t = p.tag || p.Tag;
-        
+        const pId = p.id || p.ID; const source = p.source || p.Source || 'local'; const t = p.tag || p.Tag;
         if (processSet.has(pId) && source !== 'github') hasLocal = true;
-        
-        if (t) {
-            tagCounts[t] = (tagCounts[t] || 0) + 1;
-            if (processSet.has(pId)) {
-                tagDeletes[t] = (tagDeletes[t] || 0) + 1;
-            }
-        }
+        if (t) { tagCounts[t] = (tagCounts[t] || 0) + 1; if (processSet.has(pId)) { tagDeletes[t] = (tagDeletes[t] || 0) + 1; } }
     });
 
-    const checkboxContainer = document.getElementById('bulkDeleteFilesContainer');
-    const warningText = document.getElementById('bulkDeleteLocalWarning');
-    const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
-
+    const checkboxContainer = document.getElementById('bulkDeleteFilesContainer'); const warningText = document.getElementById('bulkDeleteLocalWarning'); const checkbox = document.getElementById('bulkDeleteFilesFromDisk');
     if (checkboxContainer && warningText && checkbox) {
-        if (!hasLocal) {
-            checkboxContainer.classList.remove('hidden');
-            warningText.classList.add('hidden');
-        } else {
-            checkboxContainer.classList.add('hidden');
-            warningText.classList.remove('hidden');
-            checkbox.checked = false;
-        }
+        if (!hasLocal) { checkboxContainer.classList.remove('hidden'); warningText.classList.add('hidden'); } 
+        else { checkboxContainer.classList.add('hidden'); warningText.classList.remove('hidden'); checkbox.checked = false; }
     }
 
     tagsToOrphanBulk = [];
-    for (const t in tagDeletes) {
-        if (tagCounts[t] === tagDeletes[t]) {
-            tagsToOrphanBulk.push(t);
-        }
-    }
+    for (const t in tagDeletes) { if (tagCounts[t] === tagDeletes[t]) { tagsToOrphanBulk.push(t); } }
 
-    const tagContainer = document.getElementById('bulkDeleteTagContainer');
-    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags');
-    const tagNameSpan = document.getElementById('bulkOrphanTagNames');
-
+    const tagContainer = document.getElementById('bulkDeleteTagContainer'); const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags'); const tagNameSpan = document.getElementById('bulkOrphanTagNames');
     if (tagContainer && tagCheckbox && tagNameSpan) {
-        if (tagsToOrphanBulk.length > 0) {
-            tagNameSpan.innerText = tagsToOrphanBulk.map(t => `#${t}`).join(', ');
-            tagContainer.classList.remove('hidden');
-            tagCheckbox.checked = false; 
-        } else {
-            tagContainer.classList.add('hidden');
-            tagCheckbox.checked = false;
-        }
+        if (tagsToOrphanBulk.length > 0) { tagNameSpan.innerText = tagsToOrphanBulk.map(t => `#${t}`).join(', '); tagContainer.classList.remove('hidden'); tagCheckbox.checked = false; } 
+        else { tagContainer.classList.add('hidden'); tagCheckbox.checked = false; }
     }
 
-    const countText = document.getElementById('bulkDeleteCount');
-    if(countText) countText.innerText = idsToProcess.length;
-    
-    const modal = document.getElementById('bulkDeleteModal');
-    if(modal) { 
-        modal.classList.remove('hidden'); 
-        modal.classList.add('flex'); 
-    }
+    const countText = document.getElementById('bulkDeleteCount'); if(countText) countText.innerText = idsToProcess.length;
+    const modal = document.getElementById('bulkDeleteModal'); if(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
 }
  
 function closeBulkDeleteModal() { 
-    const m = document.getElementById('bulkDeleteModal'); 
-    if(m) { 
-        m.classList.remove('flex'); 
-        m.classList.add('hidden'); 
-    }
-    const c = document.getElementById('bulkDeleteFilesFromDisk'); 
-    if(c) c.checked = false; 
-    const t = document.getElementById('bulkDeleteOrphanedTags'); 
-    if(t) t.checked = false;
-    tagsToOrphanBulk = [];
+    const m = document.getElementById('bulkDeleteModal'); if(m) { m.classList.remove('flex'); m.classList.add('hidden'); }
+    const c = document.getElementById('bulkDeleteFilesFromDisk'); if(c) c.checked = false; 
+    const t = document.getElementById('bulkDeleteOrphanedTags'); if(t) t.checked = false; tagsToOrphanBulk = [];
 }
  
 async function executeBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
-    
     if (idsToProcess.length === 0) return;
 
-    const diskCb = document.getElementById('bulkDeleteFilesFromDisk');
-    const deleteFiles = diskCb ? diskCb.checked : false;
-    
-    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags');
-    const tagContainer = document.getElementById('bulkDeleteTagContainer');
-    const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
+    const diskCb = document.getElementById('bulkDeleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false;
+    const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags'); const tagContainer = document.getElementById('bulkDeleteTagContainer'); const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
 
-    const btn = document.getElementById('confirmBulkDeleteBtn');
-    const originalHTML = toggleButtonLoading(btn, true);
-    
+    const btn = document.getElementById('confirmBulkDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true);
     try {
-        const res = await fetch('/api/projects/delete-bulk', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles })
-        });
-        
+        const res = await fetch('/api/projects/delete-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: idsToProcess, remove_files: deleteFiles }) });
         if(res.ok) {
             if (shouldDeleteTags && tagsToOrphanBulk.length > 0) {
-                for (const t of tagsToOrphanBulk) {
-                    await fetch('/api/tags/manage', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ original_tag: t, new_tag: "", project_ids: [] })
-                    });
-                    if (currentTagFilter === t) currentTagFilter = null;
-                }
+                for (const t of tagsToOrphanBulk) { await fetch('/api/tags/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ original_tag: t, new_tag: "", project_ids: [] }) }); if (currentTagFilter === t) currentTagFilter = null; }
                 await loadSettings();
             }
-
-            closeBulkDeleteModal();
-            selectedProjectIds.clear(); 
-            loadProjects();
-            showToast("Projeler başarıyla silindi", "success");
-        } else {
-            const data = await res.json();
-            showToast(data.error, "error");
-            closeBulkDeleteModal();
-        }
-    } catch (err) {
-        showToast("Bağlantı hatası", "error");
-        closeBulkDeleteModal();
-    } finally {
-        toggleButtonLoading(btn, false, originalHTML);
-    }
+            closeBulkDeleteModal(); selectedProjectIds.clear(); loadProjects(); showToast("Projeler başarıyla silindi", "success");
+        } else { const data = await res.json(); showToast(data.error, "error"); closeBulkDeleteModal(); }
+    } catch (err) { showToast("Bağlantı hatası", "error"); closeBulkDeleteModal(); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 async function executeBulkAction(action) {
     let idsToProcess = [];
-    if (selectedProjectIds.size > 0) {
-        idsToProcess = Array.from(selectedProjectIds);
-    } else if (currentTagFilter) {
-        idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
-    }
-    
+    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
+    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID); }
     if (idsToProcess.length === 0) return;
 
     const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';
     const actionText = action === 'start' ? 'Başlatılıyor...' : 'Durduruluyor...';
-    
     showToast(`${idsToProcess.length} proje ${actionText}`, "success");
     
     try {
-        if (action === 'start') {
-            idsToProcess.forEach(id => {
-                const p = cachedProjects.find(x => (x.id || x.ID) === id);
-                if (p) getOrCreateTerminal(id, p.name || p.Name);
-            });
-        }
-
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(idsToProcess)
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            showToast(data.message || "İşlem başarılı", "success");
-        } else {
-            const err = await res.json();
-            showToast(err.error || "İşlem başarısız", "error");
-        }
-    } catch (e) {
-        showToast("Bağlantı hatası", "error");
-    }
+        if (action === 'start') { idsToProcess.forEach(id => { const p = cachedProjects.find(x => (x.id || x.ID) === id); if (p) getOrCreateTerminal(id, p.name || p.Name); }); }
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(idsToProcess) });
+        if (res.ok) { const data = await res.json(); showToast(data.message || "İşlem başarılı", "success"); } 
+        else { const err = await res.json(); showToast(err.error || "İşlem başarısız", "error"); }
+    } catch (e) { showToast("Bağlantı hatası", "error"); }
 }
 
-function handleDragStart(e) { 
-    draggedRow = this; 
-    e.dataTransfer.effectAllowed = 'move'; 
-    setTimeout(() => this.classList.add('opacity-50'), 0); 
-}
-
-function handleDragOver(e) { 
-    e.preventDefault(); 
-    return false; 
-}
-
-function handleDragEnter(e) { 
-    if (this !== draggedRow) {
-        this.classList.add('border-t-2', 'border-indigo-500'); 
-    }
-}
-
-function handleDragLeave() { 
-    this.classList.remove('border-t-2', 'border-indigo-500'); 
-}
-
+function handleDragStart(e) { draggedRow = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('opacity-50'), 0); }
+function handleDragOver(e) { e.preventDefault(); return false; }
+function handleDragEnter(e) { if (this !== draggedRow) { this.classList.add('border-t-2', 'border-indigo-500'); } }
+function handleDragLeave() { this.classList.remove('border-t-2', 'border-indigo-500'); }
 function handleDrop(e) {
-    e.stopPropagation(); 
-    this.classList.remove('border-t-2', 'border-indigo-500');
-    
-    if (draggedRow.parentNode !== this.parentNode) {
-        return false; 
-    }
-
+    e.stopPropagation(); this.classList.remove('border-t-2', 'border-indigo-500');
+    if (draggedRow.parentNode !== this.parentNode) { return false; }
     if (draggedRow !== this) {
-        const tbody = this.parentNode; 
-        const rows = Array.from(tbody.children);
-        const draggedIndex = rows.indexOf(draggedRow); 
-        const droppedIndex = rows.indexOf(this);
-        
-        if (draggedIndex < droppedIndex) {
-            tbody.insertBefore(draggedRow, this.nextSibling);
-        } else {
-            tbody.insertBefore(draggedRow, this); 
-        }
+        const tbody = this.parentNode; const rows = Array.from(tbody.children); const draggedIndex = rows.indexOf(draggedRow); const droppedIndex = rows.indexOf(this);
+        if (draggedIndex < droppedIndex) { tbody.insertBefore(draggedRow, this.nextSibling); } 
+        else { tbody.insertBefore(draggedRow, this); }
         saveNewOrder();
     } 
     return false;
 }
-
-function handleDragEnd() { 
-    this.classList.remove('opacity-50'); 
-    document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); 
-}
+function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
 
 async function saveNewOrder() {
-    const localBody = document.getElementById('local-project-list');
-    const githubBody = document.getElementById('github-project-list');
-    
+    const localBody = document.getElementById('local-project-list'); const githubBody = document.getElementById('github-project-list');
     const localIDs = localBody ? Array.from(localBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
     const githubIDs = githubBody ? Array.from(githubBody.children).map(tr => tr.dataset.id).filter(id => id) : [];
-    
     const newOrderIDs = [...localIDs, ...githubIDs];
-    
     try {
-        const res = await fetch('/api/projects/reorder', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(newOrderIDs) 
-        });
-        if(!res.ok) { 
-            showToast("Failed to save new order", "error"); 
-            loadProjects(); 
-        }
-    } catch(e) {
-        showToast("Network error", "error");
-    }
+        const res = await fetch('/api/projects/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrderIDs) });
+        if(!res.ok) { showToast("Failed to save new order", "error"); loadProjects(); }
+    } catch(e) { showToast("Network error", "error"); }
 }
 
 async function startProject(id, name, btn) { 
-    getOrCreateTerminal(id, name); 
-    const originalHTML = toggleButtonLoading(btn, true);
+    getOrCreateTerminal(id, name); const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { 
-            const data = await res.json(); 
-            showToast(data.error || "Failed to start", "error"); 
-        } else { 
-            showToast("Project started", "success"); 
-        }
-    } catch (e) { 
-        showToast("Network error", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
+        else { showToast("Project started", "success"); }
+    } catch (e) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 async function restartProject(id, name, btn) {
     const originalHTML = toggleButtonLoading(btn, true);
     try {
-        showToast("Restart sequence initiated...", "success");
-        await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
+        showToast("Restart sequence initiated...", "success"); await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
         await new Promise(resolve => setTimeout(resolve, 1500));
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { 
-            const data = await res.json(); 
-            showToast(data.error || "Failed to restart", "error"); 
-        } else { 
-            showToast("Project restarted successfully", "success"); 
-            getOrCreateTerminal(id, name); 
-        }
-    } catch (e) { 
-        showToast("Network error during restart", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to restart", "error"); } 
+        else { showToast("Project restarted successfully", "success"); getOrCreateTerminal(id, name); }
+    } catch (e) { showToast("Network error during restart", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 async function stopProject(id, btn) { 
     const originalHTML = toggleButtonLoading(btn, true);
     try {
         const res = await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { 
-            const data = await res.json(); 
-            if (!data.error.includes("not currently running")) {
-                showToast(data.error || "Failed to stop", "error"); 
-            }
-        } else { 
-            showToast("Project stopped", "success"); 
-        }
-    } catch (e) { 
-        showToast("Network error", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        if (!res.ok) { const data = await res.json(); if (!data.error.includes("not currently running")) { showToast(data.error || "Failed to stop", "error"); } } 
+        else { showToast("Project stopped", "success"); }
+    } catch (e) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
 async function backupProject(id, btn) {
@@ -2110,158 +1311,6 @@ async function backupProject(id, btn) {
     try {
         const res = await fetch(`/api/projects/backup?id=${id}`, { method: 'POST' });
         const data = await res.json();
-        if (res.ok) {
-            showToast(data.message, "success"); 
-        } else { 
-            showToast(data.error || "Backup failed", "error"); 
-        }
-    } catch (e) { 
-        showToast("Network error during backup", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
-}
-
-let isEnvBlurred = true;
-function toggleEnvBlur() {
-    const el = document.getElementById('envContent'); 
-    const icon = document.getElementById('envEyeIcon');
-    isEnvBlurred = !isEnvBlurred;
-    
-    if (isEnvBlurred) {
-        el.classList.add('blur-sm');
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
-    } else {
-        el.classList.remove('blur-sm');
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
-    }
-}
-
-// YENİ: Checkbox bazlı Edit Env Toggle mantığı
-function toggleEditEnvMode(clickedType) {
-    const globalCb = document.getElementById('editEnvGlobal');
-    const customCb = document.getElementById('editEnvCustom');
-    
-    if (clickedType === 'global' && globalCb && globalCb.checked) {
-        if(customCb) customCb.checked = false;
-    } else if (clickedType === 'custom' && customCb && customCb.checked) {
-        if(globalCb) globalCb.checked = false;
-    }
-    
-    const globalPreview = document.getElementById('editEnvGlobalPreview');
-    const customWrapper = document.getElementById('editEnvCustomWrapper');
-    const noneWarning = document.getElementById('editEnvNoneWarning');
-    
-    if (globalPreview) globalPreview.classList.add('hidden');
-    if (customWrapper) { customWrapper.classList.add('hidden'); customWrapper.classList.remove('flex'); }
-    if (noneWarning) { noneWarning.classList.add('hidden'); noneWarning.classList.remove('flex'); }
-    
-    if (globalCb && globalCb.checked) {
-        globalPreview.classList.remove('hidden');
-        globalPreview.innerText = globalEnvText || "No Global Environment Variables configured in Settings.";
-    } else if (customCb && customCb.checked) {
-        customWrapper.classList.remove('hidden');
-        customWrapper.classList.add('flex');
-    } else {
-        noneWarning.classList.remove('hidden');
-        noneWarning.classList.add('flex');
-    }
-}
-
-async function openEnvModal(id) {
-    const project = cachedProjects.find(p => p.id === id || p.ID === id); 
-    if (!project) return;
-    
-    document.getElementById('envProjId').value = project.id || project.ID;
-    const textArea = document.getElementById('envContent'); 
-    textArea.value = "Loading...";
-    
-    isEnvBlurred = false; 
-    toggleEnvBlur();
-    
-    const modal = document.getElementById('envModal');
-    modal.classList.remove('hidden'); 
-    modal.classList.add('flex');
-    
-    try {
-        const res = await fetch(`/api/projects/env?id=${id}`);
-        if (res.ok) { 
-            const data = await res.json(); 
-            textArea.value = data.content; 
-            
-            const globalCb = document.getElementById('editEnvGlobal');
-            const customCb = document.getElementById('editEnvCustom');
-            
-            if (data.content.trim() === "") {
-                if(globalCb) globalCb.checked = false;
-                if(customCb) customCb.checked = false;
-            } else if (data.content.trim() === globalEnvText.trim() && globalEnvText.trim() !== "") {
-                if(globalCb) globalCb.checked = true;
-                if(customCb) customCb.checked = false;
-            } else {
-                if(globalCb) globalCb.checked = false;
-                if(customCb) customCb.checked = true;
-            }
-            toggleEditEnvMode();
-            
-        } else { 
-            textArea.value = ""; 
-            const globalCb = document.getElementById('editEnvGlobal');
-            const customCb = document.getElementById('editEnvCustom');
-            if(globalCb) globalCb.checked = false;
-            if(customCb) customCb.checked = false;
-            toggleEditEnvMode();
-            showToast("Failed to load .env.", "error"); 
-        }
-    } catch (err) { 
-        textArea.value = ""; 
-        showToast("Network error", "error"); 
-    }
-}
-
-function closeEnvModal() { 
-    document.getElementById('envModal').classList.add('hidden'); 
-    document.getElementById('envForm').reset(); 
-}
-
-async function submitEnv(e) {
-    e.preventDefault(); 
-    const btn = e.target.querySelector('button[type="submit"]'); 
-    const originalHTML = toggleButtonLoading(btn, true);
-    
-    const id = document.getElementById('envProjId').value; 
-    
-    const globalCb = document.getElementById('editEnvGlobal');
-    const customCb = document.getElementById('editEnvCustom');
-    
-    let finalEnv = "";
-    let deleteEnv = false;
-    
-    if (globalCb && globalCb.checked) {
-        finalEnv = globalEnvText;
-    } else if (customCb && customCb.checked) {
-        finalEnv = document.getElementById('envContent').value;
-    } else {
-        finalEnv = ""; 
-        deleteEnv = true; 
-    }
-    
-    try {
-        const res = await fetch(`/api/projects/env?id=${id}`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ content: finalEnv, delete_env: deleteEnv }) 
-        });
-        if (res.ok) { 
-            closeEnvModal(); 
-            showToast(".env saved securely!", "success"); 
-        } else { 
-            const err = await res.json(); 
-            showToast(err.error, "error"); 
-        }
-    } catch (err) { 
-        showToast("Server error.", "error"); 
-    } finally { 
-        toggleButtonLoading(btn, false, originalHTML); 
-    }
+        if (res.ok) { showToast(data.message, "success"); } else { showToast(data.error || "Backup failed", "error"); }
+    } catch (e) { showToast("Network error during backup", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }

@@ -27,11 +27,43 @@ type Server struct {
 }
 
 func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
-	return &Server{
+	s := &Server{
 		manager:     m,
 		projects:    p,
 		broadcaster: b,
 	}
+
+	s.manager.OnExit = func(id string, name string, uptime time.Duration, isCrash bool) {
+		uptimeStr := ""
+		hrs := int(uptime.Hours())
+		mins := int(uptime.Minutes()) % 60
+		secs := int(uptime.Seconds()) % 60
+
+		if hrs > 0 {
+			uptimeStr = fmt.Sprintf("%dh %dm", hrs, mins)
+		} else if mins > 0 {
+			uptimeStr = fmt.Sprintf("%dm %ds", mins, secs)
+		} else {
+			uptimeStr = fmt.Sprintf("%ds", secs)
+		}
+
+		var projMsg, sysMsg string
+		if isCrash {
+			projMsg = fmt.Sprintf("\r\n\x1b[1;31m[DionyHub] Process crashed unexpectedly! (Uptime: %s)\x1b[0m\r\n", uptimeStr)
+			sysMsg = fmt.Sprintf("\x1b[1;31m[CRASH]\x1b[0m Project '%s' crashed after %s.", name, uptimeStr)
+		} else {
+			projMsg = fmt.Sprintf("\r\n\x1b[1;33m[DionyHub] Process stopped by user. (Uptime: %s)\x1b[0m\r\n", uptimeStr)
+			sysMsg = fmt.Sprintf("\x1b[1;33m[INFO]\x1b[0m Project '%s' stopped by user after %s.", name, uptimeStr)
+		}
+
+		projLog, _ := json.Marshal(map[string]string{"id": id, "data": projMsg})
+		s.broadcaster.Write(projLog)
+
+		// YENİ: Sadece WS'e değil, System log dosyasına da yazar
+		s.manager.WriteSystemLog(sysMsg + "\r\n")
+	}
+
+	return s
 }
 
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
@@ -47,6 +79,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/reorder", s.handleReorderProjects)
 	mux.HandleFunc("/api/projects/clone", s.handleCloneProject)
 	mux.HandleFunc("/api/projects/env", s.handleProjectEnv)
+	mux.HandleFunc("/api/projects/logs", s.handleProjectLogs)
 	mux.HandleFunc("/api/projects/backup", s.handleBackupProject)
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)
@@ -95,6 +128,59 @@ func (s *Server) startMetricsPusher() {
 		wsMsg, _ := json.Marshal(WSLog{ID: "metrics", Data: string(payload)})
 		s.broadcaster.Write(wsMsg)
 	}
+}
+
+func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"logs": ""}`))
+		return
+	}
+
+	var logPath string
+
+	// YENİ: System terminalinin logları soruluyorsa ana dizinden dionyhub_system.log okunur
+	if id == "system" {
+		logPath = "dionyhub_system.log"
+	} else {
+		s.mu.RLock()
+		var targetPath string
+		for _, p := range s.projects {
+			if p.ID == id {
+				targetPath = p.Path
+				break
+			}
+		}
+		s.mu.RUnlock()
+
+		if targetPath == "" {
+			http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+			return
+		}
+
+		logPath = filepath.Join(targetPath, "dionyhub_log", "output.log")
+	}
+
+	content, err := os.ReadFile(logPath)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"logs": ""}`))
+		return
+	}
+
+	strContent := string(content)
+	if len(strContent) > 15000 {
+		strContent = strContent[len(strContent)-15000:]
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"logs": strContent})
 }
 
 func (s *Server) handleBrowseFolder(w http.ResponseWriter, r *http.Request) {
@@ -212,22 +298,43 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updatedData config.Project
-	if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {
+	var req struct {
+		ID           string `json:"id"`
+		Name         string `json:"name"`
+		Path         string `json:"path"`
+		Command      string `json:"command"`
+		Tag          string `json:"tag"`
+		Interactive  bool   `json:"interactive"`
+		AutoStart    bool   `json:"auto_start"`
+		AutoRestart  bool   `json:"auto_restart"`
+		AutoClose    bool   `json:"auto_close"`
+		ClearOnStart bool   `json:"clear_on_start"`
+		InitialEnv   string `json:"initial_env"`
+		CreateEnv    bool   `json:"create_env"`
+		DeleteEnv    bool   `json:"delete_env"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
 		return
 	}
 
-	cleanPath := strings.TrimSpace(updatedData.Path)
+	cleanPath := strings.TrimSpace(req.Path)
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
-	updatedData.Path = cleanPath
-	updatedData.Tag = strings.TrimSpace(updatedData.Tag)
+	req.Tag = strings.TrimSpace(req.Tag)
 
-	if updatedData.ID == "" || updatedData.Name == "" || updatedData.Path == "" {
+	if req.ID == "" || req.Name == "" || cleanPath == "" {
 		http.Error(w, `{"error": "ID, Name, and Path are required"}`, http.StatusBadRequest)
 		return
+	}
+
+	envFile := filepath.Join(cleanPath, ".env")
+	if req.DeleteEnv {
+		os.Remove(envFile)
+	} else if req.CreateEnv {
+		os.WriteFile(envFile, []byte(req.InitialEnv), 0644)
 	}
 
 	s.mu.Lock()
@@ -235,15 +342,16 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	found := false
 	for i, p := range s.projects {
-		if p.ID == updatedData.ID {
-			s.projects[i].Name = updatedData.Name
-			s.projects[i].Path = updatedData.Path
-			s.projects[i].Command = updatedData.Command
-			s.projects[i].Interactive = updatedData.Interactive
-			s.projects[i].AutoStart = updatedData.AutoStart
-			s.projects[i].AutoRestart = updatedData.AutoRestart
-			s.projects[i].AutoClose = updatedData.AutoClose
-			s.projects[i].Tag = updatedData.Tag
+		if p.ID == req.ID {
+			s.projects[i].Name = req.Name
+			s.projects[i].Path = cleanPath
+			s.projects[i].Command = req.Command
+			s.projects[i].Interactive = req.Interactive
+			s.projects[i].AutoStart = req.AutoStart
+			s.projects[i].AutoRestart = req.AutoRestart
+			s.projects[i].AutoClose = req.AutoClose
+			s.projects[i].ClearOnStart = req.ClearOnStart
+			s.projects[i].Tag = req.Tag
 			found = true
 			break
 		}
@@ -265,16 +373,17 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Path        string `json:"path"`
-		Command     string `json:"command"`
-		Tag         string `json:"tag"`
-		Interactive bool   `json:"interactive"`
-		AutoStart   bool   `json:"auto_start"`
-		AutoRestart bool   `json:"auto_restart"`
-		AutoClose   bool   `json:"auto_close"`
-		InitialEnv  string `json:"initial_env"`
-		CreateEnv   bool   `json:"create_env"` // YENİ EKLENDİ
+		Name         string `json:"name"`
+		Path         string `json:"path"`
+		Command      string `json:"command"`
+		Tag          string `json:"tag"`
+		Interactive  bool   `json:"interactive"`
+		AutoStart    bool   `json:"auto_start"`
+		AutoRestart  bool   `json:"auto_restart"`
+		AutoClose    bool   `json:"auto_close"`
+		ClearOnStart bool   `json:"clear_on_start"`
+		InitialEnv   string `json:"initial_env"`
+		CreateEnv    bool   `json:"create_env"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -292,24 +401,24 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Sadece CreateEnv true ise dosya oluştur.
 	if req.CreateEnv {
 		envPath := filepath.Join(cleanPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
 
 	newProj := config.Project{
-		ID:          fmt.Sprintf("%d", time.Now().UnixMilli()),
-		Name:        req.Name,
-		Path:        cleanPath,
-		Command:     req.Command,
-		Tag:         req.Tag,
-		Interactive: req.Interactive,
-		AutoStart:   req.AutoStart,
-		AutoRestart: req.AutoRestart,
-		AutoClose:   req.AutoClose,
-		Source:      "local",
-		Status:      "stopped",
+		ID:           fmt.Sprintf("%d", time.Now().UnixMilli()),
+		Name:         req.Name,
+		Path:         cleanPath,
+		Command:      req.Command,
+		Tag:          req.Tag,
+		Interactive:  req.Interactive,
+		AutoStart:    req.AutoStart,
+		AutoRestart:  req.AutoRestart,
+		AutoClose:    req.AutoClose,
+		ClearOnStart: req.ClearOnStart,
+		Source:       "local",
+		Status:       "stopped",
 	}
 
 	s.mu.Lock()
@@ -330,15 +439,16 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		RepoURL     string `json:"repo_url"`
-		Command     string `json:"command"`
-		Tag         string `json:"tag"`
-		Interactive bool   `json:"interactive"`
-		AutoStart   bool   `json:"auto_start"`
-		AutoRestart bool   `json:"auto_restart"`
-		AutoClose   bool   `json:"auto_close"`
-		InitialEnv  string `json:"initial_env"`
-		CreateEnv   bool   `json:"create_env"` // YENİ EKLENDİ
+		RepoURL      string `json:"repo_url"`
+		Command      string `json:"command"`
+		Tag          string `json:"tag"`
+		Interactive  bool   `json:"interactive"`
+		AutoStart    bool   `json:"auto_start"`
+		AutoRestart  bool   `json:"auto_restart"`
+		AutoClose    bool   `json:"auto_close"`
+		ClearOnStart bool   `json:"clear_on_start"`
+		InitialEnv   string `json:"initial_env"`
+		CreateEnv    bool   `json:"create_env"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -386,24 +496,24 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YENİ: Sadece CreateEnv true ise dosya oluştur.
 	if req.CreateEnv {
 		envPath := filepath.Join(destPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
 	}
 
 	newProj := config.Project{
-		ID:          fmt.Sprintf("%d", time.Now().UnixMilli()),
-		Name:        repoName,
-		Path:        destPath,
-		Command:     req.Command,
-		Tag:         req.Tag,
-		Interactive: req.Interactive,
-		AutoStart:   req.AutoStart,
-		AutoRestart: req.AutoRestart,
-		AutoClose:   req.AutoClose,
-		Source:      "github",
-		Status:      "stopped",
+		ID:           fmt.Sprintf("%d", time.Now().UnixMilli()),
+		Name:         repoName,
+		Path:         destPath,
+		Command:      req.Command,
+		Tag:          req.Tag,
+		Interactive:  req.Interactive,
+		AutoStart:    req.AutoStart,
+		AutoRestart:  req.AutoRestart,
+		AutoClose:    req.AutoClose,
+		ClearOnStart: req.ClearOnStart,
+		Source:       "github",
+		Status:       "stopped",
 	}
 
 	s.mu.Lock()
@@ -591,6 +701,14 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if target.ClearOnStart {
+		logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+		os.WriteFile(logPath, []byte(""), 0666)
+
+		wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
+		s.broadcaster.Write(wsMsg)
+	}
+
 	parts := strings.Fields(target.Command)
 	if len(parts) == 0 {
 		http.Error(w, `{"error": "Invalid command configuration"}`, http.StatusInternalServerError)
@@ -667,6 +785,14 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		s.mu.RUnlock()
 
 		if target != nil {
+			if target.ClearOnStart {
+				logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+				os.WriteFile(logPath, []byte(""), 0666)
+
+				wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
+				s.broadcaster.Write(wsMsg)
+			}
+
 			parts := strings.Fields(target.Command)
 			if len(parts) > 0 {
 				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
@@ -746,14 +872,13 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var req struct {
 			Content   string `json:"content"`
-			DeleteEnv bool   `json:"delete_env"` // YENİ: Env dosyasını silme bayrağı
+			DeleteEnv bool   `json:"delete_env"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
 			return
 		}
 
-		// YENİ: Eğer DeleteEnv true ise mevcut dosyayı diskten kalıcı olarak sil.
 		if req.DeleteEnv {
 			os.Remove(envFile)
 		} else {

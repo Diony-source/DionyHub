@@ -119,7 +119,7 @@ type Process struct {
 	RecoveredPID int
 	Running      bool
 	IntendedStop bool
-	StartTime    time.Time // YENİ: Uptime hesaplaması için başlangıç anı
+	StartTime    time.Time
 }
 
 type Manager struct {
@@ -127,13 +127,33 @@ type Manager struct {
 	processes map[string]*Process
 	console   io.Writer
 	ws        io.Writer
+	sysLogger *RotatingLogWriter // YENİ: Sistem loglarını diske yazacak olan motor
+
+	OnExit func(id string, name string, uptime time.Duration, isCrash bool)
 }
 
 func NewManager(console io.Writer, ws io.Writer) *Manager {
+	// YENİ: Başlangıçta ana dizinde dionyhub_system.log dosyasını oluşturur
+	sysLogger, _ := NewRotatingLogWriter("dionyhub_system.log", 10)
 	return &Manager{
 		processes: make(map[string]*Process),
 		console:   console,
 		ws:        ws,
+		sysLogger: sysLogger,
+	}
+}
+
+// YENİ: Sistem loglarını hem websockete hem de diske yazan ortak fonksiyon
+func (m *Manager) WriteSystemLog(message string) {
+	type WSLog struct {
+		ID   string `json:"id"`
+		Data string `json:"data"`
+	}
+	wsMsgSys, _ := json.Marshal(WSLog{ID: "system", Data: message})
+	m.ws.Write(wsMsgSys)
+
+	if m.sysLogger != nil {
+		m.sysLogger.Write([]byte(message))
 	}
 }
 
@@ -149,8 +169,9 @@ func (m *Manager) sysLog(id, name, message string) {
 	m.ws.Write(wsMsgProj)
 
 	sysAuditMsg := fmt.Sprintf("\x1b[36m[AUDIT]\x1b[0m \x1b[33m%s\x1b[0m -> %s\n", name, message)
-	wsMsgSys, _ := json.Marshal(WSLog{ID: "system", Data: sysAuditMsg})
-	m.ws.Write(wsMsgSys)
+
+	// YENİ: Sadece WS'e değil, artık diske de kaydediyoruz
+	m.WriteSystemLog(sysAuditMsg)
 }
 
 func (m *Manager) prefixLogger(id, name string, r io.Reader, logWriter io.Writer) {
@@ -224,7 +245,7 @@ func (m *Manager) Recover(id, name, path string) bool {
 		Path:         path,
 		RecoveredPID: pid,
 		Running:      true,
-		StartTime:    time.Now(), // Kurtarıldığı anı referans alıyoruz
+		StartTime:    time.Now(),
 	}
 	m.mu.Unlock()
 
@@ -236,11 +257,23 @@ func (m *Manager) Recover(id, name, path string) bool {
 			alive, _ := process.PidExists(int32(pid))
 			if !alive {
 				m.mu.Lock()
+				var intended bool
+				var start time.Time
 				if p, ok := m.processes[id]; ok && p.RecoveredPID == pid {
 					p.Running = false
+					intended = p.IntendedStop
+					start = p.StartTime
 				}
 				m.mu.Unlock()
+
 				os.Remove(pidFile)
+
+				uptime := time.Since(start)
+				isCrash := !intended
+				if m.OnExit != nil {
+					m.OnExit(id, name, uptime, isCrash)
+				}
+
 				m.sysLog(id, name, "⚪ Recovered process exited.")
 				break
 			}
@@ -284,9 +317,9 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 	var logWriter *RotatingLogWriter
 
 	if !interactive {
-		logDir := filepath.Join(path, "logs")
+		logDir := filepath.Join(path, "dionyhub_log")
 		os.MkdirAll(logDir, 0755)
-		logPath := filepath.Join(logDir, "dionyhub.log")
+		logPath := filepath.Join(logDir, "output.log")
 
 		logWriter, _ = NewRotatingLogWriter(logPath, 10)
 	}
@@ -343,7 +376,7 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		LogWriter:    logWriter,
 		Running:      true,
 		IntendedStop: false,
-		StartTime:    time.Now(), // YENİ: Başlangıç zamanı kaydedildi
+		StartTime:    time.Now(),
 	}
 	m.mu.Unlock()
 
@@ -354,9 +387,11 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 
 		m.mu.Lock()
 		var intended bool
+		var start time.Time
 		if p, exists := m.processes[id]; exists {
 			p.Running = false
 			intended = p.IntendedStop
+			start = p.StartTime
 
 			if p.LogWriter != nil {
 				p.LogWriter.Close()
@@ -365,6 +400,12 @@ func (m *Manager) Start(id, name, path string, interactive bool, autoRestart boo
 		m.mu.Unlock()
 
 		os.Remove(pidFile)
+
+		uptime := time.Since(start)
+		isCrash := !intended
+		if m.OnExit != nil {
+			m.OnExit(id, name, uptime, isCrash)
+		}
 
 		if autoRestart && !intended {
 			m.sysLog(id, name, "⚠️ \x1b[33mProcess crashed! Restarting in 3 seconds...\x1b[0m")
@@ -448,7 +489,6 @@ func (m *Manager) IsRunning(id string) bool {
 	return exists && p.Running
 }
 
-// YENİ: Uptime verisi eklendi
 func (m *Manager) GetStats(id string) (cpu float64, ram float64, uptime int64) {
 	m.mu.RLock()
 	p, exists := m.processes[id]
