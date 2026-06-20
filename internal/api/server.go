@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Diony-source/DionyHub/internal/config"
+	"github.com/Diony-source/DionyHub/internal/database" // YENİ: Veritabanı paketimizi içeri alıyoruz
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
@@ -18,16 +19,18 @@ type Server struct {
 	mu          sync.RWMutex
 	projects    []config.Project
 	broadcaster *Broadcaster
+	db          *database.Engine // YENİ: Titanyum SQLite motorumuz artık API sunucusunun merkezinde
 }
 
-// NewServer initializes a new Server and configures crash detection callbacks.
-func NewServer(m *process.Manager, p []config.Project, b *Broadcaster) *Server {
-	slog.Debug("Initializing core API server instance")
+// NewServer initializes a new Server, injects dependencies, and configures crash detection callbacks.
+func NewServer(m *process.Manager, p []config.Project, b *Broadcaster, db *database.Engine) *Server {
+	slog.Debug("Initializing core API server instance with SQLite integration")
 
 	s := &Server{
 		manager:     m,
 		projects:    p,
 		broadcaster: b,
+		db:          db, // YENİ: main.go'dan gelen motoru sunucumuza takıyoruz
 	}
 
 	// Setup global crash and exit detection hook

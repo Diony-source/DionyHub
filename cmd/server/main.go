@@ -16,6 +16,7 @@ import (
 
 	"github.com/Diony-source/DionyHub/internal/api"
 	"github.com/Diony-source/DionyHub/internal/config"
+	"github.com/Diony-source/DionyHub/internal/database"
 	"github.com/Diony-source/DionyHub/internal/logger"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
@@ -52,7 +53,24 @@ func (s *SystemLogWrapper) Write(p []byte) (n int, err error) {
 }
 
 func main() {
-	// 1. Kademeli Loglama Motorunu Başlat
+	// 1. Önce Loglama Motoru Başlar
+	logger.InitGlobalLogger()
+	slog.Info("Starting DionyHub Command Center Initialization...")
+
+	// 2. YENİ: Veritabanı Motoru Başlar
+	dbPath := "data/dionyhub.db"
+	dbEngine, err := database.NewEngine(dbPath)
+	if err != nil {
+		slog.Error("CRITICAL: Failed to initialize database engine", slog.Any("error", err))
+		panic("Database initialization failed! See logs for details.")
+	}
+	defer dbEngine.Close()
+
+	// 3. YENİ: Göç Kontrolü (Sadece JSON varsa 1 kere çalışır)
+	if err := dbEngine.MigrateFromJSON("config.json"); err != nil {
+		slog.Warn("Failed to migrate legacy JSON data", slog.Any("error", err))
+	}
+
 	logger.InitGlobalLogger()
 	slog.Info("Starting DionyHub Command Center Initialization...")
 
@@ -98,7 +116,7 @@ func main() {
 		}
 	}
 
-	server := api.NewServer(procManager, projects, broadcaster)
+	server := api.NewServer(procManager, projects, broadcaster, dbEngine)
 	mux := http.NewServeMux()
 
 	fs := http.FileServer(http.Dir("./web"))

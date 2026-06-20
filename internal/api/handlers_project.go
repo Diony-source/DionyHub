@@ -22,6 +22,16 @@ type ProjectResponse struct {
 	RAM float64 `json:"ram"`
 }
 
+// YENİ VE KRİTİK: Veritabanındaki güncel durumu, arka plan WebSocket işçisinin
+// (metrics.go) taradığı bellek listesine (s.projects) kopyalayan köprü.
+func (s *Server) syncMemory() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if dbProjects, err := s.db.GetProjects(); err == nil {
+		s.projects = dbProjects
+	}
+}
+
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		slog.Warn("Invalid HTTP method for getting projects", slog.String("method", r.Method))
@@ -29,12 +39,20 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("Fetching all projects and their current stats")
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	// İlk istek geldiğinde işçinin belleğini hemen güncelliyoruz
+	s.syncMemory()
+
+	slog.Debug("Fetching all projects from SQLite database and compiling live stats")
+
+	dbProjects, err := s.db.GetProjects()
+	if err != nil {
+		slog.Error("Failed to fetch projects from database", slog.Any("error", err))
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+		return
+	}
 
 	var response []ProjectResponse
-	for _, p := range s.projects {
+	for _, p := range dbProjects {
 		status := "stopped"
 		var cpu, ram float64
 
@@ -50,12 +68,13 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		p.Status = status
+
 		pr := ProjectResponse{
 			Project: p,
 			CPU:     cpu,
 			RAM:     ram,
 		}
-		pr.Status = status
 		response = append(response, pr)
 	}
 
@@ -65,7 +84,7 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(response)
-	slog.Debug("Successfully returned projects list", slog.Int("count", len(response)))
+	slog.Debug("Successfully returned projects list to UI", slog.Int("count", len(response)))
 }
 
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -119,38 +138,27 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Updated environment file for project", slog.String("project_id", req.ID))
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	found := false
-	for i, p := range s.projects {
-		if p.ID == req.ID {
-			s.projects[i].Name = req.Name
-			s.projects[i].Path = cleanPath
-			s.projects[i].Command = req.Command
-			s.projects[i].Interactive = req.Interactive
-			s.projects[i].AutoStart = req.AutoStart
-			s.projects[i].AutoRestart = req.AutoRestart
-			s.projects[i].AutoClose = req.AutoClose
-			s.projects[i].ClearOnStart = req.ClearOnStart
-			s.projects[i].Tag = req.Tag
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		slog.Warn("Attempted to update a non-existent project", slog.String("project_id", req.ID))
-		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+	query := `UPDATE projects SET name=?, path=?, command=?, interactive=?, auto_start=?, auto_restart=?, auto_close=?, clear_on_start=? WHERE id=?`
+	_, err := s.db.DB.Exec(query, req.Name, cleanPath, req.Command, req.Interactive, req.AutoStart, req.AutoRestart, req.AutoClose, req.ClearOnStart, req.ID)
+	if err != nil {
+		slog.Error("Failed to update project in DB", slog.Any("error", err))
+		http.Error(w, `{"error": "Failed to update project database"}`, http.StatusInternalServerError)
 		return
 	}
 
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save updated projects to disk", slog.Any("error", err))
-	} else {
-		slog.Info("Project successfully updated and saved", slog.String("project_id", req.ID))
+	s.db.DB.Exec(`DELETE FROM project_tags WHERE project_id=?`, req.ID)
+	if req.Tag != "" {
+		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
+		var tagID int
+		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
+			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", req.ID, tagID)
+		}
 	}
 
+	// Güncellemeden sonra belleği senkronize et
+	s.syncMemory()
+
+	slog.Info("Project successfully updated and saved to DB", slog.String("project_id", req.ID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -197,34 +205,35 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Created environment file for new local project", slog.String("path", envPath))
 	}
 
-	newProj := config.Project{
-		ID:           fmt.Sprintf("%d", time.Now().UnixMilli()),
-		Name:         req.Name,
-		Path:         cleanPath,
-		Command:      req.Command,
-		Tag:          req.Tag,
-		Interactive:  req.Interactive,
-		AutoStart:    req.AutoStart,
-		AutoRestart:  req.AutoRestart,
-		AutoClose:    req.AutoClose,
-		ClearOnStart: req.ClearOnStart,
-		Source:       "local",
-		Status:       "stopped",
+	newID := fmt.Sprintf("%d", time.Now().UnixMilli())
+
+	query := `INSERT INTO projects (id, name, path, command, interactive, auto_start, auto_restart, auto_close, clear_on_start, source, order_index) 
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT IFNULL(MAX(order_index), 0) + 1 FROM projects))`
+	_, err := s.db.DB.Exec(query, newID, req.Name, cleanPath, req.Command, req.Interactive, req.AutoStart, req.AutoRestart, req.AutoClose, req.ClearOnStart, "local")
+
+	if err != nil {
+		slog.Error("Failed to save new project to DB", slog.Any("error", err))
+		http.Error(w, `{"error": "Database insert failed"}`, http.StatusInternalServerError)
+		return
 	}
 
-	s.mu.Lock()
-	newProj.Order = len(s.projects)
-	s.projects = append(s.projects, newProj)
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save new project to disk", slog.Any("error", err))
-	} else {
-		slog.Info("New local project created and saved", slog.String("project_id", newProj.ID), slog.String("project_name", newProj.Name))
+	if req.Tag != "" {
+		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
+		var tagID int
+		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
+			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+		}
 	}
-	s.mu.Unlock()
+
+	// Ekledikten sonra belleği senkronize et
+	s.syncMemory()
+
+	slog.Info("New local project created and saved to DB", slog.String("project_id", newID), slog.String("project_name", req.Name))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newProj)
+	p, _ := s.db.GetProjectByID(newID)
+	json.NewEncoder(w).Encode(p)
 }
 
 func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
@@ -303,34 +312,35 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Created environment file for cloned project", slog.String("path", envPath))
 	}
 
-	newProj := config.Project{
-		ID:           fmt.Sprintf("%d", time.Now().UnixMilli()),
-		Name:         repoName,
-		Path:         destPath,
-		Command:      req.Command,
-		Tag:          req.Tag,
-		Interactive:  req.Interactive,
-		AutoStart:    req.AutoStart,
-		AutoRestart:  req.AutoRestart,
-		AutoClose:    req.AutoClose,
-		ClearOnStart: req.ClearOnStart,
-		Source:       "github",
-		Status:       "stopped",
+	newID := fmt.Sprintf("%d", time.Now().UnixMilli())
+
+	query := `INSERT INTO projects (id, name, path, command, interactive, auto_start, auto_restart, auto_close, clear_on_start, source, order_index) 
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT IFNULL(MAX(order_index), 0) + 1 FROM projects))`
+	_, err = s.db.DB.Exec(query, newID, repoName, destPath, req.Command, req.Interactive, req.AutoStart, req.AutoRestart, req.AutoClose, req.ClearOnStart, "github")
+
+	if err != nil {
+		slog.Error("Failed to save cloned project configuration to DB", slog.Any("error", err))
+		http.Error(w, `{"error": "Failed to save project to DB"}`, http.StatusInternalServerError)
+		return
 	}
 
-	s.mu.Lock()
-	newProj.Order = len(s.projects)
-	s.projects = append(s.projects, newProj)
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save cloned project configuration", slog.Any("error", err))
-	} else {
-		slog.Info("Cloned project configured and saved", slog.String("project_id", newProj.ID), slog.String("project_name", newProj.Name))
+	if req.Tag != "" {
+		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
+		var tagID int
+		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
+			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+		}
 	}
-	s.mu.Unlock()
+
+	// Klonlamadan sonra belleği senkronize et
+	s.syncMemory()
+
+	slog.Info("Cloned project configured and saved to DB", slog.String("project_id", newID), slog.String("project_name", repoName))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newProj)
+	p, _ := s.db.GetProjectByID(newID)
+	json.NewEncoder(w).Encode(p)
 }
 
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -350,54 +360,38 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Initiating project deletion", slog.String("project_id", id), slog.Bool("remove_files", removeFiles))
 
-	if s.manager.IsRunning(id) {
-		slog.Debug("Stopping running project before deletion", slog.String("project_id", id))
-		_ = s.manager.Stop(id)
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	found := false
-	var updatedProjects []config.Project
-	var projectToDelete *config.Project
-
-	for _, p := range s.projects {
-		if p.ID == id {
-			found = true
-			projCopy := p
-			projectToDelete = &projCopy
-		} else {
-			updatedProjects = append(updatedProjects, p)
-		}
-	}
-
-	if !found {
+	targetProject, err := s.db.GetProjectByID(id)
+	if err != nil {
 		slog.Warn("Attempted to delete a non-existent project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
 
-	if removeFiles && projectToDelete != nil && projectToDelete.Source == "github" {
-		err := os.RemoveAll(projectToDelete.Path)
+	if s.manager.IsRunning(id) {
+		slog.Debug("Stopping running project before deletion", slog.String("project_id", id))
+		_ = s.manager.Stop(id)
+	}
+
+	if removeFiles && targetProject.Source == "github" {
+		err := os.RemoveAll(targetProject.Path)
 		if err != nil {
-			slog.Error("Failed to remove project files from disk", slog.String("path", projectToDelete.Path), slog.Any("error", err))
+			slog.Error("Failed to remove project files from disk", slog.String("path", targetProject.Path), slog.Any("error", err))
 		} else {
-			slog.Info("Project files successfully removed from disk", slog.String("path", projectToDelete.Path))
+			slog.Info("Project files successfully removed from disk", slog.String("path", targetProject.Path))
 		}
 	}
 
-	for i := range updatedProjects {
-		updatedProjects[i].Order = i
+	_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
+	if err != nil {
+		slog.Error("Failed to delete project from DB", slog.Any("error", err))
+		http.Error(w, `{"error": "Database delete failed"}`, http.StatusInternalServerError)
+		return
 	}
 
-	s.projects = updatedProjects
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save updated project list after deletion", slog.Any("error", err))
-	} else {
-		slog.Info("Project successfully deleted", slog.String("project_id", id))
-	}
+	// Sildikten sonra belleği senkronize et
+	s.syncMemory()
 
+	slog.Info("Project successfully deleted from DB", slog.String("project_id", id))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
@@ -427,47 +421,37 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Initiating bulk deletion", slog.Int("project_count", len(req.IDs)), slog.Bool("remove_files", req.RemoveFiles))
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	idMap := make(map[string]bool)
+	deletedCount := 0
 	for _, id := range req.IDs {
-		idMap[id] = true
+		target, err := s.db.GetProjectByID(id)
+		if err != nil {
+			continue
+		}
+
 		if s.manager.IsRunning(id) {
 			slog.Debug("Stopping project for bulk deletion", slog.String("project_id", id))
 			_ = s.manager.Stop(id)
 		}
-	}
 
-	var updatedProjects []config.Project
-	deletedCount := 0
-
-	for _, p := range s.projects {
-		if idMap[p.ID] {
-			if req.RemoveFiles && p.Source == "github" {
-				err := os.RemoveAll(p.Path)
-				if err != nil {
-					slog.Error("Failed to remove project files during bulk delete", slog.String("path", p.Path), slog.Any("error", err))
-				} else {
-					slog.Debug("Removed project files during bulk delete", slog.String("path", p.Path))
-				}
+		if req.RemoveFiles && target.Source == "github" {
+			err := os.RemoveAll(target.Path)
+			if err != nil {
+				slog.Error("Failed to remove project files during bulk delete", slog.String("path", target.Path), slog.Any("error", err))
+			} else {
+				slog.Debug("Removed project files during bulk delete", slog.String("path", target.Path))
 			}
+		}
+
+		_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
+		if err == nil {
 			deletedCount++
-		} else {
-			updatedProjects = append(updatedProjects, p)
 		}
 	}
 
-	for i := range updatedProjects {
-		updatedProjects[i].Order = i
-	}
+	// Sildikten sonra belleği senkronize et
+	s.syncMemory()
 
-	s.projects = updatedProjects
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save configuration after bulk delete", slog.Any("error", err))
-	} else {
-		slog.Info("Bulk deletion completed", slog.Int("deleted_count", deletedCount))
-	}
+	slog.Info("Bulk deletion completed via DB", slog.Int("deleted_count", deletedCount))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -489,35 +473,32 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("Processing project reorder request", slog.Int("provided_ids_count", len(newOrderIDs)))
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	projectMap := make(map[string]config.Project)
-	for _, p := range s.projects {
-		projectMap[p.ID] = p
+	tx, err := s.db.DB.Begin()
+	if err != nil {
+		http.Error(w, `{"error": "Failed to start transaction"}`, http.StatusInternalServerError)
+		return
 	}
+	defer tx.Rollback()
 
-	var reorderedProjects []config.Project
 	for index, id := range newOrderIDs {
-		if p, exists := projectMap[id]; exists {
-			p.Order = index
-			reorderedProjects = append(reorderedProjects, p)
-			delete(projectMap, id)
+		_, err := tx.Exec(`UPDATE projects SET order_index = ? WHERE id = ?`, index, id)
+		if err != nil {
+			slog.Error("Failed to update order in DB", slog.String("project_id", id), slog.Any("error", err))
+			http.Error(w, `{"error": "Failed to reorder projects"}`, http.StatusInternalServerError)
+			return
 		}
 	}
 
-	for _, p := range projectMap {
-		p.Order = len(reorderedProjects)
-		reorderedProjects = append(reorderedProjects, p)
+	if err := tx.Commit(); err != nil {
+		slog.Error("Failed to commit reorder transaction", slog.Any("error", err))
+		http.Error(w, `{"error": "Failed to save reordered projects"}`, http.StatusInternalServerError)
+		return
 	}
 
-	s.projects = reorderedProjects
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save reordered projects", slog.Any("error", err))
-	} else {
-		slog.Info("Projects reordered and saved successfully")
-	}
+	// Sıralamadan sonra belleği senkronize et
+	s.syncMemory()
 
+	slog.Info("Projects reordered and saved successfully to DB")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -528,17 +509,9 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.URL.Query().Get("id")
-	s.mu.RLock()
-	var target *config.Project
-	for _, p := range s.projects {
-		if p.ID == id {
-			target = &p
-			break
-		}
-	}
-	s.mu.RUnlock()
 
-	if target == nil {
+	target, err := s.db.GetProjectByID(id)
+	if err != nil {
 		slog.Warn("Start requested for unknown project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
@@ -631,33 +604,26 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 
 	startedCount := 0
 	for _, id := range ids {
-		s.mu.RLock()
-		var target *config.Project
-		for _, p := range s.projects {
-			if p.ID == id {
-				target = &p
-				break
-			}
+		target, err := s.db.GetProjectByID(id)
+		if err != nil {
+			continue
 		}
-		s.mu.RUnlock()
 
-		if target != nil {
-			if target.ClearOnStart {
-				logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
-				os.WriteFile(logPath, []byte(""), 0666)
+		if target.ClearOnStart {
+			logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+			os.WriteFile(logPath, []byte(""), 0666)
 
-				wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
-				s.broadcaster.Write(wsMsg)
-			}
+			wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
+			s.broadcaster.Write(wsMsg)
+		}
 
-			parts := strings.Fields(target.Command)
-			if len(parts) > 0 {
-				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
-					startedCount++
-					slog.Debug("Started project via bulk operation", slog.String("project_id", target.ID))
-				} else {
-					slog.Error("Failed to start project in bulk operation", slog.String("project_id", target.ID), slog.Any("error", err))
-				}
+		parts := strings.Fields(target.Command)
+		if len(parts) > 0 {
+			if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
+				startedCount++
+				slog.Debug("Started project via bulk operation", slog.String("project_id", target.ID))
+			} else {
+				slog.Error("Failed to start project in bulk operation", slog.String("project_id", target.ID), slog.Any("error", err))
 			}
 		}
 	}
@@ -711,23 +677,14 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("Processing project environment file request", slog.String("project_id", id), slog.String("method", r.Method))
 
-	s.mu.RLock()
-	var targetPath string
-	for _, p := range s.projects {
-		if p.ID == id {
-			targetPath = p.Path
-			break
-		}
-	}
-	s.mu.RUnlock()
-
-	if targetPath == "" {
+	target, err := s.db.GetProjectByID(id)
+	if err != nil {
 		slog.Warn("Environment requested for unknown project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
 
-	envFile := filepath.Join(targetPath, ".env")
+	envFile := filepath.Join(target.Path, ".env")
 
 	if r.Method == http.MethodGet {
 		content, err := os.ReadFile(envFile)
@@ -790,18 +747,8 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Initiating backup process for project", slog.String("project_id", id))
 
-	s.mu.RLock()
-	var targetProject *config.Project
-	for _, p := range s.projects {
-		if p.ID == id {
-			pCopy := p
-			targetProject = &pCopy
-			break
-		}
-	}
-	s.mu.RUnlock()
-
-	if targetProject == nil {
+	targetProject, err := s.db.GetProjectByID(id)
+	if err != nil {
 		slog.Warn("Backup requested for non-existent project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
@@ -883,23 +830,13 @@ func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
 	if id == "system" {
 		logPath = "dionyhub_system.log"
 	} else {
-		s.mu.RLock()
-		var targetPath string
-		for _, p := range s.projects {
-			if p.ID == id {
-				targetPath = p.Path
-				break
-			}
-		}
-		s.mu.RUnlock()
-
-		if targetPath == "" {
+		target, err := s.db.GetProjectByID(id)
+		if err != nil {
 			slog.Warn("Log fetch requested for unknown project", slog.String("project_id", id))
 			http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 			return
 		}
-
-		logPath = filepath.Join(targetPath, "dionyhub_log", "output.log")
+		logPath = filepath.Join(target.Path, "dionyhub_log", "output.log")
 	}
 
 	content, err := os.ReadFile(logPath)
