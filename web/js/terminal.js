@@ -230,22 +230,41 @@ function restoreTerminal(id) {
 function closeTerminal(id) {
     const termInstance = terminalPool[id];
     if (!termInstance) return;
-    if (id === 'system') { minimizeTerminal(id, "DionyHub System Logs"); return; }
-    if (termInstance.lastStatus === 'running') {
+    
+    if (id === 'system') { 
+        minimizeTerminal(id, "DionyHub System Logs"); 
+        return; 
+    }
+
+    // YENİ: Sistemin güncel durumuna (RAM) bakıyoruz.
+    const p = cachedProjects.find(x => (x.id || x.ID) === id);
+
+    // KRİTİK: Eğer proje tamamen silinmişse (p undefined) VEYA
+    // durumu "running" değilse, terminali acımadan yok et!
+    // (Böylece takılı kalan lastStatus bug'ını aşıyoruz)
+    const isActuallyRunning = p && p.status === 'running';
+
+    if (isActuallyRunning) {
         if (!termInstance.minimized) {
-            const p = cachedProjects.find(x => (x.id || x.ID) === id);
-            const pName = p ? (p.name || p.Name) : id;
+            const pName = p.name || p.Name || id;
             minimizeTerminal(id, pName);
             showToast("Terminal kapatılamadı: Proje şu anda çalışıyor. Sekmeye küçültüldü.", "error");
-        } else showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
+        } else {
+            showToast("Terminal tamamen kapatılamadı. Lütfen önce projeyi durdurun.", "error");
+        }
         return;
     }
+
+    // Silme ve Temizlik İşlemleri
     termInstance.term.dispose(); 
     termInstance.container.remove();
+    
     const tab = document.getElementById(`min-tab-${id}`);
     if (tab) tab.remove();
+    
     delete terminalPool[id];
     if (maximizedTerminalId === id) maximizedTerminalId = null;
+    
     updateGridCSS();
 }
 
