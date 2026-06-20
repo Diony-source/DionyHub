@@ -43,3 +43,6 @@
 [36m[AUDIT][0m [33menv_test[0m -> 🚀 [32mProject started successfully (PID: 36792).[0m
 [36m[AUDIT][0m [33menv_test[0m -> 🛑 Stop signal sent. Terminating process tree...
 [1;33m[INFO][0m Project 'env_test' stopped by user after 2s.
+[36m[AUDIT][0m [33mzombi_test[0m -> 🚀 [32mProject started successfully (PID: 35264).[0m
+[36m[AUDIT][0m [33mzombi_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'zombi_test' stopped by user after 43s.

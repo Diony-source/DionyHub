@@ -337,29 +337,23 @@ func (m *Manager) Stop(id string) error {
 	}
 
 	m.sysLog(id, p.Name, "🛑 Stop signal sent. Terminating process tree...")
-	slog.Debug("Issuing OS kill command", slog.String("project_id", id), slog.Int("pid", pid))
+	slog.Debug("Summoning Zombie Reaper", slog.String("project_id", id), slog.Int("pid", pid))
 
-	var err error
+	// YENİ: Zombi Avcısını tetikliyoruz. Tüm ağaç kökünden kazınıyor!
+	err := killProcessTree(pid)
+
+	// Windows'taki harici "CMD" pencerelerini kapatmak için isim bazlı ekstra güvenlik (Opsiyonel)
 	if runtime.GOOS == "windows" {
-		killCmd := exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprint(pid))
-		killCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		err = killCmd.Run()
-
 		windowTitle := fmt.Sprintf("%s - DionyHub*", p.Name)
 		titleKillCmd := exec.Command("taskkill", "/F", "/FI", fmt.Sprintf("WINDOWTITLE eq %s", windowTitle))
 		titleKillCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		titleKillCmd.Run()
-	} else {
-		proc, _ := os.FindProcess(pid)
-		if proc != nil {
-			err = proc.Kill()
-		}
 	}
 
 	if err != nil {
-		slog.Error("OS failed to terminate process", slog.String("project_id", id), slog.Int("pid", pid), slog.Any("error", err))
+		slog.Error("Reaper failed to terminate process tree completely", slog.String("project_id", id), slog.Int("pid", pid), slog.Any("error", err))
 	} else {
-		slog.Info("OS successfully terminated process tree", slog.String("project_id", id), slog.Int("pid", pid))
+		slog.Info("Zombie Reaper successfully cleared process tree", slog.String("project_id", id), slog.Int("pid", pid))
 	}
 
 	m.mu.Lock()

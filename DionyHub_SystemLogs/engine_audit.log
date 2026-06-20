@@ -350,3 +350,81 @@ time=18:37:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shut
 time=18:37:00 level=INFO msg="Terminating all running background processes..."
 time=18:37:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
 time=18:37:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=03:35:12 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=03:35:12 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=03:35:13 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=03:35:13 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=03:35:13 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=03:35:13 level=DEBUG msg="Successfully loaded projects" count=8
+time=03:35:13 level=INFO msg="Successfully loaded project configurations" count=8
+time=03:35:13 level=DEBUG msg="Initializing core process manager"
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=noteapp id=1780618949493
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618949493
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=CrashTest id=1780618751290
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618751290
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=env_test id=1780618770556
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618770556
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=filereader id=1780618931388
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618931388
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=focus_timer id=1780618940799
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618940799
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=soru_test id=1780618967389
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618967389
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=survivor_test id=1780618980983
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780618980983
+time=03:35:13 level=DEBUG msg="Checking recovery status for project" name=hangman id=1780591488979
+time=03:35:13 level=DEBUG msg="Checking for orphaned process recovery" project_id=1780591488979
+time=03:35:13 level=DEBUG msg="Initializing core API server instance"
+time=03:35:13 level=DEBUG msg="Starting to register API endpoints..."
+time=03:35:13 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=03:35:13 level=DEBUG msg="Booting up background metrics worker..."
+time=03:35:13 level=INFO msg="All API routes and background workers registered successfully"
+time=03:35:13 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=03:35:20 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=36.5214ms
+time=03:35:21 level=DEBUG msg="Fetching system settings"
+time=03:35:21 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=03:35:21 level=DEBUG msg="Fetching historical logs for terminal" target_id=system
+time=03:35:21 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=03:35:21 level=DEBUG msg="Successfully retrieved system settings"
+time=03:35:21 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=4.7118ms
+time=03:35:21 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=5.2344ms
+time=03:35:21 level=DEBUG msg="Fetching all projects and their current stats"
+time=03:35:21 level=DEBUG msg="Successfully returned projects list" count=8
+time=03:35:21 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=03:35:21 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50794
+time=03:35:21 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50794 total_active_clients=1
+time=03:35:26 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=03:35:26 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=03:35:29 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=03:35:29 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=03:35:29 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.7671697s
+time=03:35:41 level=DEBUG msg="Attempting to save projects configuration" filename=config.json count=9
+time=03:35:41 level=DEBUG msg="Successfully saved projects configuration" filename=config.json
+time=03:35:41 level=INFO msg="New local project created and saved" project_id=1781915741808 project_name=zombi_test
+time=03:35:41 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.7064ms
+time=03:35:41 level=DEBUG msg="Fetching all projects and their current stats"
+time=03:35:41 level=DEBUG msg="Successfully returned projects list" count=9
+time=03:35:41 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=03:35:47 level=DEBUG msg="Fetching historical logs for terminal" target_id=1781915741808
+time=03:35:47 level=DEBUG msg="Log file unreadable or not found" path=C:\Users\Diony\Desktop\zombi_test\dionyhub_log\output.log
+time=03:35:47 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=03:35:47 level=INFO msg="Starting project execution" project_id=1781915741808 project_name=zombi_test
+time=03:35:47 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=03:35:47 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=03:35:47 level=INFO msg="Requesting process start" project_id=1781915741808 command=go interactive=false
+time=03:35:47 level=INFO msg="OS Process successfully spawned" project_id=1781915741808 pid=35264
+time=03:35:47 level=INFO msg="Project started successfully" project_id=1781915741808
+time=03:35:47 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=5.3174ms
+time=03:36:31 level=INFO msg="Stop command received for project" project_id=1781915741808
+time=03:36:31 level=INFO msg="Stop sequence initiated for process" project_id=1781915741808
+time=03:36:31 level=DEBUG msg="Summoning Zombie Reaper" project_id=1781915741808 pid=35264
+time=03:36:31 level=DEBUG msg="Zombie Reaper activated: Scanning for process tree" parent_pid=35264
+time=03:36:31 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1781915741808
+time=03:36:31 level=INFO msg="Project process stopped by user" project_id=1781915741808 project_name=zombi_test uptime=43s
+time=03:36:31 level=INFO msg="Zombie Reaper successfully cleared process tree" project_id=1781915741808 pid=35264
+time=03:36:31 level=INFO msg="Project stopped successfully" project_id=1781915741808
+time=03:36:31 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=167.7943ms
+time=03:37:08 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=03:37:08 level=INFO msg="Terminating all running background processes..."
+time=03:37:08 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=03:37:08 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
