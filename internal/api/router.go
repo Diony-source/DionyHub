@@ -26,6 +26,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/projects/backup", s.handleBackupProject)
 	mux.HandleFunc("/api/projects/input", s.handleProjectInput)
 
+	// YENİ: Akıllı Dedektif (Heuristics) Endpoint'i
+	mux.HandleFunc("/api/projects/detect", s.handleDetectProject)
+
 	// System Operations
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)

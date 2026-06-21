@@ -112,3 +112,9 @@
 [36m[AUDIT][0m [33mzombi test 2[0m -> 🚀 [32mProject started successfully (PID: 29444).[0m
 [36m[AUDIT][0m [33mzombi test 2[0m -> 🛑 Stop signal sent. Terminating process tree...
 [1;33m[INFO][0m Project 'zombi test 2' stopped by user after 4s.
+[36m[AUDIT][0m [33mzombi_test[0m -> 🚀 [32mProject started successfully (PID: 36096).[0m
+[36m[AUDIT][0m [33mzombi_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'zombi_test' stopped by user after 1s.
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🚀 [32mProject started successfully (PID: 41896).[0m
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'pc_kapama_forgames' stopped by user after 3s.

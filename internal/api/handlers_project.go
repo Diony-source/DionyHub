@@ -14,22 +14,79 @@ import (
 
 	"github.com/Diony-source/DionyHub/internal/archive"
 	"github.com/Diony-source/DionyHub/internal/config"
+	"github.com/Diony-source/DionyHub/internal/detector"
 )
 
+// YANLIŞLIKLA SİLDİĞİM O KRİTİK VERİ YAPISI (DTO) BURADA!
+// Bu yapı arayüzün "Loading..." hatasını çözen yapıdır.
 type ProjectResponse struct {
-	config.Project
-	CPU float64 `json:"cpu"`
-	RAM float64 `json:"ram"`
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	Path         string  `json:"path"`
+	Command      string  `json:"command"`
+	Tag          string  `json:"tag"`
+	Interactive  bool    `json:"interactive"`
+	AutoStart    bool    `json:"auto_start"`
+	AutoRestart  bool    `json:"auto_restart"`
+	AutoClose    bool    `json:"auto_close"`
+	ClearOnStart bool    `json:"clear_on_start"`
+	Source       string  `json:"source"`
+	Order        int     `json:"order"`
+	Status       string  `json:"status"`
+	CPU          float64 `json:"cpu"`
+	RAM          float64 `json:"ram"`
 }
 
-// YENİ VE KRİTİK: Veritabanındaki güncel durumu, arka plan WebSocket işçisinin
-// (metrics.go) taradığı bellek listesine (s.projects) kopyalayan köprü.
+// Güvenli veri dönüştürücümüz (Arayüze giden veriyi düzleştirir)
+func toProjectResponse(p config.Project, status string, cpu, ram float64) ProjectResponse {
+	return ProjectResponse{
+		ID:           p.ID,
+		Name:         p.Name,
+		Path:         p.Path,
+		Command:      p.Command,
+		Tag:          p.Tag,
+		Interactive:  p.Interactive,
+		AutoStart:    p.AutoStart,
+		AutoRestart:  p.AutoRestart,
+		AutoClose:    p.AutoClose,
+		ClearOnStart: p.ClearOnStart,
+		Source:       p.Source,
+		Order:        p.Order,
+		Status:       status,
+		CPU:          cpu,
+		RAM:          ram,
+	}
+}
+
+// Arka plan işçisini veritabanı ile senkronize eden köprümüz
 func (s *Server) syncMemory() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if dbProjects, err := s.db.GetProjects(); err == nil {
 		s.projects = dbProjects
 	}
+}
+
+// YENİ: Zeka Motoru (Dedektif) Uç Noktası
+func (s *Server) handleDetectProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	targetPath := r.URL.Query().Get("path")
+	if targetPath == "" {
+		http.Error(w, `{"error": "Path parameter is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	slog.Debug("Processing smart detection request", slog.String("path", targetPath))
+
+	// Klasörü analiz edip sonucu JSON olarak arayüze gönderiyoruz
+	result := detector.AnalyzePath(targetPath)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
@@ -39,10 +96,7 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// İlk istek geldiğinde işçinin belleğini hemen güncelliyoruz
 	s.syncMemory()
-
-	slog.Debug("Fetching all projects from SQLite database and compiling live stats")
 
 	dbProjects, err := s.db.GetProjects()
 	if err != nil {
@@ -68,14 +122,7 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		p.Status = status
-
-		pr := ProjectResponse{
-			Project: p,
-			CPU:     cpu,
-			RAM:     ram,
-		}
-		response = append(response, pr)
+		response = append(response, toProjectResponse(p, status, cpu, ram))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -84,7 +131,6 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(response)
-	slog.Debug("Successfully returned projects list to UI", slog.Int("count", len(response)))
 }
 
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -115,13 +161,12 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Updating project configuration", slog.String("project_id", req.ID), slog.String("project_name", req.Name))
-
 	cleanPath := strings.TrimSpace(req.Path)
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 	req.Tag = strings.TrimSpace(req.Tag)
+	req.ID = strings.TrimSpace(req.ID)
 
 	if req.ID == "" || req.Name == "" || cleanPath == "" {
 		slog.Warn("Missing required fields in update project request", slog.String("project_id", req.ID))
@@ -132,10 +177,8 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	envFile := filepath.Join(cleanPath, ".env")
 	if req.DeleteEnv {
 		os.Remove(envFile)
-		slog.Debug("Removed environment file for project", slog.String("project_id", req.ID))
 	} else if req.CreateEnv {
 		os.WriteFile(envFile, []byte(req.InitialEnv), 0644)
-		slog.Debug("Updated environment file for project", slog.String("project_id", req.ID))
 	}
 
 	query := `UPDATE projects SET name=?, path=?, command=?, interactive=?, auto_start=?, auto_restart=?, auto_close=?, clear_on_start=? WHERE id=?`
@@ -155,10 +198,7 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Güncellemeden sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("Project successfully updated and saved to DB", slog.String("project_id", req.ID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -183,7 +223,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Warn("Failed to decode add project request payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
 		return
 	}
@@ -194,7 +233,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 
 	if req.Name == "" || cleanPath == "" || req.Command == "" {
-		slog.Warn("Missing required fields in add project request", slog.String("name", req.Name))
 		http.Error(w, `{"error": "Name, Path, and Command are required"}`, http.StatusBadRequest)
 		return
 	}
@@ -202,7 +240,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	if req.CreateEnv {
 		envPath := filepath.Join(cleanPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
-		slog.Debug("Created environment file for new local project", slog.String("path", envPath))
 	}
 
 	newID := fmt.Sprintf("%d", time.Now().UnixMilli())
@@ -212,7 +249,6 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	_, err := s.db.DB.Exec(query, newID, req.Name, cleanPath, req.Command, req.Interactive, req.AutoStart, req.AutoRestart, req.AutoClose, req.ClearOnStart, "local")
 
 	if err != nil {
-		slog.Error("Failed to save new project to DB", slog.Any("error", err))
 		http.Error(w, `{"error": "Database insert failed"}`, http.StatusInternalServerError)
 		return
 	}
@@ -225,15 +261,13 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Ekledikten sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("New local project created and saved to DB", slog.String("project_id", newID), slog.String("project_name", req.Name))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	p, _ := s.db.GetProjectByID(newID)
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(toProjectResponse(p, "stopped", 0, 0))
 }
 
 func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
@@ -256,14 +290,12 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Warn("Failed to decode clone project payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON payload"}`, http.StatusBadRequest)
 		return
 	}
 
 	req.RepoURL = strings.TrimSpace(req.RepoURL)
 	if req.RepoURL == "" {
-		slog.Warn("Clone project request missing repository URL")
 		http.Error(w, `{"error": "Repository URL is required"}`, http.StatusBadRequest)
 		return
 	}
@@ -286,16 +318,13 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
 	if _, err := os.Stat(destPath); !os.IsNotExist(err) {
-		slog.Warn("Clone target directory already exists", slog.String("dest_path", destPath))
 		http.Error(w, fmt.Sprintf(`{"error": "Folder '%s' already exists in your workspace!"}`, repoName), http.StatusBadRequest)
 		return
 	}
 
-	slog.Info("Initiating git clone operation", slog.String("repo_url", req.RepoURL), slog.String("dest_path", destPath))
 	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		slog.Error("Git clone execution failed", slog.String("repo_url", req.RepoURL), slog.Any("error", err), slog.String("output", string(output)))
 		safeErr := strings.ReplaceAll(string(output), "\n", " ")
 		safeErr = strings.ReplaceAll(safeErr, "\"", "'")
 		if safeErr == "" {
@@ -304,12 +333,10 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, safeErr), http.StatusInternalServerError)
 		return
 	}
-	slog.Info("Git clone completed successfully", slog.String("repo_url", req.RepoURL))
 
 	if req.CreateEnv {
 		envPath := filepath.Join(destPath, ".env")
 		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
-		slog.Debug("Created environment file for cloned project", slog.String("path", envPath))
 	}
 
 	newID := fmt.Sprintf("%d", time.Now().UnixMilli())
@@ -319,7 +346,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	_, err = s.db.DB.Exec(query, newID, repoName, destPath, req.Command, req.Interactive, req.AutoStart, req.AutoRestart, req.AutoClose, req.ClearOnStart, "github")
 
 	if err != nil {
-		slog.Error("Failed to save cloned project configuration to DB", slog.Any("error", err))
 		http.Error(w, `{"error": "Failed to save project to DB"}`, http.StatusInternalServerError)
 		return
 	}
@@ -332,15 +358,13 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Klonlamadan sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("Cloned project configured and saved to DB", slog.String("project_id", newID), slog.String("project_name", repoName))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	p, _ := s.db.GetProjectByID(newID)
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(toProjectResponse(p, "stopped", 0, 0))
 }
 
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -349,50 +373,36 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 	removeFiles := r.URL.Query().Get("remove_files") == "true"
 
 	if id == "" {
-		slog.Warn("Delete project requested without an ID")
 		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
 		return
 	}
 
-	slog.Info("Initiating project deletion", slog.String("project_id", id), slog.Bool("remove_files", removeFiles))
-
 	targetProject, err := s.db.GetProjectByID(id)
 	if err != nil {
-		slog.Warn("Attempted to delete a non-existent project", slog.String("project_id", id))
+		slog.Warn("Delete requested for unknown project", slog.String("project_id", id), slog.Any("error", err))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
 
 	if s.manager.IsRunning(id) {
-		slog.Debug("Stopping running project before deletion", slog.String("project_id", id))
 		_ = s.manager.Stop(id)
 	}
 
 	if removeFiles && targetProject.Source == "github" {
-		err := os.RemoveAll(targetProject.Path)
-		if err != nil {
-			slog.Error("Failed to remove project files from disk", slog.String("path", targetProject.Path), slog.Any("error", err))
-		} else {
-			slog.Info("Project files successfully removed from disk", slog.String("path", targetProject.Path))
-		}
+		os.RemoveAll(targetProject.Path)
 	}
 
 	_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
 	if err != nil {
-		slog.Error("Failed to delete project from DB", slog.Any("error", err))
 		http.Error(w, `{"error": "Database delete failed"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Sildikten sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("Project successfully deleted from DB", slog.String("project_id", id))
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -408,38 +418,24 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Warn("Failed to decode bulk delete request", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
 
-	if len(req.IDs) == 0 {
-		slog.Warn("Bulk delete requested with empty ID list")
-		http.Error(w, `{"error": "No IDs provided"}`, http.StatusBadRequest)
-		return
-	}
-
-	slog.Info("Initiating bulk deletion", slog.Int("project_count", len(req.IDs)), slog.Bool("remove_files", req.RemoveFiles))
-
 	deletedCount := 0
-	for _, id := range req.IDs {
+	for _, rawID := range req.IDs {
+		id := strings.TrimSpace(rawID)
 		target, err := s.db.GetProjectByID(id)
 		if err != nil {
 			continue
 		}
 
 		if s.manager.IsRunning(id) {
-			slog.Debug("Stopping project for bulk deletion", slog.String("project_id", id))
 			_ = s.manager.Stop(id)
 		}
 
 		if req.RemoveFiles && target.Source == "github" {
-			err := os.RemoveAll(target.Path)
-			if err != nil {
-				slog.Error("Failed to remove project files during bulk delete", slog.String("path", target.Path), slog.Any("error", err))
-			} else {
-				slog.Debug("Removed project files during bulk delete", slog.String("path", target.Path))
-			}
+			os.RemoveAll(target.Path)
 		}
 
 		_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
@@ -448,10 +444,7 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sildikten sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("Bulk deletion completed via DB", slog.Int("deleted_count", deletedCount))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -466,12 +459,9 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 
 	var newOrderIDs []string
 	if err := json.NewDecoder(r.Body).Decode(&newOrderIDs); err != nil {
-		slog.Warn("Failed to decode project reorder request", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON array for ordering"}`, http.StatusBadRequest)
 		return
 	}
-
-	slog.Debug("Processing project reorder request", slog.Int("provided_ids_count", len(newOrderIDs)))
 
 	tx, err := s.db.DB.Begin()
 	if err != nil {
@@ -480,25 +470,21 @@ func (s *Server) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	for index, id := range newOrderIDs {
+	for index, rawID := range newOrderIDs {
+		id := strings.TrimSpace(rawID)
 		_, err := tx.Exec(`UPDATE projects SET order_index = ? WHERE id = ?`, index, id)
 		if err != nil {
-			slog.Error("Failed to update order in DB", slog.String("project_id", id), slog.Any("error", err))
 			http.Error(w, `{"error": "Failed to reorder projects"}`, http.StatusInternalServerError)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		slog.Error("Failed to commit reorder transaction", slog.Any("error", err))
 		http.Error(w, `{"error": "Failed to save reordered projects"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Sıralamadan sonra belleği senkronize et
 	s.syncMemory()
-
-	slog.Info("Projects reordered and saved successfully to DB")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -508,28 +494,24 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 
 	target, err := s.db.GetProjectByID(id)
 	if err != nil {
-		slog.Warn("Start requested for unknown project", slog.String("project_id", id))
+		slog.Error("Start request failed: Database lookup error", slog.String("project_id", id), slog.Any("error", err))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
-
-	slog.Info("Starting project execution", slog.String("project_id", target.ID), slog.String("project_name", target.Name))
 
 	if target.ClearOnStart {
 		logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
 		os.WriteFile(logPath, []byte(""), 0666)
 		wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
 		s.broadcaster.Write(wsMsg)
-		slog.Debug("Cleared logs for project before starting", slog.String("project_id", target.ID))
 	}
 
 	parts := strings.Fields(target.Command)
 	if len(parts) == 0 {
-		slog.Error("Invalid or empty command configuration for project", slog.String("project_id", target.ID))
 		http.Error(w, `{"error": "Invalid command configuration"}`, http.StatusInternalServerError)
 		return
 	}
@@ -552,7 +534,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Project started successfully", slog.String("project_id", target.ID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -562,16 +543,11 @@ func (s *Server) handleStopProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	slog.Info("Stop command received for project", slog.String("project_id", id))
-
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 	if err := s.manager.Stop(id); err != nil {
-		slog.Error("Failed to stop project", slog.String("project_id", id), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
-
-	slog.Info("Project stopped successfully", slog.String("project_id", id))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -583,12 +559,9 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 
 	var ids []string
 	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
-		slog.Warn("Failed to decode bulk start request payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON array"}`, http.StatusBadRequest)
 		return
 	}
-
-	slog.Info("Processing bulk start request", slog.Int("project_count", len(ids)))
 
 	settings, _ := config.LoadSettings("app_config.json")
 	var globalEnvs []string
@@ -603,7 +576,8 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	startedCount := 0
-	for _, id := range ids {
+	for _, rawID := range ids {
+		id := strings.TrimSpace(rawID)
 		target, err := s.db.GetProjectByID(id)
 		if err != nil {
 			continue
@@ -612,7 +586,6 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		if target.ClearOnStart {
 			logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
 			os.WriteFile(logPath, []byte(""), 0666)
-
 			wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
 			s.broadcaster.Write(wsMsg)
 		}
@@ -621,14 +594,9 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 		if len(parts) > 0 {
 			if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
 				startedCount++
-				slog.Debug("Started project via bulk operation", slog.String("project_id", target.ID))
-			} else {
-				slog.Error("Failed to start project in bulk operation", slog.String("project_id", target.ID), slog.Any("error", err))
 			}
 		}
 	}
-
-	slog.Info("Bulk start completed", slog.Int("started_count", startedCount))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -643,24 +611,17 @@ func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 
 	var ids []string
 	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
-		slog.Warn("Failed to decode bulk stop request payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON array"}`, http.StatusBadRequest)
 		return
 	}
 
-	slog.Info("Processing bulk stop request", slog.Int("project_count", len(ids)))
-
 	stoppedCount := 0
-	for _, id := range ids {
+	for _, rawID := range ids {
+		id := strings.TrimSpace(rawID)
 		if err := s.manager.Stop(id); err == nil {
 			stoppedCount++
-			slog.Debug("Stopped project via bulk operation", slog.String("project_id", id))
-		} else {
-			slog.Error("Failed to stop project in bulk operation", slog.String("project_id", id), slog.Any("error", err))
 		}
 	}
-
-	slog.Info("Bulk stop completed", slog.Int("stopped_count", stoppedCount))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -668,18 +629,14 @@ func (s *Server) handleStopBulk(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 	if id == "" {
-		slog.Warn("Environment variable request missing project ID")
 		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
 		return
 	}
 
-	slog.Debug("Processing project environment file request", slog.String("project_id", id), slog.String("method", r.Method))
-
 	target, err := s.db.GetProjectByID(id)
 	if err != nil {
-		slog.Warn("Environment requested for unknown project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
@@ -689,7 +646,6 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		content, err := os.ReadFile(envFile)
 		if err != nil {
-			slog.Debug("No environment file found or readable for project", slog.String("project_id", id), slog.Any("error", err))
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{"content": ""}`))
 			return
@@ -707,25 +663,14 @@ func (s *Server) handleProjectEnv(w http.ResponseWriter, r *http.Request) {
 			DeleteEnv bool   `json:"delete_env"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			slog.Warn("Failed to decode environment payload", slog.Any("error", err))
 			http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
 			return
 		}
 
 		if req.DeleteEnv {
-			err := os.Remove(envFile)
-			if err != nil {
-				slog.Error("Failed to delete environment file", slog.String("project_id", id), slog.Any("error", err))
-			} else {
-				slog.Info("Environment file deleted for project", slog.String("project_id", id))
-			}
+			os.Remove(envFile)
 		} else {
-			err := os.WriteFile(envFile, []byte(req.Content), 0644)
-			if err != nil {
-				slog.Error("Failed to save environment file", slog.String("project_id", id), slog.Any("error", err))
-			} else {
-				slog.Info("Environment file saved for project", slog.String("project_id", id))
-			}
+			os.WriteFile(envFile, []byte(req.Content), 0644)
 		}
 		w.WriteHeader(http.StatusOK)
 		return
@@ -738,25 +683,20 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 	if id == "" {
-		slog.Warn("Backup requested without a project ID")
 		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
 		return
 	}
 
-	slog.Info("Initiating backup process for project", slog.String("project_id", id))
-
 	targetProject, err := s.db.GetProjectByID(id)
 	if err != nil {
-		slog.Warn("Backup requested for non-existent project", slog.String("project_id", id))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 		return
 	}
 
 	settings, err := config.LoadSettings("app_config.json")
 	if err != nil || settings.Workspace == "" {
-		slog.Debug("Using default workspace path for backup")
 		settings.Workspace = "C:/DionyHub/apps"
 	}
 
@@ -769,12 +709,9 @@ func (s *Server) handleBackupProject(w http.ResponseWriter, r *http.Request) {
 	targetZipPath := filepath.Join(backupDir, zipFileName)
 
 	if err := archive.ZipDirectory(targetProject.Path, targetZipPath); err != nil {
-		slog.Error("Failed to create zip archive for backup", slog.String("project_id", id), slog.Any("error", err))
 		http.Error(w, `{"error": "Failed to create zip archive"}`, http.StatusInternalServerError)
 		return
 	}
-
-	slog.Info("Backup created successfully", slog.String("project_id", id), slog.String("archive", zipFileName))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -794,15 +731,11 @@ func (s *Server) handleProjectInput(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Warn("Failed to decode project input payload", slog.Any("error", err))
 		http.Error(w, `{"error": "Invalid JSON body"}`, http.StatusBadRequest)
 		return
 	}
 
-	slog.Debug("Writing input to process stdin", slog.String("project_id", req.ID))
-
 	if err := s.manager.WriteInput(req.ID, req.Data); err != nil {
-		slog.Error("Failed to write input to process", slog.String("project_id", req.ID), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -816,23 +749,19 @@ func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
 	if id == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"logs": ""}`))
 		return
 	}
 
-	slog.Debug("Fetching historical logs for terminal", slog.String("target_id", id))
-
 	var logPath string
-
 	if id == "system" {
 		logPath = "dionyhub_system.log"
 	} else {
 		target, err := s.db.GetProjectByID(id)
 		if err != nil {
-			slog.Warn("Log fetch requested for unknown project", slog.String("project_id", id))
 			http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
 			return
 		}
@@ -841,7 +770,6 @@ func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
 
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		slog.Debug("Log file unreadable or not found", slog.String("path", logPath))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"logs": ""}`))
 		return

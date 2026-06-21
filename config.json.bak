@@ -11,7 +11,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 0
   },
   {
@@ -26,7 +26,7 @@
     "auto_close": false,
     "clear_on_start": true,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 1
   },
   {
@@ -41,7 +41,7 @@
     "auto_close": false,
     "clear_on_start": true,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 2
   },
   {
@@ -56,7 +56,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 3
   },
   {
@@ -71,7 +71,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 4
   },
   {
@@ -86,7 +86,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 5
   },
   {
@@ -101,7 +101,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 6
   },
   {
@@ -109,14 +109,14 @@
     "name": "hangman",
     "path": "C:/DionyHub/apps/hangman",
     "command": "go run main.go",
-    "tag": "hangman",
+    "tag": "",
     "interactive": false,
     "auto_start": false,
     "auto_restart": false,
     "auto_close": false,
     "clear_on_start": false,
     "source": "github",
-    "status": "stopped",
+    "status": "",
     "order": 7
   },
   {
@@ -131,7 +131,7 @@
     "auto_close": false,
     "clear_on_start": false,
     "source": "local",
-    "status": "stopped",
+    "status": "",
     "order": 8
   }
 ]

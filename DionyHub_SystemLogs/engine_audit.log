@@ -1743,3 +1743,540 @@ time=01:30:30 level=INFO msg="Terminating all running background processes..."
 time=01:30:30 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
 time=01:30:30 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
 time=01:30:31 level=DEBUG msg="Closing SQLite Engine"
+time=01:38:22 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:38:22 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:38:22 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=01:38:22 level=DEBUG msg="Running database migrations..."
+time=01:38:22 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=01:38:22 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:38:22 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:38:23 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=01:38:23 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=01:38:23 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=01:38:23 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=01:38:23 level=INFO msg="Successfully loaded project configurations" count=0
+time=01:38:23 level=DEBUG msg="Initializing core process manager"
+time=01:38:23 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=01:38:23 level=DEBUG msg="Starting to register API endpoints..."
+time=01:38:23 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=01:38:23 level=DEBUG msg="Booting up background metrics worker..."
+time=01:38:23 level=INFO msg="All API routes and background workers registered successfully"
+time=01:38:23 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=01:38:29 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50870
+time=01:38:29 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50870 total_active_clients=1
+time=01:38:30 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:38:30 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:38:34 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:38:34 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:38:34 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.5615719s
+time=01:38:56 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:38:56 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:38:59 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:38:59 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:38:59 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.0887393s
+time=01:39:30 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:39:30 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:39:34 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\DionyHub
+time=01:39:34 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/DionyHub
+time=01:39:34 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.4247394s
+time=01:42:15 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=01:42:15 level=INFO msg="Terminating all running background processes..."
+time=01:42:15 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=01:42:15 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=01:42:16 level=DEBUG msg="Closing SQLite Engine"
+time=01:42:23 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:42:23 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:42:23 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=01:42:23 level=DEBUG msg="Running database migrations..."
+time=01:42:23 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=01:42:23 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:42:23 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:42:24 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=01:42:24 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=01:42:24 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=01:42:24 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=01:42:24 level=INFO msg="Successfully loaded project configurations" count=0
+time=01:42:24 level=DEBUG msg="Initializing core process manager"
+time=01:42:24 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=01:42:24 level=DEBUG msg="Starting to register API endpoints..."
+time=01:42:24 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=01:42:24 level=DEBUG msg="Booting up background metrics worker..."
+time=01:42:24 level=INFO msg="All API routes and background workers registered successfully"
+time=01:42:24 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=01:42:26 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51514
+time=01:42:26 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51514 total_active_clients=1
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=20.2993ms
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:42:28 level=DEBUG msg="Fetching system settings"
+time=01:42:28 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:42:28 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:42:28 level=DEBUG msg="Successfully retrieved system settings"
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:42:28 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:57977
+time=01:42:28 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:57977 total_active_clients=2
+time=01:42:28 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:42:29 level=DEBUG msg="Fetching system settings"
+time=01:42:29 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:42:29 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:42:29 level=DEBUG msg="Successfully retrieved system settings"
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5452ms
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:42:29 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63298
+time=01:42:29 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63298 total_active_clients=3
+time=01:42:29 level=DEBUG msg="Fetching system settings"
+time=01:42:29 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:42:29 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:42:29 level=DEBUG msg="Successfully retrieved system settings"
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:42:29 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51015
+time=01:42:29 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51015 total_active_clients=4
+time=01:42:29 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:42:32 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51514 error="write tcp [::1]:8080->[::1]:51514: wsasend: An established connection was aborted by the software in your host machine."
+time=01:42:32 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:57977 error="write tcp [::1]:8080->[::1]:57977: wsasend: An established connection was aborted by the software in your host machine."
+time=01:42:32 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:63298 error="write tcp [::1]:8080->[::1]:63298: wsasend: An established connection was aborted by the software in your host machine."
+time=01:42:34 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:42:34 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:42:36 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:42:36 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:42:36 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=1.843752s
+time=01:45:58 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=01:45:58 level=INFO msg="Terminating all running background processes..."
+time=01:45:58 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=01:45:58 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=01:45:59 level=DEBUG msg="Closing SQLite Engine"
+time=01:46:02 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:46:02 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:46:02 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=01:46:02 level=DEBUG msg="Running database migrations..."
+time=01:46:02 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=01:46:02 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:46:02 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:46:03 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=01:46:03 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=01:46:03 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=01:46:03 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=01:46:03 level=INFO msg="Successfully loaded project configurations" count=0
+time=01:46:03 level=DEBUG msg="Initializing core process manager"
+time=01:46:03 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=01:46:03 level=DEBUG msg="Starting to register API endpoints..."
+time=01:46:03 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=01:46:03 level=DEBUG msg="Booting up background metrics worker..."
+time=01:46:03 level=INFO msg="All API routes and background workers registered successfully"
+time=01:46:03 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=01:46:03 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:53995
+time=01:46:03 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:53995 total_active_clients=1
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=20.4161ms
+time=01:46:09 level=DEBUG msg="Fetching system settings"
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:46:09 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:46:09 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:46:09 level=DEBUG msg="Successfully retrieved system settings"
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=641.2µs
+time=01:46:09 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:61539
+time=01:46:09 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:61539 total_active_clients=2
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:46:09 level=DEBUG msg="Fetching system settings"
+time=01:46:09 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:46:09 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:46:09 level=DEBUG msg="Successfully retrieved system settings"
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=504.1µs
+time=01:46:09 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=504.1µs
+time=01:46:10 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:57389
+time=01:46:10 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:57389 total_active_clients=3
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:46:10 level=DEBUG msg="Fetching system settings"
+time=01:46:10 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:46:10 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:46:10 level=DEBUG msg="Successfully retrieved system settings"
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:46:10 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:54752
+time=01:46:10 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:54752 total_active_clients=4
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=1.709ms
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:46:10 level=DEBUG msg="Fetching system settings"
+time=01:46:10 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:46:10 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:46:10 level=DEBUG msg="Successfully retrieved system settings"
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=581µs
+time=01:46:10 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:55568
+time=01:46:10 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:55568 total_active_clients=5
+time=01:46:10 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:46:13 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:61539 error="write tcp [::1]:8080->[::1]:61539: wsasend: An established connection was aborted by the software in your host machine."
+time=01:46:13 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:57389 error="write tcp [::1]:8080->[::1]:57389: wsasend: An established connection was aborted by the software in your host machine."
+time=01:46:13 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:54752 error="write tcp [::1]:8080->[::1]:54752: wsasend: An established connection was aborted by the software in your host machine."
+time=01:46:13 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:53995 error="write tcp [::1]:8080->[::1]:53995: wsasend: An established connection was aborted by the software in your host machine."
+time=01:46:14 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:46:14 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:46:16 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:46:16 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:16 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.3045109s
+time=01:46:16 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:16 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:16 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:16 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:46:42 level=DEBUG msg="Fetching system settings"
+time=01:46:42 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:46:42 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:46:42 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:46:42 level=DEBUG msg="Successfully retrieved system settings"
+time=01:46:42 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:46:42 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:46:42 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:59909
+time=01:46:42 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:59909 total_active_clients=2
+time=01:46:43 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:55568 error="write tcp [::1]:8080->[::1]:55568: wsasend: An established connection was aborted by the software in your host machine."
+time=01:46:45 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:46:45 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:46:47 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:46:47 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:47 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.2827726s
+time=01:46:47 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:47 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:47 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:46:47 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=1.6662ms
+time=01:47:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.0255ms
+time=01:47:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:12 level=INFO msg="API Request Executed" method=DELETE path=/api/projects/delete status=200 duration=0s
+time=01:47:12 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:13 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:19 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:23 level=INFO msg="Managing tags" original_tag="" new_tag=asd affected_projects=0
+time=01:47:23 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Attempting to save application settings" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Successfully saved application settings via Atomic Write" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Saved tags configuration successfully updated in settings"
+time=01:47:23 level=DEBUG msg="Attempting to save projects configuration" filename=config.json count=9
+time=01:47:23 level=DEBUG msg="Successfully saved projects configuration" filename=config.json
+time=01:47:23 level=INFO msg="Project tags updated and saved successfully"
+time=01:47:23 level=INFO msg="API Request Executed" method=POST path=/api/tags/manage status=200 duration=2.6572ms
+time=01:47:23 level=DEBUG msg="Fetching system settings"
+time=01:47:23 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:47:23 level=DEBUG msg="Successfully retrieved system settings"
+time=01:47:23 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=2.591ms
+time=01:47:23 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:27 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:29 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:31 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=01:47:34 level=INFO msg="API Request Executed" method=POST path=/api/projects/update status=200 duration=0s
+time=01:47:34 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:34 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:38 level=INFO msg="API Request Executed" method=GET path=/ status=304 duration=0s
+time=01:47:38 level=DEBUG msg="Fetching system settings"
+time=01:47:38 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:47:38 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:47:38 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:47:38 level=DEBUG msg="Successfully retrieved system settings"
+time=01:47:38 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:47:38 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:62097
+time=01:47:38 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:62097 total_active_clients=2
+time=01:47:38 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:39 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:41 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:59909 error="write tcp [::1]:8080->[::1]:59909: wsasend: An established connection was aborted by the software in your host machine."
+time=01:47:44 level=INFO msg="Managing tags" original_tag=asd new_tag="" affected_projects=0
+time=01:47:44 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Attempting to save application settings" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Successfully saved application settings via Atomic Write" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Saved tags configuration successfully updated in settings"
+time=01:47:44 level=DEBUG msg="Attempting to save projects configuration" filename=config.json count=9
+time=01:47:44 level=DEBUG msg="Successfully saved projects configuration" filename=config.json
+time=01:47:44 level=INFO msg="Project tags updated and saved successfully"
+time=01:47:44 level=INFO msg="API Request Executed" method=POST path=/api/tags/manage status=200 duration=2.0769ms
+time=01:47:44 level=DEBUG msg="Fetching system settings"
+time=01:47:44 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:47:44 level=DEBUG msg="Successfully retrieved system settings"
+time=01:47:44 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.577ms
+time=01:47:44 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:47:45 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:49:46 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=01:49:46 level=INFO msg="Terminating all running background processes..."
+time=01:49:46 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=01:49:46 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=01:49:47 level=DEBUG msg="Closing SQLite Engine"
+time=01:49:49 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:49:49 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:49:49 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=01:49:49 level=DEBUG msg="Running database migrations..."
+time=01:49:49 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=01:49:49 level=INFO msg="Legacy JSON detected. Starting database migration..." project_count=9
+time=01:49:49 level=INFO msg="Migration completed successfully. Backing up legacy JSON."
+time=01:49:49 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:49:49 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:49:51 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=01:49:51 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=01:49:51 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=01:49:51 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=01:49:51 level=INFO msg="Successfully loaded project configurations" count=0
+time=01:49:51 level=DEBUG msg="Initializing core process manager"
+time=01:49:51 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=01:49:51 level=DEBUG msg="Starting to register API endpoints..."
+time=01:49:51 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=01:49:51 level=DEBUG msg="Booting up background metrics worker..."
+time=01:49:51 level=INFO msg="All API routes and background workers registered successfully"
+time=01:49:51 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=01:49:51 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:53519
+time=01:49:51 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:53519 total_active_clients=1
+time=01:49:55 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=21.414ms
+time=01:49:55 level=DEBUG msg="Fetching system settings"
+time=01:49:55 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:49:55 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:49:55 level=DEBUG msg="Successfully retrieved system settings"
+time=01:49:55 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=1.5041ms
+time=01:49:55 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5041ms
+time=01:49:55 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:49:55 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:56612
+time=01:49:55 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:56612 total_active_clients=2
+time=01:49:56 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:49:56 level=DEBUG msg="Fetching system settings"
+time=01:49:56 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:49:56 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:49:56 level=DEBUG msg="Successfully retrieved system settings"
+time=01:49:56 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:49:56 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:49:56 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:49992
+time=01:49:56 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:49:56 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:49992 total_active_clients=3
+time=01:49:59 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:53519 error="write tcp [::1]:8080->[::1]:53519: wsasend: An established connection was aborted by the software in your host machine."
+time=01:49:59 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:56612 error="write tcp [::1]:8080->[::1]:56612: wsasend: An established connection was aborted by the software in your host machine."
+time=01:49:59 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:49:59 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:01 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:50:01 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:50:01 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.2958394s
+time=01:50:01 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:50:01 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:50:01 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:50:01 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:50:06 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:06 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:09 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\noteapp
+time=01:50:09 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/noteapp
+time=01:50:09 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.6574596s
+time=01:50:09 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/noteapp
+time=01:50:09 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/noteapp
+time=01:50:09 level=DEBUG msg="Detective found .env file" path=C:/Users/Diony/Desktop/noteapp
+time=01:50:09 level=INFO msg="Detective identified Golang project" command="go run main.go" confidence=100
+time=01:50:09 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=504.2µs
+time=01:50:12 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:12 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:16 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=01:50:16 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=01:50:16 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=4.1623764s
+time=01:50:18 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:18 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:37 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:50:37 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:37 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:37 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:37 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:37 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:37 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:37 level=DEBUG msg="Fetching system settings"
+time=01:50:37 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:50:37 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:50:37 level=DEBUG msg="Successfully retrieved system settings"
+time=01:50:37 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=521.2µs
+time=01:50:37 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=521.2µs
+time=01:50:37 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:53995
+time=01:50:37 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:53995 total_active_clients=2
+time=01:50:37 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:50:39 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=01:50:39 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=01:50:39 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=1.8100014s
+time=01:50:40 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=01:50:40 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=01:50:40 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.882932s
+time=01:50:40 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=01:50:40 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=01:50:40 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.2443831s
+time=01:50:41 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:49992 error="write tcp [::1]:8080->[::1]:49992: wsasend: An established connection was aborted by the software in your host machine."
+time=01:50:42 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:50:42 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:50:59 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\survivor_test
+time=01:50:59 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/survivor_test
+time=01:50:59 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=17.5298807s
+time=01:50:59 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/survivor_test
+time=01:50:59 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/survivor_test
+time=01:50:59 level=INFO msg="Detective identified Golang project" command="go run main.go" confidence=100
+time=01:50:59 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:51:02 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:51:02 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:51:06 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\DionyHub
+time=01:51:06 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/DionyHub
+time=01:51:06 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.6503931s
+time=01:51:06 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub
+time=01:51:06 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/DionyHub
+time=01:51:06 level=DEBUG msg="Detective found .env file" path=C:/Users/Diony/Desktop/DionyHub
+time=01:51:06 level=INFO msg="Detective identified Golang project" command="go run cmd/server/main.go" confidence=100
+time=01:51:06 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:51:34 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=01:51:34 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=01:51:34 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=1m15.4127867s
+time=01:54:09 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:54:09 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:54:12 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:54:12 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:12 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.3062331s
+time=01:54:12 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:12 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:12 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:12 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:54:16 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:54:16 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:54:19 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:54:19 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:19 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.3553732s
+time=01:54:19 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:19 level=DEBUG msg="Smart Detective initiated scan" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:19 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:54:19 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=01:57:53 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=01:57:53 level=INFO msg="Terminating all running background processes..."
+time=01:57:53 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=01:57:53 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=01:57:54 level=DEBUG msg="Closing SQLite Engine"
+time=01:59:42 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:59:43 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:59:43 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=01:59:43 level=DEBUG msg="Running database migrations..."
+time=01:59:43 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=01:59:43 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=01:59:43 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=01:59:43 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=01:59:43 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=01:59:43 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=01:59:43 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=01:59:43 level=INFO msg="Successfully loaded project configurations" count=0
+time=01:59:43 level=DEBUG msg="Initializing core process manager"
+time=01:59:43 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=01:59:43 level=DEBUG msg="Starting to register API endpoints..."
+time=01:59:43 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=01:59:43 level=DEBUG msg="Booting up background metrics worker..."
+time=01:59:43 level=INFO msg="All API routes and background workers registered successfully"
+time=01:59:43 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=01:59:46 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58693
+time=01:59:46 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58693 total_active_clients=1
+time=01:59:47 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=24.0965ms
+time=01:59:47 level=DEBUG msg="Fetching system settings"
+time=01:59:47 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:59:47 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:59:47 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:59:47 level=DEBUG msg="Successfully retrieved system settings"
+time=01:59:47 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=636.5µs
+time=01:59:48 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:59:48 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:53939
+time=01:59:48 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:53939 total_active_clients=2
+time=01:59:48 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=01:59:48 level=DEBUG msg="Fetching system settings"
+time=01:59:48 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:59:48 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:59:48 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:59:48 level=DEBUG msg="Successfully retrieved system settings"
+time=01:59:48 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=01:59:48 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:56892
+time=01:59:48 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=01:59:48 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:56892 total_active_clients=3
+time=01:59:49 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:58693 error="write tcp [::1]:8080->[::1]:58693: wsasend: An established connection was aborted by the software in your host machine."
+time=01:59:51 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:53939 error="write tcp [::1]:8080->[::1]:53939: wsasend: An established connection was aborted by the software in your host machine."
+time=01:59:51 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=01:59:51 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=01:59:51 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=01:59:51 level=INFO msg="Requesting process start" project_id=1781915741808 command=go interactive=false
+time=01:59:51 level=INFO msg="OS Process successfully spawned" project_id=1781915741808 pid=36096
+time=01:59:51 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=5.3804ms
+time=01:59:53 level=INFO msg="Stop sequence initiated for process" project_id=1781915741808
+time=01:59:53 level=DEBUG msg="Summoning Zombie Reaper" project_id=1781915741808 pid=36096
+time=01:59:53 level=DEBUG msg="Zombie Reaper activated: Scanning for process tree" parent_pid=36096
+time=01:59:53 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1781915741808
+time=01:59:53 level=INFO msg="Project process stopped by user" project_id=1781915741808 project_name=zombi_test uptime=1s
+time=01:59:53 level=INFO msg="Zombie Reaper successfully cleared process tree" project_id=1781915741808 pid=36096
+time=01:59:53 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=167.198ms
+time=01:59:55 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=01:59:55 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=01:59:57 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=01:59:57 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=01:59:57 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.0389316s
+time=01:59:57 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=01:59:57 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/zombi_test
+time=01:59:57 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=01:59:57 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=1.0747ms
+time=02:00:02 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:02 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:05 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\DionyHub
+time=02:00:05 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/DionyHub
+time=02:00:05 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.6385806s
+time=02:00:05 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub
+time=02:00:05 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub
+time=02:00:05 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=02:00:09 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:09 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:11 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\noteapp
+time=02:00:11 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/noteapp
+time=02:00:11 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.2117811s
+time=02:00:11 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/noteapp
+time=02:00:11 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/noteapp
+time=02:00:11 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=02:00:14 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:14 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:25 level=DEBUG msg="Folder picker dialog returned an empty path (likely cancelled)"
+time=02:00:25 level=DEBUG msg="Folder picker dialogue cancelled or failed" error=<nil>
+time=02:00:25 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=10.1773062s
+time=02:00:27 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:27 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:30 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\noteapp
+time=02:00:30 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/noteapp
+time=02:00:30 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.9782041s
+time=02:00:30 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/noteapp
+time=02:00:30 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/noteapp
+time=02:00:30 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=995.9µs
+time=02:00:33 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:33 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:38 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\pc_kapama_forgames
+time=02:00:38 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:38 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=5.1739358s
+time=02:00:38 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:38 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:38 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=503.1µs
+time=02:00:39 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=02:00:39 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=02:00:44 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\pc_kapama_forgames
+time=02:00:44 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:44 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=4.1478897s
+time=02:00:44 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:44 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/pc_kapama_forgames
+time=02:00:44 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=02:01:03 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.5485ms
+time=02:01:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=02:01:04 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=02:01:09 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=02:01:09 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=02:01:09 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=02:01:09 level=INFO msg="Requesting process start" project_id=1781996463345 command=go interactive=false
+time=02:01:09 level=INFO msg="OS Process successfully spawned" project_id=1781996463345 pid=41896
+time=02:01:09 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.4685ms
+time=02:01:13 level=INFO msg="Stop sequence initiated for process" project_id=1781996463345
+time=02:01:13 level=DEBUG msg="Summoning Zombie Reaper" project_id=1781996463345 pid=41896
+time=02:01:13 level=DEBUG msg="Zombie Reaper activated: Scanning for process tree" parent_pid=41896
+time=02:01:13 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1781996463345
+time=02:01:13 level=INFO msg="Project process stopped by user" project_id=1781996463345 project_name=pc_kapama_forgames uptime=3s
+time=02:01:13 level=INFO msg="Zombie Reaper successfully cleared process tree" project_id=1781996463345 pid=41896
+time=02:01:13 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=164.5981ms
+time=02:04:27 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=02:04:27 level=INFO msg="Terminating all running background processes..."
+time=02:04:27 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=02:04:27 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=02:04:28 level=DEBUG msg="Closing SQLite Engine"

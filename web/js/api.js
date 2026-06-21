@@ -30,15 +30,80 @@ async function saveSettings() {
     } catch (e) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
+// --- YENİ VE KONUŞAN AKILLI DEDEKTİF (HEURISTICS) MOTORU ---
+async function triggerSmartDetection(fullPath, isEdit = false) {
+    if (!fullPath) return;
+
+    const useWsCb = document.getElementById('useWorkspace');
+    if (useWsCb && useWsCb.checked && !isEdit) {
+        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+        fullPath = formattedWs + fullPath;
+    }
+
+    // Dedektifin çalıştığını anlık olarak gösteriyoruz
+    showToast("Dedektif klasörü analiz ediyor...", "success");
+
+    try {
+        const res = await fetch(`/api/projects/detect?path=${encodeURIComponent(fullPath)}`);
+        if (res.ok) {
+            const data = await res.json();
+            
+            if (data.detected) {
+                const cmdInputId = isEdit ? 'editProjCmd' : 'projCmd';
+                const tagInputId = isEdit ? 'editProjTag' : 'projTag';
+
+                const cmdInput = document.getElementById(cmdInputId);
+                const tagInput = document.getElementById(tagInputId);
+
+                if (cmdInput && cmdInput.value.trim() === "") cmdInput.value = data.command;
+                if (tagInput && tagInput.value.trim() === "") tagInput.value = data.language;
+
+                if (data.has_env && !isEdit) {
+                    const customCb = document.getElementById('addEnvCustom');
+                    if (customCb && !customCb.checked) {
+                        customCb.checked = true;
+                        if (typeof toggleAddEnvMode === 'function') toggleAddEnvMode('custom');
+                    }
+                    showToast(`Dedektif: ${data.language} projesi ve .env dosyası algıladı!`, "success");
+                } else {
+                    showToast(`Dedektif: ${data.language} projesi algıladı!`, "success");
+                }
+            } else {
+                // EĞER PROJE BULAMAZSA SESSİZ KALMASIN, UYARSIN!
+                showToast("Dedektif: Bu klasörde tanıdık bir proje (Go/Node/Python) bulunamadı.", "error");
+            }
+        }
+    } catch (err) {
+        console.error("Smart detective failed to scan path:", err);
+        showToast("Dedektif motoru klasörü tararken hata verdi.", "error");
+    }
+}
+
 async function browseFolder(inputId, handleWorkspace = true) {
     try {
         const res = await fetch('/api/system/browse'); const data = await res.json();
         if (data.path && data.path !== "") {
             document.getElementById(inputId).value = data.path;
             if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
+            
+            // Klasör seçildiği anda dedektifi tetikle
+            if (inputId === 'projPath' || inputId === 'editProjPath') {
+                triggerSmartDetection(data.path, inputId === 'editProjPath');
+            }
         }
     } catch (e) { showToast("Failed to open native folder picker.", "error"); }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const pathInput = document.getElementById('projPath');
+    let detectTimeout;
+    if (pathInput) {
+        pathInput.addEventListener('input', (e) => {
+            clearTimeout(detectTimeout);
+            detectTimeout = setTimeout(() => triggerSmartDetection(e.target.value, false), 600);
+        });
+    }
+});
 
 async function submitNewProject(e) {
     e.preventDefault(); 
