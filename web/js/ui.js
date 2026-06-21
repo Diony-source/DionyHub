@@ -641,7 +641,6 @@ function handleDrop(e) {
 function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
 
 
-// --- 🚨 ŞEFKATLİ PORT DEDEKTİFİ MODALI 🚨 ---
 function showPortConflictModal(port, pName, pid, projectId, safeName, btn) {
     let modal = document.getElementById('portConflictModal');
     if (!modal) {
@@ -703,7 +702,6 @@ function showPortConflictModal(port, pName, pid, projectId, safeName, btn) {
     });
 }
 
-// --- 🚀 UÇUŞ ÖNCESİ EKSİK DONANIM UYARI MODALI (PRE-FLIGHT CHECK) ---
 function showMissingDependencyModal(binary) {
     let modal = document.getElementById('dependencyModal');
     if (!modal) {
@@ -748,3 +746,124 @@ function showMissingDependencyModal(binary) {
         document.getElementById('dependencyBox').classList.replace('scale-95', 'scale-100');
     });
 }
+
+// --- YENİ MİMARİ: KUSURSUZ AKIŞKAN SÜRÜKLE BIRAK (DRAG & DROP) ---
+function initGlobalDragAndDrop() {
+    let overlay = document.getElementById('dragOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'dragOverlay';
+        // Zırhımız başlangıçta tıklamaları geçirmemeli (pointer-events-none)
+        overlay.className = 'fixed inset-0 z-[1000] hidden bg-[#0a0c10]/80 backdrop-blur-sm flex items-center justify-center pointer-events-none transition-all duration-300 opacity-0';
+        overlay.innerHTML = `
+            <div class="bg-[#11151f] p-12 rounded-3xl shadow-[0_0_80px_rgba(99,102,241,0.3)] flex flex-col items-center border-2 border-dashed border-indigo-500/70 transform scale-110 transition-transform duration-300" id="dragOverlayBox">
+                <div class="w-24 h-24 mb-6 rounded-full bg-indigo-500/20 flex items-center justify-center animate-bounce shadow-[0_0_30px_rgba(99,102,241,0.5)]">
+                    <svg class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <h2 class="text-3xl font-black text-white mb-3 tracking-wide drop-shadow-md">Projeyi Buraya Bırak</h2>
+                <p class="text-indigo-300/80 font-bold text-lg text-center">GitHub Linki veya Klasör Sürükleyebilirsiniz<br><span class="text-xs text-rose-400 mt-2 block">(Not: Web güvenliği gereği klasörler sadece Workspace içinden sürüklenmelidir)</span></p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    // Tarayıcının dosyayı veya linki yeni sekmede açmasını kesin olarak engelliyoruz!
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        window.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    let dragCounter = 0;
+
+    window.addEventListener('dragenter', (e) => {
+        if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('text/plain') || e.dataTransfer.types.includes('text/uri-list')) {
+            dragCounter++;
+            if (dragCounter === 1) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                // Ekrana girince zırhı aktifleştir ki diğer elementler titreşim yapmasın
+                overlay.style.pointerEvents = 'auto';
+                requestAnimationFrame(() => {
+                    overlay.classList.remove('opacity-0');
+                    document.getElementById('dragOverlayBox').classList.replace('scale-110', 'scale-100');
+                });
+            }
+        }
+    });
+
+    window.addEventListener('dragleave', (e) => {
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            hideOverlay();
+        }
+    });
+
+    window.addEventListener('drop', (e) => {
+        dragCounter = 0;
+        hideOverlay();
+
+        // 1. GITHUB LİNKİ SÜRÜKLENDİYSE (Chrome sekmesinden vs)
+        const textData = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+        if (textData && (textData.includes('github.com') || textData.includes('gitlab.com'))) {
+            openModal();
+            document.querySelector('input[name="sourceMode"][value="github"]').checked = true;
+            toggleSourceMode();
+            document.getElementById('repoUrl').value = textData.trim();
+            document.getElementById('projCmd').value = '';
+            document.getElementById('projTag').value = '';
+            showToast("GitHub URL başarıyla yakalandı!", "success");
+            return;
+        }
+
+        // 2. LOKAL KLASÖR SÜRÜKLENDİYSE
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const cleanName = file.name.replace(/[^a-zA-Z0-9_-]/g, ' ');
+            
+            openModal();
+            document.querySelector('input[name="sourceMode"][value="local"]').checked = true;
+            toggleSourceMode();
+            
+            // Tarayıcı güvenliği tam yolu vermez, klasörün Workspace içinde olduğunu varsayarız
+            const useWsCb = document.getElementById('useWorkspace');
+            if (useWsCb) useWsCb.checked = true;
+            toggleWorkspaceMode();
+            
+            document.getElementById('projPath').value = file.name;
+            document.getElementById('projName').value = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+            
+            const ws = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
+            triggerSmartDetection(ws + file.name, false);
+        }
+    });
+
+    function hideOverlay() {
+        overlay.classList.add('opacity-0');
+        document.getElementById('dragOverlayBox').classList.replace('scale-100', 'scale-110');
+        overlay.style.pointerEvents = 'none';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }, 300);
+    }
+}
+
+// BÜTÜN DİNLEYİCİLERİ DOM YÜKLENDİĞİNDE BAŞLAT
+document.addEventListener('DOMContentLoaded', () => {
+    const pathInput = document.getElementById('projPath');
+    let detectTimeout;
+    if (pathInput) {
+        pathInput.addEventListener('input', (e) => {
+            clearTimeout(detectTimeout);
+            detectTimeout = setTimeout(() => triggerSmartDetection(e.target.value, false), 600);
+        });
+    }
+
+    // Drag & Drop Sihrini Başlat
+    initGlobalDragAndDrop();
+});

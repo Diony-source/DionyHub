@@ -216,3 +216,115 @@ time=2026-06-21T15:05:56.087+03:00 level=INFO msg="Terminating all running backg
 time=2026-06-21T15:05:56.087+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
 time=2026-06-21T15:05:56.087+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
 time=2026-06-21T15:05:57.087+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-21T16:19:48.766+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T16:19:48.784+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T16:19:48.786+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T16:19:48.786+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T16:19:50.209+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T16:19:50.209+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T16:19:50.209+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T16:19:50.209+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T16:19:54.106+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=28.0736ms
+time=2026-06-21T16:19:54.411+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T16:19:54.411+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T16:19:54.412+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T16:19:54.412+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T16:19:54.412+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=637.4µs
+time=2026-06-21T16:19:54.418+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.6332ms
+time=2026-06-21T16:19:54.508+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=1.0002ms
+time=2026-06-21T16:19:55.151+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-21T16:19:55.327+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T16:19:55.327+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T16:19:55.327+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T16:19:55.327+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T16:19:55.327+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=2026-06-21T16:19:55.336+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=8.5283ms
+time=2026-06-21T16:19:55.381+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-21T16:19:57.239+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:56583
+time=2026-06-21T16:19:57.239+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:56583 total_active_clients=1
+time=2026-06-21T16:23:03.989+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-21T16:23:03.989+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-21T16:23:03.989+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-21T16:23:03.989+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-21T16:23:04.989+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-21T16:23:09.881+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T16:23:09.900+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T16:23:09.902+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T16:23:09.902+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T16:23:10.894+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T16:23:10.894+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T16:23:10.895+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T16:23:10.895+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T16:23:13.969+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51630
+time=2026-06-21T16:23:13.969+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51630 total_active_clients=1
+time=2026-06-21T16:23:15.422+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=22.0007ms
+time=2026-06-21T16:23:15.674+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T16:23:15.674+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T16:23:15.674+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T16:23:15.674+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T16:23:15.674+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51630 error="write tcp [::1]:8080->[::1]:51630: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-21T16:23:15.674+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=504.3µs
+time=2026-06-21T16:23:15.681+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=7.5046ms
+time=2026-06-21T16:23:15.762+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:60540
+time=2026-06-21T16:23:15.762+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:60540 total_active_clients=1
+time=2026-06-21T16:23:15.763+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=1.062ms
+time=2026-06-21T16:23:16.366+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-21T16:23:16.536+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T16:23:16.536+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T16:23:16.536+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:60540 error="write tcp [::1]:8080->[::1]:60540: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-21T16:23:16.536+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T16:23:16.537+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T16:23:16.537+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=497.9µs
+time=2026-06-21T16:23:16.548+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=11.109ms
+time=2026-06-21T16:23:16.611+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:57347
+time=2026-06-21T16:23:16.612+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:57347 total_active_clients=1
+time=2026-06-21T16:23:16.612+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-21T16:23:33.348+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:33.348+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:33.348+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:33.348+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-21T16:23:57.303+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:57.303+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:57.303+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/env_test
+time=2026-06-21T16:23:57.303+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-21T16:32:24.188+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-21T16:32:24.188+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-21T16:32:24.188+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-21T16:32:24.188+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-21T16:32:25.188+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-21T16:32:27.975+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T16:32:27.994+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T16:32:27.996+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T16:32:27.996+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T16:32:28.882+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T16:32:28.882+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T16:32:28.882+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T16:32:28.883+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T16:32:29.119+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:54571
+time=2026-06-21T16:32:29.120+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:54571 total_active_clients=1
+time=2026-06-21T16:33:51.025+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-21T16:33:51.025+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-21T16:33:51.025+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-21T16:33:51.025+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-21T16:33:52.026+03:00 level=DEBUG msg="Closing SQLite Engine"
