@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Diony-source/DionyHub/internal/config"
-	"github.com/Diony-source/DionyHub/internal/database" // YENİ: Veritabanı paketimizi içeri alıyoruz
+	"github.com/Diony-source/DionyHub/internal/database"
 	"github.com/Diony-source/DionyHub/internal/process"
 )
 
@@ -19,7 +19,7 @@ type Server struct {
 	mu          sync.RWMutex
 	projects    []config.Project
 	broadcaster *Broadcaster
-	db          *database.Engine // YENİ: Titanyum SQLite motorumuz artık API sunucusunun merkezinde
+	db          *database.Engine
 }
 
 // NewServer initializes a new Server, injects dependencies, and configures crash detection callbacks.
@@ -30,7 +30,7 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster, db *datab
 		manager:     m,
 		projects:    p,
 		broadcaster: b,
-		db:          db, // YENİ: main.go'dan gelen motoru sunucumuza takıyoruz
+		db:          db,
 	}
 
 	// Setup global crash and exit detection hook
@@ -48,37 +48,32 @@ func NewServer(m *process.Manager, p []config.Project, b *Broadcaster, db *datab
 			uptimeStr = fmt.Sprintf("%ds", secs)
 		}
 
-		var projMsg, sysMsg string
+		var projMsg string
 		if isCrash {
-			// PROJE ÇÖKTÜĞÜNDE KIRMIZI ALARM (Hem arayüze hem arşive)
+			// PROJE ÇÖKTÜĞÜNDE (Slog ile atılan log otomatik olarak System UI Terminaline düşecek)
 			slog.Error("Project process crashed unexpectedly!",
 				slog.String("project_id", id),
 				slog.String("project_name", name),
 				slog.String("uptime", uptimeStr),
 			)
 			projMsg = fmt.Sprintf("\r\n\x1b[1;31m[DionyHub] Process crashed unexpectedly! (Uptime: %s)\x1b[0m\r\n", uptimeStr)
-			sysMsg = fmt.Sprintf("\x1b[1;31m[CRASH]\x1b[0m Project '%s' crashed after %s.", name, uptimeStr)
 		} else {
-			// KULLANICI KENDİ KAPATTIĞINDA (Sadece bilgi logu)
+			// KULLANICI KAPATTIĞINDA
 			slog.Info("Project process stopped by user",
 				slog.String("project_id", id),
 				slog.String("project_name", name),
 				slog.String("uptime", uptimeStr),
 			)
 			projMsg = fmt.Sprintf("\r\n\x1b[1;33m[DionyHub] Process stopped by user. (Uptime: %s)\x1b[0m\r\n", uptimeStr)
-			sysMsg = fmt.Sprintf("\x1b[1;33m[INFO]\x1b[0m Project '%s' stopped by user after %s.", name, uptimeStr)
 		}
 
-		// Yutulan hatayı ( _ ) düzelttik
+		// Bu mesaj sadece spesifik projenin kendi terminal ekranına gider
 		projLog, err := json.Marshal(map[string]string{"id": id, "data": projMsg})
 		if err != nil {
 			slog.Error("Failed to marshal exit message for websocket", slog.Any("error", err))
 		} else {
 			s.broadcaster.Write(projLog)
 		}
-
-		// Diske de kaydet (DionyHub sistem terminalinde görünmesi için)
-		s.manager.WriteSystemLog(sysMsg + "\r\n")
 	}
 
 	return s

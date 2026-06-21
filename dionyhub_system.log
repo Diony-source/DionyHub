@@ -151,3 +151,68 @@
 [36m[AUDIT][0m [33mfiber[0m -> 🚀 [32mProject started successfully (PID: 36044).[0m
 [36m[AUDIT][0m [33mfiber[0m -> 🛑 Stop signal sent. Terminating process tree...
 [1;33m[INFO][0m Project 'fiber' stopped by user after 8s.
+time=2026-06-21T14:58:54.982+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T14:58:55.001+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T14:58:55.003+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T14:58:55.003+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T14:58:55.818+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T14:58:55.818+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T14:58:55.818+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T14:58:55.818+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T14:58:58.019+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:61490
+time=2026-06-21T14:58:58.019+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:61490 total_active_clients=1
+time=2026-06-21T14:59:02.960+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=19.8839ms
+time=2026-06-21T14:59:03.223+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T14:59:03.223+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T15:03:19.060+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T15:03:19.078+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T15:03:19.084+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T15:03:19.084+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T15:03:19.893+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T15:03:19.893+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T15:03:19.893+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T15:03:19.893+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T15:03:19.893+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T15:03:19.894+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T15:03:19.894+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T15:03:19.894+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T15:03:19.894+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T15:03:19.895+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T15:03:19.895+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T15:03:24.636+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=23.986ms
+time=2026-06-21T15:03:24.839+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T15:03:24.839+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T15:03:24.839+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T15:03:24.839+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T15:03:24.839+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=503.5µs
+time=2026-06-21T15:03:24.845+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.2365ms
+time=2026-06-21T15:03:24.932+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-21T15:03:24.932+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63122
+time=2026-06-21T15:03:24.932+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63122 total_active_clients=1
+time=2026-06-21T15:03:39.832+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-21T15:03:39.839+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T15:03:39.839+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T15:03:39.839+03:00 level=INFO msg="Requesting process start" project_id=1781915741808 command=go interactive=false
+time=2026-06-21T15:03:39.842+03:00 level=INFO msg="OS Process successfully spawned" project_id=1781915741808 pid=33956
+[36m[AUDIT][0m [33mzombi_test[0m -> 🚀 [32mProject started successfully (PID: 33956).[0m
+time=2026-06-21T15:03:39.843+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=11.4344ms
+time=2026-06-21T15:04:02.704+03:00 level=INFO msg="Stop sequence initiated for process" project_id=1781915741808
+[36m[AUDIT][0m [33mzombi_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+time=2026-06-21T15:04:02.704+03:00 level=DEBUG msg="Summoning Zombie Reaper" project_id=1781915741808 pid=33956
+time=2026-06-21T15:04:02.704+03:00 level=DEBUG msg="Zombie Reaper activated: Scanning for process tree" parent_pid=33956
+time=2026-06-21T15:04:02.787+03:00 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1781915741808
+time=2026-06-21T15:04:02.787+03:00 level=INFO msg="Project process stopped by user" project_id=1781915741808 project_name=zombi_test uptime=22s
+time=2026-06-21T15:04:02.861+03:00 level=INFO msg="Zombie Reaper successfully cleared process tree" project_id=1781915741808 pid=33956
+time=2026-06-21T15:04:02.861+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=156.3891ms
+time=2026-06-21T15:05:56.087+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-21T15:05:56.087+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-21T15:05:56.087+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-21T15:05:56.087+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-21T15:05:57.087+03:00 level=DEBUG msg="Closing SQLite Engine"
