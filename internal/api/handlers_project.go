@@ -16,6 +16,7 @@ import (
 	"github.com/Diony-source/DionyHub/internal/archive"
 	"github.com/Diony-source/DionyHub/internal/config"
 	"github.com/Diony-source/DionyHub/internal/detector"
+	"github.com/Diony-source/DionyHub/internal/process"
 )
 
 type ProjectResponse struct {
@@ -422,7 +423,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 				s.syncMemory()
 				sendLog("\x1b[36m>>> Project is fully configured and ready.\x1b[0m\r\n")
 
-				// --- YENİ EKLENEN SİHİR: ARAYÜZE "YENİLE" EMRİ VER ---
 				reloadMsg, _ := json.Marshal(map[string]string{"id": projectID, "action": "reload"})
 				s.broadcaster.Write(reloadMsg)
 
@@ -587,11 +587,57 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := strings.TrimSpace(r.URL.Query().Get("id"))
-
 	target, err := s.db.GetProjectByID(id)
 	if err != nil {
 		slog.Error("Start request failed: Database lookup error", slog.String("project_id", id), slog.Any("error", err))
 		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// 🚨 ŞEFKATLİ PORT DEDEKTİFİ
+	forceStart := r.URL.Query().Get("force") == "true"
+	envFile := filepath.Join(target.Path, ".env")
+	if envContent, err := os.ReadFile(envFile); err == nil {
+		port := process.ExtractPortFromEnv(string(envContent))
+		if port != "" {
+			pid, pName, err := process.GetProcessByPort(port)
+			if err == nil && pid > 0 {
+				if forceStart {
+					slog.Info("Port Guardian resolving conflict forcibly", slog.Int("pid", pid), slog.String("name", pName))
+					process.ForceKill(pid)
+					time.Sleep(800 * time.Millisecond)
+				} else {
+					slog.Warn("Port conflict detected", slog.String("port", port), slog.Int("pid", pid))
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusConflict)
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"error":        "port_conflict",
+						"port":         port,
+						"process_name": pName,
+						"pid":          pid,
+					})
+					return
+				}
+			}
+		}
+	}
+
+	parts := strings.Fields(target.Command)
+	if len(parts) == 0 {
+		http.Error(w, `{"error": "Invalid command configuration"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// --- 🚀 YENİ EKLENEN: UÇUŞ ÖNCESİ DONANIM KONTROLÜ (PRE-FLIGHT CHECK) ---
+	binary := parts[0]
+	if _, err := exec.LookPath(binary); err != nil {
+		slog.Warn("Pre-flight check failed: binary not found", slog.String("binary", binary))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusFailedDependency) // 424 Failed Dependency
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  "missing_dependency",
+			"binary": binary,
+		})
 		return
 	}
 
@@ -601,12 +647,6 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 		os.WriteFile(logPath, []byte(""), 0666)
 		wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
 		s.broadcaster.Write(wsMsg)
-	}
-
-	parts := strings.Fields(target.Command)
-	if len(parts) == 0 {
-		http.Error(w, `{"error": "Invalid command configuration"}`, http.StatusInternalServerError)
-		return
 	}
 
 	settings, _ := config.LoadSettings("app_config.json")
@@ -676,18 +716,21 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if target.ClearOnStart {
-			logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
-			os.MkdirAll(filepath.Dir(logPath), 0755)
-			os.WriteFile(logPath, []byte(""), 0666)
-			wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
-			s.broadcaster.Write(wsMsg)
-		}
-
 		parts := strings.Fields(target.Command)
 		if len(parts) > 0 {
-			if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
-				startedCount++
+			// YENİ EKLENEN: Toplu Başlatmada Pre-flight Check (Yüklü değilse direkt atlar, sistemi kitlemez)
+			if _, err := exec.LookPath(parts[0]); err == nil {
+				if target.ClearOnStart {
+					logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+					os.MkdirAll(filepath.Dir(logPath), 0755)
+					os.WriteFile(logPath, []byte(""), 0666)
+					wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
+					s.broadcaster.Write(wsMsg)
+				}
+
+				if err := s.manager.Start(target.ID, target.Name, target.Path, target.Interactive, target.AutoRestart, globalEnvs, parts[0], parts[1:]...); err == nil {
+					startedCount++
+				}
 			}
 		}
 	}

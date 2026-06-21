@@ -51,18 +51,19 @@ func AnalyzePath(targetPath string) Result {
 		res.Detected = true
 		res.Language = "Makefile"
 		res.Command = "make"
-		res.Confidence = 80 // Makefile başka dillerle birlikte olabilir ama evrensel bir başlatıcıdır
-		// Hemen dönmüyoruz, eğer Makefile varsa bile belki daha spesifik bir dil bulabiliriz, o yüzden devam edebiliriz.
-		// Ancak basitlik için, make varsa genelde "make run" veya "make start" çalışır. Şimdilik burada tutalım.
+		res.Confidence = 80
 	}
 
-	// === 1. GOLANG (Dinamik Entrypoint Taraması) ===
-	if _, err := os.Stat(filepath.Join(targetPath, "go.mod")); err == nil {
+	// === 1. GOLANG (Dinamik Entrypoint ve Bağımsız Script Taraması) ===
+	_, errGoMod := os.Stat(filepath.Join(targetPath, "go.mod"))
+	_, errMainGo := os.Stat(filepath.Join(targetPath, "main.go"))
+
+	// go.mod YOKSA BİLE main.go varsa Go projesi olduğunu anlar
+	if errGoMod == nil || errMainGo == nil {
 		res.Detected = true
 		res.Language = "Go"
-		res.Confidence = 90
+		res.Confidence = 80
 
-		// Dinamik olarak cmd/ klasörü içinde main.go arama motoru
 		cmdPath := filepath.Join(targetPath, "cmd")
 		foundMain := ""
 		if info, err := os.Stat(cmdPath); err == nil && info.IsDir() {
@@ -72,9 +73,8 @@ func AnalyzePath(targetPath string) Result {
 				}
 				if !d.IsDir() && d.Name() == "main.go" {
 					rel, _ := filepath.Rel(targetPath, path)
-					// Windows'ta ters eğik çizgileri düzeltiriz ki "go run cmd/server/main.go" şeklinde temiz çıksın
 					foundMain = filepath.ToSlash(rel)
-					return filepath.SkipDir // İlk bulduğunu al ve taramayı durdur
+					return filepath.SkipDir
 				}
 				return nil
 			})
@@ -83,7 +83,7 @@ func AnalyzePath(targetPath string) Result {
 		if foundMain != "" {
 			res.Command = "go run " + foundMain
 			res.Confidence = 100
-		} else if _, err := os.Stat(filepath.Join(targetPath, "main.go")); err == nil {
+		} else if errMainGo == nil { // Ana dizinde main.go bulundu
 			res.Command = "go run main.go"
 			res.Confidence = 100
 		} else {
@@ -92,7 +92,7 @@ func AnalyzePath(targetPath string) Result {
 		return res
 	}
 
-	// === 2. NODE.JS (NPM, Yarn, Bun, Deno) ===
+	// === 2. NODE.JS (NPM, Yarn, Bun, Deno ve Bağımsız JS) ===
 	if _, err := os.Stat(filepath.Join(targetPath, "deno.json")); err == nil {
 		res.Detected = true
 		res.Language = "Deno"
@@ -113,7 +113,6 @@ func AnalyzePath(targetPath string) Result {
 		res.Confidence = 80
 		res.Command = "npm start" // Varsayılan
 
-		// Yarn veya pnpm kullanıyor mu?
 		if _, err := os.Stat(filepath.Join(targetPath, "yarn.lock")); err == nil {
 			res.Command = "yarn start"
 		} else if _, err := os.Stat(filepath.Join(targetPath, "pnpm-lock.yaml")); err == nil {
@@ -147,7 +146,23 @@ func AnalyzePath(targetPath string) Result {
 		return res
 	}
 
-	// === 3. PYTHON (Django, Flask, Standart, Pipenv) ===
+	// Package.json yok ama bağımsız Node dosyası var
+	if _, err := os.Stat(filepath.Join(targetPath, "index.js")); err == nil {
+		res.Detected = true
+		res.Language = "Node.js"
+		res.Command = "node index.js"
+		res.Confidence = 70
+		return res
+	}
+	if _, err := os.Stat(filepath.Join(targetPath, "app.js")); err == nil {
+		res.Detected = true
+		res.Language = "Node.js"
+		res.Command = "node app.js"
+		res.Confidence = 70
+		return res
+	}
+
+	// === 3. PYTHON (Django, Flask, Standart, Pipenv ve Bağımsız PY) ===
 	if _, err := os.Stat(filepath.Join(targetPath, "manage.py")); err == nil {
 		res.Detected = true
 		res.Language = "Python (Django)"
@@ -158,12 +173,28 @@ func AnalyzePath(targetPath string) Result {
 	if _, err := os.Stat(filepath.Join(targetPath, "requirements.txt")); err == nil {
 		res.Detected = true
 		res.Language = "Python"
-		res.Command = "python app.py" // Genel varsayım
+		res.Command = "python app.py"
 		res.Confidence = 70
 		if _, err := os.Stat(filepath.Join(targetPath, "main.py")); err == nil {
 			res.Command = "python main.py"
 			res.Confidence = 90
 		}
+		return res
+	}
+
+	// requirements.txt yok ama bağımsız Python scripti var
+	if _, err := os.Stat(filepath.Join(targetPath, "main.py")); err == nil {
+		res.Detected = true
+		res.Language = "Python"
+		res.Command = "python main.py"
+		res.Confidence = 80
+		return res
+	}
+	if _, err := os.Stat(filepath.Join(targetPath, "app.py")); err == nil {
+		res.Detected = true
+		res.Language = "Python"
+		res.Command = "python app.py"
+		res.Confidence = 80
 		return res
 	}
 
@@ -276,12 +307,10 @@ func AnalyzePath(targetPath string) Result {
 		return res
 	}
 
-	// Makefile daha önce bulunduysa ama üstteki spesifik dillere girmediyse, onu kullanalım
 	if res.Detected && res.Language == "Makefile" {
 		return res
 	}
 
-	// Eğer hiçbir şablon eşleşmezse
 	slog.Info("Detective could not definitively identify project type", slog.String("path", targetPath))
 	res.Detected = false
 	res.ErrorMessage = "Proje dili otomatik algılanamadı, lütfen komutu manuel girin."

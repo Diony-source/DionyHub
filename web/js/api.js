@@ -182,7 +182,6 @@ async function executeDelete() {
 async function executeBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-    // YENİ: Virgüllü tag filtremesi
     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID);
     if (idsToProcess.length === 0) return;
 
@@ -205,7 +204,6 @@ async function executeBulkDelete() {
 async function executeBulkAction(action) {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
-    // YENİ: Virgüllü tag filtremesi
     else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
     if (idsToProcess.length === 0) return;
 
@@ -232,13 +230,39 @@ async function saveNewOrder() {
     } catch(e) { showToast("Network error", "error"); }
 }
 
-async function startProject(id, name, btn) { 
-    getOrCreateTerminal(id, name); const originalHTML = toggleButtonLoading(btn, true);
+// --- GÜNCELLENDİ: PRE-FLIGHT (424) VE PORT (409) YAKALAYICISI EKLENDİ ---
+async function startProject(id, name, btn, force = false) { 
+    getOrCreateTerminal(id, name); 
+    const originalHTML = toggleButtonLoading(btn, true);
+    
     try {
-        const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to start", "error"); } 
+        const url = force ? `/api/projects/start?id=${id}&force=true` : `/api/projects/start?id=${id}`;
+        const res = await fetch(url, { method: 'POST' }); 
+        
+        if (!res.ok) { 
+            const data = await res.json(); 
+            if (res.status === 409 && data.error === "port_conflict") {
+                if (typeof showPortConflictModal === 'function') {
+                    showPortConflictModal(data.port, data.process_name, data.pid, id, name, btn);
+                } else {
+                    showToast(`Port ${data.port} çakışması!`, "error");
+                }
+            } else if (res.status === 424 && data.error === "missing_dependency") {
+                if (typeof showMissingDependencyModal === 'function') {
+                    showMissingDependencyModal(data.binary);
+                } else {
+                    showToast(`Sistemde '${data.binary}' yüklü değil!`, "error");
+                }
+            } else {
+                showToast(data.error || "Failed to start", "error"); 
+            }
+        } 
         else { showToast("Project started", "success"); }
-    } catch (e) { showToast("Network error", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
+    } catch (e) { 
+        showToast("Network error", "error"); 
+    } finally { 
+        if (!force) toggleButtonLoading(btn, false, originalHTML); 
+    }
 }
 
 async function restartProject(id, name, btn) {
@@ -246,9 +270,19 @@ async function restartProject(id, name, btn) {
     try {
         showToast("Restart sequence initiated...", "success"); await fetch(`/api/projects/stop?id=${id}`, { method: 'POST' });
         await new Promise(resolve => setTimeout(resolve, 1500));
+        
         const res = await fetch(`/api/projects/start?id=${id}`, { method: 'POST' }); 
-        if (!res.ok) { const data = await res.json(); showToast(data.error || "Failed to restart", "error"); } 
-        else { showToast("Project restarted successfully", "success"); getOrCreateTerminal(id, name); }
+        if (!res.ok) { 
+            const data = await res.json();
+            if (res.status === 424 && data.error === "missing_dependency") {
+                if (typeof showMissingDependencyModal === 'function') showMissingDependencyModal(data.binary);
+            } else {
+                showToast(data.error || "Failed to restart", "error"); 
+            }
+        } else { 
+            showToast("Project restarted successfully", "success"); 
+            getOrCreateTerminal(id, name); 
+        }
     } catch (e) { showToast("Network error during restart", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 

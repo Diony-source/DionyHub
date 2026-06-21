@@ -2833,3 +2833,451 @@ time=14:25:07 level=INFO msg="Terminating all running background processes..."
 time=14:25:07 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
 time=14:25:07 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
 time=14:25:08 level=DEBUG msg="Closing SQLite Engine"
+time=14:31:50 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:31:50 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:31:50 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:31:50 level=DEBUG msg="Running database migrations..."
+time=14:31:50 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:31:50 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:31:50 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:31:50 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:31:50 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:31:50 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:31:50 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:31:50 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:31:50 level=DEBUG msg="Initializing core process manager"
+time=14:31:50 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:31:50 level=DEBUG msg="Starting to register API endpoints..."
+time=14:31:50 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:31:50 level=DEBUG msg="Booting up background metrics worker..."
+time=14:31:50 level=INFO msg="All API routes and background workers registered successfully"
+time=14:31:50 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:31:54 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=14:31:54 level=INFO msg="Terminating all running background processes..."
+time=14:31:54 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=14:31:54 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=14:31:55 level=DEBUG msg="Closing SQLite Engine"
+time=14:32:09 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:32:09 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:32:09 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:32:09 level=DEBUG msg="Running database migrations..."
+time=14:32:09 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:32:09 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:32:09 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:32:10 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:32:10 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:32:10 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:32:10 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:32:10 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:32:10 level=DEBUG msg="Initializing core process manager"
+time=14:32:10 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:32:10 level=DEBUG msg="Starting to register API endpoints..."
+time=14:32:10 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:32:10 level=DEBUG msg="Booting up background metrics worker..."
+time=14:32:10 level=INFO msg="All API routes and background workers registered successfully"
+time=14:32:10 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:32:10 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50977
+time=14:32:10 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50977 total_active_clients=1
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=20.8157ms
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:32:30 level=DEBUG msg="Fetching system settings"
+time=14:32:30 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:32:30 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:32:30 level=DEBUG msg="Successfully retrieved system settings"
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.6254ms
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:32:30 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:64567
+time=14:32:30 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:64567 total_active_clients=2
+time=14:32:30 level=DEBUG msg="Fetching system settings"
+time=14:32:30 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:32:30 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:32:30 level=DEBUG msg="Successfully retrieved system settings"
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:32:30 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:64672
+time=14:32:30 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:64672 total_active_clients=3
+time=14:32:30 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=505.3µs
+time=14:32:34 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:64567 error="write tcp [::1]:8080->[::1]:64567: wsasend: An established connection was aborted by the software in your host machine."
+time=14:32:34 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:50977 error="write tcp [::1]:8080->[::1]:50977: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Fetching system settings"
+time=14:33:03 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:59390
+time=14:33:03 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:59390 total_active_clients=2
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=757.1µs
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Fetching system settings"
+time=14:33:03 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=505.3µs
+time=14:33:03 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63469
+time=14:33:03 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63469 total_active_clients=3
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=766.2µs
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Fetching system settings"
+time=14:33:03 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:03 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.504ms
+time=14:33:03 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:62128
+time=14:33:03 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:62128 total_active_clients=4
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=505.8µs
+time=14:33:03 level=DEBUG msg="Fetching system settings"
+time=14:33:03 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:03 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=1.0002ms
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.0002ms
+time=14:33:03 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:57575
+time=14:33:03 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:57575 total_active_clients=5
+time=14:33:03 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:33:06 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:62128 error="write tcp [::1]:8080->[::1]:62128: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:06 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:59390 error="write tcp [::1]:8080->[::1]:59390: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:06 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:63469 error="write tcp [::1]:8080->[::1]:63469: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:06 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:64672 error="write tcp [::1]:8080->[::1]:64672: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:06 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Fetching system settings"
+time=14:33:07 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:07 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:49983
+time=14:33:07 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:49983 total_active_clients=2
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Fetching system settings"
+time=14:33:07 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:07 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:07 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:53531
+time=14:33:07 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:53531 total_active_clients=3
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.4µs
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Fetching system settings"
+time=14:33:07 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:07 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:33:07 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63312
+time=14:33:07 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63312 total_active_clients=4
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:33:07 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:33:08 level=DEBUG msg="Fetching system settings"
+time=14:33:08 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:33:08 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:33:08 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:33:08 level=DEBUG msg="Successfully retrieved system settings"
+time=14:33:08 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=503.7µs
+time=14:33:08 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:62666
+time=14:33:08 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:62666 total_active_clients=5
+time=14:33:08 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=1.5035ms
+time=14:33:10 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:49983 error="write tcp [::1]:8080->[::1]:49983: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:10 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:53531 error="write tcp [::1]:8080->[::1]:53531: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:10 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:63312 error="write tcp [::1]:8080->[::1]:63312: wsasend: An established connection was aborted by the software in your host machine."
+time=14:33:10 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:57575 error="write tcp [::1]:8080->[::1]:57575: wsasend: An established connection was aborted by the software in your host machine."
+time=14:34:09 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=14:34:09 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=14:34:15 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\kurban_port
+time=14:34:15 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/kurban_port
+time=14:34:15 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=5.463209s
+time=14:34:15 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/kurban_port
+time=14:34:15 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/kurban_port
+time=14:34:15 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/kurban_port
+time=14:34:15 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=14:35:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.5863ms
+time=14:35:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:35:16 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:35:16 level=WARN msg="Port conflict detected" port=8080 pid=17428
+time=14:35:16 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=409 duration=60.109ms
+time=14:35:51 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:35:51 level=WARN msg="Port conflict detected" port=8080 pid=17428
+time=14:35:51 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=409 duration=46.3579ms
+time=14:35:53 level=INFO msg="Port Guardian resolving conflict forcibly" pid=17428 name="Unknown Process"
+time=14:36:03 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:36:03 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:36:03 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:36:03 level=DEBUG msg="Running database migrations..."
+time=14:36:03 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:36:03 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:36:03 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:36:04 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:36:04 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:36:04 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:36:04 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:36:04 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:36:04 level=DEBUG msg="Initializing core process manager"
+time=14:36:04 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:36:04 level=DEBUG msg="Starting to register API endpoints..."
+time=14:36:04 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:36:04 level=DEBUG msg="Booting up background metrics worker..."
+time=14:36:04 level=INFO msg="All API routes and background workers registered successfully"
+time=14:36:04 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:36:06 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=21.683ms
+time=14:36:06 level=DEBUG msg="Fetching system settings"
+time=14:36:06 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:36:06 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:36:06 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:36:06 level=DEBUG msg="Successfully retrieved system settings"
+time=14:36:06 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:36:06 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50652
+time=14:36:06 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50652 total_active_clients=1
+time=14:36:06 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=504.3µs
+time=14:39:26 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=14:39:26 level=INFO msg="Terminating all running background processes..."
+time=14:39:26 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=14:39:26 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=14:39:27 level=DEBUG msg="Closing SQLite Engine"
+time=14:39:31 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:39:31 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:39:31 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:39:31 level=DEBUG msg="Running database migrations..."
+time=14:39:31 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:39:31 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:39:31 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:39:32 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:39:32 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:39:32 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:39:32 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:39:32 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:39:32 level=DEBUG msg="Initializing core process manager"
+time=14:39:32 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:39:32 level=DEBUG msg="Starting to register API endpoints..."
+time=14:39:32 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:39:32 level=DEBUG msg="Booting up background metrics worker..."
+time=14:39:32 level=INFO msg="All API routes and background workers registered successfully"
+time=14:39:32 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:39:36 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63399
+time=14:39:36 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63399 total_active_clients=1
+time=14:40:06 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=14:40:06 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=14:40:08 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\soru_test
+time=14:40:08 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/soru_test
+time=14:40:08 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.5081296s
+time=14:40:08 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/soru_test
+time=14:40:08 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/soru_test
+time=14:40:08 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=503.5µs
+time=14:40:57 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=14:40:57 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=14:41:01 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=14:41:01 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=14:41:01 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.9566084s
+time=14:41:01 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=14:41:01 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/zombi_test
+time=14:41:01 level=INFO msg="Detective could not definitively identify project type" path=C:/Users/Diony/Desktop/zombi_test
+time=14:41:01 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=516.8µs
+time=14:41:36 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.5626ms
+time=14:41:36 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:41:38 level=WARN msg="Pre-flight check failed: binary not found" binary=hayalet_motor
+time=14:41:38 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=3.2049ms
+time=14:41:38 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.4096ms
+time=14:41:40 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:41:40 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:41:40 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:41:42 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=14:42:05 level=INFO msg="API Request Executed" method=POST path=/api/projects/update status=200 duration=505.2µs
+time=14:42:05 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:42:08 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=14:42:12 level=WARN msg="Pre-flight check failed: binary not found" binary=olmayan_dil
+time=14:42:12 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=2.6107ms
+time=14:42:13 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:42:13 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:42:13 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:42:15 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:42:15 level=WARN msg="Pre-flight check failed: binary not found" binary=olmayan_dil
+time=14:42:15 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=3.3469ms
+time=14:42:19 level=WARN msg="Pre-flight check failed: binary not found" binary=olmayan_dil
+time=14:42:19 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=4.2066ms
+time=14:42:20 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:42:20 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:42:20 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:43:04 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=14:43:07 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:43:07 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:43:07 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:43:07 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:43:07 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:43:07 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:43:07 level=INFO msg="Stop sequence initiated for process" project_id=1782042096004
+time=14:43:07 level=WARN msg="Attempted to stop a non-running process" project_id=1782042096004
+time=14:43:07 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=14:43:10 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=14:43:12 level=INFO msg="API Request Executed" method=POST path=/api/projects/update status=200 duration=540.8µs
+time=14:43:12 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:43:13 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:43:13 level=WARN msg="Pre-flight check failed: binary not found" binary=run
+time=14:43:13 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=3.6434ms
+time=14:43:15 level=WARN msg="Pre-flight check failed: binary not found" binary=run
+time=14:43:15 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=4.1035ms
+time=14:45:56 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=14:45:56 level=INFO msg="Terminating all running background processes..."
+time=14:45:56 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=14:45:56 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=14:45:57 level=DEBUG msg="Closing SQLite Engine"
+time=14:46:14 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:46:14 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:46:14 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:46:14 level=DEBUG msg="Running database migrations..."
+time=14:46:14 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:46:14 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:46:14 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:46:15 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:46:15 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:46:15 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:46:15 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:46:15 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:46:15 level=DEBUG msg="Initializing core process manager"
+time=14:46:15 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:46:15 level=DEBUG msg="Starting to register API endpoints..."
+time=14:46:15 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:46:15 level=DEBUG msg="Booting up background metrics worker..."
+time=14:46:15 level=INFO msg="All API routes and background workers registered successfully"
+time=14:46:15 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:46:15 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=127.0.0.1:61013
+time=14:46:15 level=INFO msg="New WebSocket client connected successfully" client_ip=127.0.0.1:61013 total_active_clients=1
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=24.7559ms
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:46:19 level=DEBUG msg="Fetching system settings"
+time=14:46:19 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=1.5062ms
+time=14:46:19 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:46:19 level=DEBUG msg="Successfully retrieved system settings"
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5062ms
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:46:19 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:64821
+time=14:46:19 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:64821 total_active_clients=2
+time=14:46:19 level=DEBUG msg="Fetching system settings"
+time=14:46:19 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:46:19 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:46:19 level=DEBUG msg="Successfully retrieved system settings"
+time=14:46:19 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51206
+time=14:46:20 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51206 total_active_clients=3
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=506.7µs
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Fetching system settings"
+time=14:46:20 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:46:20 level=DEBUG msg="Successfully retrieved system settings"
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=503.2µs
+time=14:46:20 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50583
+time=14:46:20 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50583 total_active_clients=4
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=748.8µs
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Fetching system settings"
+time=14:46:20 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:46:20 level=DEBUG msg="Successfully retrieved system settings"
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:46:20 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51966
+time=14:46:20 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51966 total_active_clients=5
+time=14:46:20 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:46:21 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:46:21 level=DEBUG msg="Fetching system settings"
+time=14:46:21 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:46:21 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=1.005ms
+time=14:46:21 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:46:21 level=DEBUG msg="Successfully retrieved system settings"
+time=14:46:21 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.005ms
+time=14:46:21 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58329
+time=14:46:21 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58329 total_active_clients=6
+time=14:46:21 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.8µs
+time=14:46:23 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=127.0.0.1:61013 error="write tcp 127.0.0.1:8080->127.0.0.1:61013: wsasend: An established connection was aborted by the software in your host machine."
+time=14:46:23 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:64821 error="write tcp [::1]:8080->[::1]:64821: wsasend: An established connection was aborted by the software in your host machine."
+time=14:46:23 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51206 error="write tcp [::1]:8080->[::1]:51206: wsasend: An established connection was aborted by the software in your host machine."
+time=14:46:23 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:50583 error="write tcp [::1]:8080->[::1]:50583: wsasend: An established connection was aborted by the software in your host machine."
+time=14:46:24 level=INFO msg="API Request Executed" method=GET path=/api/projects/env status=200 duration=0s
+time=14:46:25 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51966 error="write tcp [::1]:8080->[::1]:51966: wsasend: An established connection was aborted by the software in your host machine."
+time=14:46:26 level=INFO msg="API Request Executed" method=POST path=/api/projects/update status=200 duration=1.6825ms
+time=14:46:26 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=14:46:27 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=1.5031ms
+time=14:46:27 level=WARN msg="Pre-flight check failed: binary not found" binary=hayalet_motor
+time=14:46:27 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=3.1003ms
+time=14:49:52 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=14:49:52 level=INFO msg="Terminating all running background processes..."
+time=14:49:52 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=14:49:52 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=14:49:53 level=DEBUG msg="Closing SQLite Engine"
+time=14:49:56 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:49:56 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:49:56 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=14:49:56 level=DEBUG msg="Running database migrations..."
+time=14:49:56 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=14:49:56 level=INFO msg="Global structured logging engine initialized successfully" log_dir=DionyHub_SystemLogs max_size_mb=10
+time=14:49:56 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=14:49:57 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=14:49:57 level=DEBUG msg="Initializing WebSocket Broadcaster component"
+time=14:49:57 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=14:49:57 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=14:49:57 level=INFO msg="Successfully loaded project configurations" count=0
+time=14:49:57 level=DEBUG msg="Initializing core process manager"
+time=14:49:57 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=14:49:57 level=DEBUG msg="Starting to register API endpoints..."
+time=14:49:57 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=14:49:57 level=DEBUG msg="Booting up background metrics worker..."
+time=14:49:57 level=INFO msg="All API routes and background workers registered successfully"
+time=14:49:57 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=14:49:57 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=127.0.0.1:61742
+time=14:49:57 level=INFO msg="New WebSocket client connected successfully" client_ip=127.0.0.1:61742 total_active_clients=1
+time=14:50:01 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=19.8033ms
+time=14:50:01 level=DEBUG msg="Fetching system settings"
+time=14:50:01 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:50:01 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:50:01 level=DEBUG msg="Successfully retrieved system settings"
+time=14:50:01 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:50:01 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:50:01 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:49345
+time=14:50:01 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:49345 total_active_clients=2
+time=14:50:01 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.4µs
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=14:50:02 level=DEBUG msg="Fetching system settings"
+time=14:50:02 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:50:02 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:50:02 level=DEBUG msg="Successfully retrieved system settings"
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=14:50:02 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:50203
+time=14:50:02 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:50203 total_active_clients=3
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=510.3µs
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=1.0804ms
+time=14:50:02 level=DEBUG msg="Fetching system settings"
+time=14:50:02 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=14:50:02 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=14:50:02 level=DEBUG msg="Successfully retrieved system settings"
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=504.5µs
+time=14:50:02 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:57012
+time=14:50:02 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:57012 total_active_clients=4
+time=14:50:02 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=504.2µs
+time=14:50:03 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=127.0.0.1:61742 error="write tcp 127.0.0.1:8080->127.0.0.1:61742: wsasend: An established connection was aborted by the software in your host machine."
+time=14:50:05 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:49345 error="write tcp [::1]:8080->[::1]:49345: wsasend: An established connection was aborted by the software in your host machine."
+time=14:50:05 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:50203 error="write tcp [::1]:8080->[::1]:50203: wsasend: An established connection was aborted by the software in your host machine."
+time=14:50:11 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=14:50:11 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=14:50:14 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\zombi_test
+time=14:50:14 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/zombi_test
+time=14:50:14 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=2.2259622s
+time=14:50:14 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/zombi_test
+time=14:50:14 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/zombi_test
+time=14:50:14 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=504.8µs
+time=14:51:10 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=14:51:10 level=INFO msg="Terminating all running background processes..."
+time=14:51:10 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=14:51:10 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=14:51:11 level=DEBUG msg="Closing SQLite Engine"

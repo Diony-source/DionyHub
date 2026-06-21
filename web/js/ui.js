@@ -104,7 +104,7 @@ function closeCmdPalette() {
     if (!pal || !box) return;
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
-	setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
+    setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
 function handleCmdSearch(e) {
@@ -451,7 +451,6 @@ function toggleWorkspaceMode() {
     }
 }
 
-// --- GÜNCELLENMİŞ VE AKILLI SOURCEMODE SEÇİCİ ---
 function toggleSourceMode() {
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
     const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
@@ -469,7 +468,7 @@ function toggleSourceMode() {
         localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden'); 
 		projName.required = false; projPath.required = false; repoUrl.required = true;
 		if (projCmd) {
-			projCmd.required = false; // GitHub modunda zorunluluk kalktı!
+			projCmd.required = false;
 			projCmd.placeholder = "go run main.go (Boş bırakırsanız dedektif otomatik bulur)";
 		}
     }
@@ -640,3 +639,112 @@ function handleDrop(e) {
     return false;
 }
 function handleDragEnd() { this.classList.remove('opacity-50'); document.querySelectorAll('#local-project-list tr, #github-project-list tr').forEach(r => r.classList.remove('border-t-2', 'border-indigo-500')); }
+
+
+// --- 🚨 ŞEFKATLİ PORT DEDEKTİFİ MODALI 🚨 ---
+function showPortConflictModal(port, pName, pid, projectId, safeName, btn) {
+    let modal = document.getElementById('portConflictModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'portConflictModal';
+        modal.className = 'fixed inset-0 z-[999] flex items-center justify-center bg-[#0f111a]/80 backdrop-blur-md transition-opacity opacity-0';
+        modal.innerHTML = `
+        <div class="bg-[#11151f] border border-gray-700 rounded-2xl shadow-2xl p-6 w-[450px] transform scale-95 transition-transform duration-300" id="portConflictBox">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-500 shrink-0">
+                    <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Port Çakışması Tespit Edildi</h3>
+                    <p class="text-xs text-gray-400 mt-1">Sistem bir pürüz yakaladı, ancak çözümü basit.</p>
+                </div>
+            </div>
+            <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl mb-6 shadow-inner">
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Başlatmak istediğin projenin ihtiyacı olan <span class="font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">Port <span id="conflictPort"></span></span> şu anda başka bir program tarafından işgal ediliyor.
+                </p>
+                <div class="mt-4 flex items-center gap-3 text-xs font-mono text-gray-400 bg-[#0a0c10] px-4 py-3 rounded-lg border border-gray-800 shadow-md">
+                    <span class="text-indigo-400 font-bold uppercase tracking-wider">Suçlu İşlem:</span> 
+                    <span id="conflictProcess" class="text-gray-200 font-bold"></span>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3">
+                <button id="btnCancelConflict" class="px-5 py-2.5 text-sm font-bold text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border border-transparent hover:border-gray-700">İptal Et</button>
+                <button id="btnKillAndStart" class="px-5 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-lg shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> 
+                    İşlemi Öldür ve Başlat
+                </button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        
+        document.getElementById('btnCancelConflict').addEventListener('click', () => {
+            modal.classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('portConflictBox').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        });
+    }
+    
+    document.getElementById('conflictPort').innerText = port;
+    document.getElementById('conflictProcess').innerText = `${pName} (PID: ${pid})`;
+    
+    const killBtn = document.getElementById('btnKillAndStart');
+    killBtn.onclick = () => {
+        modal.classList.replace('opacity-100', 'opacity-0');
+        document.getElementById('portConflictBox').classList.replace('scale-100', 'scale-95');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+        startProject(projectId, safeName, btn, true);
+    };
+    
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.classList.replace('opacity-0', 'opacity-100');
+        document.getElementById('portConflictBox').classList.replace('scale-95', 'scale-100');
+    });
+}
+
+// --- 🚀 UÇUŞ ÖNCESİ EKSİK DONANIM UYARI MODALI (PRE-FLIGHT CHECK) ---
+function showMissingDependencyModal(binary) {
+    let modal = document.getElementById('dependencyModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dependencyModal';
+        modal.className = 'fixed inset-0 z-[999] flex items-center justify-center bg-[#0f111a]/80 backdrop-blur-md transition-opacity opacity-0';
+        modal.innerHTML = `
+        <div class="bg-[#11151f] border border-gray-700 rounded-2xl shadow-2xl p-6 w-[450px] transform scale-95 transition-transform duration-300" id="dependencyBox">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-500 shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Eksik Bağımlılık (Dependency)</h3>
+                    <p class="text-xs text-gray-400 mt-1">Sisteminizde bu projeyi çalıştıracak motor yok.</p>
+                </div>
+            </div>
+            <div class="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl mb-6 shadow-inner">
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Projeyi başlatmak için <span class="font-bold text-rose-400 bg-rose-400/10 px-1.5 py-0.5 rounded" id="depBinary"></span> komutuna ihtiyaç var, ancak bu yazılım bilgisayarınızda yüklü değil veya PATH ortam değişkenine eklenmemiş.
+                </p>
+                <p class="text-xs text-gray-500 mt-3 italic">Lütfen ilgili yazılımı kurup DionyHub'ı (sunucuyu) yeniden başlatın.</p>
+            </div>
+            <div class="flex items-center justify-end">
+                <button id="btnCloseDependency" class="px-5 py-2.5 text-sm font-bold text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">Anladım</button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        
+        document.getElementById('btnCloseDependency').addEventListener('click', () => {
+            modal.classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('dependencyBox').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        });
+    }
+    
+    document.getElementById('depBinary').innerText = binary;
+    
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.classList.replace('opacity-0', 'opacity-100');
+        document.getElementById('dependencyBox').classList.replace('scale-95', 'scale-100');
+    });
+}
