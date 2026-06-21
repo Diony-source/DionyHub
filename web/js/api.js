@@ -30,7 +30,6 @@ async function saveSettings() {
     } catch (e) { showToast("Server error.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
 
-// --- YENİ VE KONUŞAN AKILLI DEDEKTİF (HEURISTICS) MOTORU ---
 async function triggerSmartDetection(fullPath, isEdit = false) {
     if (!fullPath) return;
 
@@ -40,7 +39,6 @@ async function triggerSmartDetection(fullPath, isEdit = false) {
         fullPath = formattedWs + fullPath;
     }
 
-    // Dedektifin çalıştığını anlık olarak gösteriyoruz
     showToast("Dedektif klasörü analiz ediyor...", "success");
 
     try {
@@ -69,8 +67,7 @@ async function triggerSmartDetection(fullPath, isEdit = false) {
                     showToast(`Dedektif: ${data.language} projesi algıladı!`, "success");
                 }
             } else {
-                // EĞER PROJE BULAMAZSA SESSİZ KALMASIN, UYARSIN!
-                showToast("Dedektif: Bu klasörde tanıdık bir proje (Go/Node/Python) bulunamadı.", "error");
+                showToast("Dedektif: Bu klasörde tanıdık bir proje bulunamadı.", "error");
             }
         }
     } catch (err) {
@@ -86,7 +83,6 @@ async function browseFolder(inputId, handleWorkspace = true) {
             document.getElementById(inputId).value = data.path;
             if (handleWorkspace) { const wsCheckbox = document.getElementById('useWorkspace'); if (wsCheckbox.checked) { wsCheckbox.checked = false; toggleWorkspaceMode(); } }
             
-            // Klasör seçildiği anda dedektifi tetikle
             if (inputId === 'projPath' || inputId === 'editProjPath') {
                 triggerSmartDetection(data.path, inputId === 'editProjPath');
             }
@@ -186,7 +182,8 @@ async function executeDelete() {
 async function executeBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
+    // YENİ: Virgüllü tag filtremesi
+    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID);
     if (idsToProcess.length === 0) return;
 
     const diskCb = document.getElementById('bulkDeleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false;
@@ -208,7 +205,8 @@ async function executeBulkDelete() {
 async function executeBulkAction(action) {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
-    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID); }
+    // YENİ: Virgüllü tag filtremesi
+    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
     if (idsToProcess.length === 0) return;
 
     const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk';

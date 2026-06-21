@@ -3,6 +3,14 @@ function connectWebSocket() {
     socket.onmessage = (e) => {
         try {
             const msg = JSON.parse(e.data);
+            
+            // --- YENİ EKLENEN SİHİR: OTONOM YENİLEME ---
+            if (msg.action === 'reload') {
+                // Sayfayı asla F5'lemeden arka planda projeleri ve etiketleri yeniler
+                loadProjects(); 
+                return;
+            }
+
             if (msg.action === 'clear') {
                 if (terminalPool[msg.id]) terminalPool[msg.id].term.clear();
                 return;

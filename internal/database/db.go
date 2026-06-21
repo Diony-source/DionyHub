@@ -130,7 +130,17 @@ func (e *Engine) Close() error {
 
 // GetProjects tüm projeleri veritabanından çekip listeleyen fonksiyondur.
 func (e *Engine) GetProjects() ([]config.Project, error) {
-	query := `SELECT id, name, path, command, interactive, auto_start, auto_restart, auto_close, clear_on_start, source, order_index FROM projects ORDER BY order_index ASC`
+	// YENİ: Çoklu etiketleri GROUP_CONCAT ile virgülle birleştirip çekiyoruz!
+	query := `
+		SELECT p.id, p.name, p.path, p.command, p.interactive, p.auto_start, 
+		       p.auto_restart, p.auto_close, p.clear_on_start, p.source, p.order_index, 
+		       IFNULL(GROUP_CONCAT(t.name, ','), '') as tag
+		FROM projects p
+		LEFT JOIN project_tags pt ON p.id = pt.project_id
+		LEFT JOIN tags t ON pt.tag_id = t.id
+		GROUP BY p.id
+		ORDER BY p.order_index ASC
+	`
 
 	rows, err := e.DB.Query(query)
 	if err != nil {
@@ -144,12 +154,11 @@ func (e *Engine) GetProjects() ([]config.Project, error) {
 		err := rows.Scan(
 			&p.ID, &p.Name, &p.Path, &p.Command,
 			&p.Interactive, &p.AutoStart, &p.AutoRestart, &p.AutoClose,
-			&p.ClearOnStart, &p.Source, &p.Order,
+			&p.ClearOnStart, &p.Source, &p.Order, &p.Tag,
 		)
 		if err != nil {
 			return nil, err
 		}
-		// Etiket (tag) ilişkisini sonradan temiz sorgularla bağlayacağız, şimdilik temel yapı tamam.
 		projects = append(projects, p)
 	}
 	return projects, nil
@@ -158,13 +167,22 @@ func (e *Engine) GetProjects() ([]config.Project, error) {
 // GetProjectByID fetches a single project from the database using its unique ID.
 // It is heavily used by action handlers (Start, Stop, Restart) to resolve project details.
 func (e *Engine) GetProjectByID(id string) (config.Project, error) {
-	query := `SELECT id, name, path, command, interactive, auto_start, auto_restart, auto_close, clear_on_start, source, order_index FROM projects WHERE id = ?`
+	query := `
+		SELECT p.id, p.name, p.path, p.command, p.interactive, p.auto_start, 
+		       p.auto_restart, p.auto_close, p.clear_on_start, p.source, p.order_index,
+		       IFNULL(GROUP_CONCAT(t.name, ','), '') as tag
+		FROM projects p
+		LEFT JOIN project_tags pt ON p.id = pt.project_id
+		LEFT JOIN tags t ON pt.tag_id = t.id
+		WHERE p.id = ?
+		GROUP BY p.id
+	`
 
 	var p config.Project
 	err := e.DB.QueryRow(query, id).Scan(
 		&p.ID, &p.Name, &p.Path, &p.Command,
 		&p.Interactive, &p.AutoStart, &p.AutoRestart, &p.AutoClose,
-		&p.ClearOnStart, &p.Source, &p.Order,
+		&p.ClearOnStart, &p.Source, &p.Order, &p.Tag,
 	)
 	if err != nil {
 		return p, fmt.Errorf("project not found or db error: %w", err)

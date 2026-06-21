@@ -104,7 +104,7 @@ function closeCmdPalette() {
     if (!pal || !box) return;
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
-    setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
+	setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
 function handleCmdSearch(e) {
@@ -273,7 +273,11 @@ function createProjectRow(p, index, sourceArray) {
     tr.addEventListener('contextmenu', (e) => { const status = cachedProjects.find(x => (x.id || x.ID) === pId)?.status || 'stopped'; showContextMenu(e, pId, p.name || p.Name, status); });
     tr.addEventListener('dragstart', handleDragStart); tr.addEventListener('dragover', handleDragOver); tr.addEventListener('dragenter', handleDragEnter); tr.addEventListener('dragleave', handleDragLeave); tr.addEventListener('drop', handleDrop); tr.addEventListener('dragend', handleDragEnd);
     
-    const tagBadge = p.tag ? `<span class="ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${p.tag}</span>` : '';
+    let tagBadges = '';
+    if (p.tag && p.tag.trim() !== '') {
+        tagBadges = p.tag.split(',').map(t => `<span class="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 shadow-sm whitespace-nowrap"><span class="text-indigo-500 opacity-80 font-black">#</span>${t.trim()}</span>`).join('');
+    }
+    
     const autoBadge = p.auto_start ? `<span class="ml-2 text-emerald-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Start Enabled">⚡</span>` : '';
     const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
     const safeName = p.name || p.Name || "Unknown";
@@ -282,7 +286,7 @@ function createProjectRow(p, index, sourceArray) {
         <td class="p-4 font-bold text-gray-200 flex items-center gap-4">
             <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
             <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${safeName.charAt(0).toUpperCase()}</div>
-            <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadge} ${autoBadge} ${watchdogBadge}</div></div>
+            <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadges} ${autoBadge} ${watchdogBadge}</div></div>
         </td>
         <td class="p-4 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
         <td class="p-4"><span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
@@ -314,7 +318,12 @@ function renderProjects() {
     if (!localTbody || !githubTbody) return;
     
     localTbody.innerHTML = ''; githubTbody.innerHTML = '';
-    const filteredProjects = currentTagFilter ? cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()) : cachedProjects;
+    
+    const filteredProjects = currentTagFilter ? cachedProjects.filter(p => {
+        if (!p.tag) return false;
+        return p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase());
+    }) : cachedProjects;
+
     updateBulkActionBar(filteredProjects.length);
 
     if (filteredProjects.length === 0) { 
@@ -366,7 +375,12 @@ function setFilter(tag) {
 
 function renderSidebarTags(projects) {
     projects.sort((a, b) => (a.order || 0) - (b.order || 0)); 
-    availableTags = [...new Set([...projects.map(p => p.tag).filter(t => t && t.trim() !== ''), ...globalSavedTags])].sort();
+    let allTags = [];
+    projects.forEach(p => {
+        if (p.tag) p.tag.split(',').forEach(t => { if(t.trim()) allTags.push(t.trim()); });
+    });
+    availableTags = [...new Set([...allTags, ...globalSavedTags])].sort();
+
     const tagList = document.getElementById('tag-list'); if (!tagList) return;
     
     tagList.innerHTML = `<button id="btn-filter-all" onclick="setFilter(null)" class="flex-1 tag-filter-btn text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border flex items-center gap-2 w-full ${currentTagFilter === null ? 'border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[inset_3px_0_0_#6366f1]' : 'border-transparent text-gray-400 hover:bg-gray-800/40 hover:text-gray-200'} mb-2 group/btn"><svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg><span class="font-semibold tracking-wide">All Projects</span></button>`;
@@ -386,7 +400,8 @@ function openTagModal(tag = null) {
     if (cachedProjects.length === 0) projectList.innerHTML = '<span class="text-xs text-gray-500 italic">No projects available.</span>';
     else {
         cachedProjects.forEach(p => {
-            const isAssigned = p.tag === tag; const pId = p.id || p.ID; const safeName = p.name || p.Name;
+            const isAssigned = p.tag && p.tag.split(',').map(t => t.trim()).includes(tag);
+            const pId = p.id || p.ID; const safeName = p.name || p.Name;
             projectList.innerHTML += `<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors border border-transparent hover:border-gray-700/50"><div class="relative flex items-center shrink-0"><input type="checkbox" name="tagProjectIds" value="${pId}" class="sr-only peer" ${isAssigned ? 'checked' : ''}><div class="w-5 h-5 bg-gray-900 border border-gray-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-400 transition-colors flex items-center justify-center"><svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></div><span class="text-sm font-bold text-gray-300 select-none">${safeName}</span></label>`;
         });
     }
@@ -397,14 +412,29 @@ function closeTagModal() { document.getElementById('tagModal').classList.remove(
 
 function initTagAutocomplete(inputId, dropdownId) {
     const input = document.getElementById(inputId); const dropdown = document.getElementById(dropdownId); if (!input || !dropdown) return;
-    input.addEventListener('focus', () => update(input.value)); input.addEventListener('input', (e) => update(e.target.value)); input.addEventListener('blur', () => setTimeout(() => dropdown.classList.add('hidden'), 200));
+    input.addEventListener('focus', () => update(input.value)); 
+    input.addEventListener('input', (e) => update(e.target.value)); 
+    input.addEventListener('blur', () => setTimeout(() => dropdown.classList.add('hidden'), 200));
+    
     function update(text) {
-        const filtered = availableTags.filter(t => t.toLowerCase().includes(text.toLowerCase()));
+        const parts = text.split(',');
+        const currentWord = parts[parts.length - 1].trim();
+        
+        if (currentWord === "") { dropdown.classList.add('hidden'); return; }
+        
+        const filtered = availableTags.filter(t => t.toLowerCase().includes(currentWord.toLowerCase()));
         if (filtered.length === 0) { dropdown.classList.add('hidden'); return; }
+        
         dropdown.innerHTML = '';
         filtered.forEach(tag => {
             const div = document.createElement('div'); div.className = 'px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white cursor-pointer'; div.textContent = tag;
-            div.onmousedown = (e) => { e.preventDefault(); input.value = tag; dropdown.classList.add('hidden'); }; dropdown.appendChild(div);
+            div.onmousedown = (e) => { 
+                e.preventDefault(); 
+                parts[parts.length - 1] = " " + tag; 
+                input.value = parts.join(',').trim(); 
+                dropdown.classList.add('hidden'); 
+            }; 
+            dropdown.appendChild(div);
         }); 
         dropdown.classList.remove('hidden');
     }
@@ -421,15 +451,27 @@ function toggleWorkspaceMode() {
     }
 }
 
+// --- GÜNCELLENMİŞ VE AKILLI SOURCEMODE SEÇİCİ ---
 function toggleSourceMode() {
     const mode = document.querySelector('input[name="sourceMode"]:checked').value;
     const localWrapper = document.getElementById('localFlowWrapper'); const githubWrapper = document.getElementById('githubFlowWrapper');
     const projName = document.getElementById('projName'); const projPath = document.getElementById('projPath'); const repoUrl = document.getElementById('repoUrl');
+	const projCmd = document.getElementById('projCmd');
 
     if (mode === 'local') {
-        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden'); projName.required = true; projPath.required = true; repoUrl.required = false;
+        localWrapper.classList.remove('hidden'); githubWrapper.classList.add('hidden'); 
+		projName.required = true; projPath.required = true; repoUrl.required = false;
+		if (projCmd) {
+			projCmd.required = true;
+			projCmd.placeholder = "go run main.go";
+		}
     } else {
-        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden'); projName.required = false; projPath.required = false; repoUrl.required = true;
+        localWrapper.classList.add('hidden'); githubWrapper.classList.remove('hidden'); 
+		projName.required = false; projPath.required = false; repoUrl.required = true;
+		if (projCmd) {
+			projCmd.required = false; // GitHub modunda zorunluluk kalktı!
+			projCmd.placeholder = "go run main.go (Boş bırakırsanız dedektif otomatik bulur)";
+		}
     }
 }
 
@@ -539,14 +581,22 @@ function closeDeleteModal() {
 function confirmBulkDelete() {
     let idsToProcess = [];
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
-    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.toLowerCase() === currentTagFilter.toLowerCase()).map(p => p.id || p.ID);
+    else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID);
     if (idsToProcess.length === 0) return;
 
     let hasLocal = false; const processSet = new Set(idsToProcess); const tagCounts = {}; const tagDeletes = {}; 
     cachedProjects.forEach(p => {
-        const pId = p.id || p.ID; const source = p.source || p.Source || 'local'; const t = p.tag || p.Tag;
+        const pId = p.id || p.ID; const source = p.source || p.Source || 'local'; const pTagsStr = p.tag || p.Tag;
         if (processSet.has(pId) && source !== 'github') hasLocal = true;
-        if (t) { tagCounts[t] = (tagCounts[t] || 0) + 1; if (processSet.has(pId)) { tagDeletes[t] = (tagDeletes[t] || 0) + 1; } }
+        if (pTagsStr) { 
+            pTagsStr.split(',').forEach(t => {
+                const cleanT = t.trim();
+                if(cleanT) {
+                    tagCounts[cleanT] = (tagCounts[cleanT] || 0) + 1; 
+                    if (processSet.has(pId)) { tagDeletes[cleanT] = (tagDeletes[cleanT] || 0) + 1; } 
+                }
+            });
+        }
     });
 
     const checkboxContainer = document.getElementById('bulkDeleteFilesContainer'); const warningText = document.getElementById('bulkDeleteLocalWarning'); const checkbox = document.getElementById('bulkDeleteFilesFromDisk');

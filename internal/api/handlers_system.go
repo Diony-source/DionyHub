@@ -112,6 +112,7 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		slog.Int("affected_projects", len(req.ProjectIDs)),
 	)
 
+	// App_config içindeki kayıtlı tag'leri güncelle
 	settings, err := config.LoadSettings("app_config.json")
 	if err == nil {
 		var newSavedTags []string
@@ -139,28 +140,60 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// SQLite İşlemleri (JSON Zombisi tamamen yokedildi)
+	tx, err := s.db.DB.Begin()
+	if err != nil {
+		http.Error(w, `{"error": "Database transaction failed"}`, http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
 
-	targetMap := make(map[string]bool)
-	for _, id := range req.ProjectIDs {
-		targetMap[id] = true
+	// 1. Etiket Tamamen Siliniyorsa
+	if req.NewTag == "" && len(req.ProjectIDs) == 0 {
+		_, err := tx.Exec("DELETE FROM tags WHERE name = ?", req.OriginalTag)
+		if err != nil {
+			http.Error(w, `{"error": "Failed to delete tag"}`, http.StatusInternalServerError)
+			return
+		}
+		tx.Commit()
+		s.syncMemory() // RAM'i tazele
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Tag başarıyla silindi"})
+		return
 	}
 
-	for i, p := range s.projects {
-		if targetMap[p.ID] {
-			s.projects[i].Tag = req.NewTag
-		} else if req.OriginalTag != "" && p.Tag == req.OriginalTag {
-			s.projects[i].Tag = ""
+	// 2. Etiket Güncelleniyorsa VEYA Yeni Projelere Atanıyorsa
+	var tagID int
+	err = tx.QueryRow("SELECT id FROM tags WHERE name = ?", req.OriginalTag).Scan(&tagID)
+
+	if err != nil { // Veritabanında tag yoksa yenisini yarat
+		if req.NewTag != "" {
+			res, _ := tx.Exec("INSERT INTO tags (name, color) VALUES (?, '#6366f1')", req.NewTag)
+			id, _ := res.LastInsertId()
+			tagID = int(id)
+		}
+	} else if req.NewTag != "" && req.NewTag != req.OriginalTag { // İsmi değiştiyse
+		tx.Exec("UPDATE tags SET name = ? WHERE id = ?", req.NewTag, tagID)
+	}
+
+	// Etiketin atandığı projeleri güncelle (Önce kopar, sonra bağla)
+	if tagID != 0 {
+		tx.Exec("DELETE FROM project_tags WHERE tag_id = ?", tagID)
+		for _, pid := range req.ProjectIDs {
+			tx.Exec("INSERT INTO project_tags (project_id, tag_id) VALUES (?, ?)", pid, tagID)
 		}
 	}
 
-	if err := config.SaveProjects("config.json", s.projects); err != nil {
-		slog.Error("Failed to save projects after tag update", slog.Any("error", err))
-	} else {
-		slog.Info("Project tags updated and saved successfully")
+	// YENİ: Öksüz etiketleri sistem yönetiminden de süpüren Çöpçü
+	tx.Exec(`DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)`)
+
+	if err := tx.Commit(); err != nil {
+		http.Error(w, `{"error": "Failed to commit tag changes"}`, http.StatusInternalServerError)
+		return
 	}
 
+	s.syncMemory() // RAM'i tazele
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Tag konfigürasyonu başarıyla kaydedildi"})

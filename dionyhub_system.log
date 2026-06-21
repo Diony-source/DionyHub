@@ -118,3 +118,36 @@
 [36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🚀 [32mProject started successfully (PID: 41896).[0m
 [36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🛑 Stop signal sent. Terminating process tree...
 [1;33m[INFO][0m Project 'pc_kapama_forgames' stopped by user after 3s.
+[36m[AUDIT][0m [33mnoteapp[0m -> 🚀 [32mProject started successfully (PID: 42836).[0m
+[1;31m[CRASH][0m Project 'noteapp' crashed after 2s.
+[36m[AUDIT][0m [33mnoteapp[0m -> ⚪ Process exited normally.
+[36m[AUDIT][0m [33mCrashTest[0m -> 🚀 [32mProject started successfully (PID: 40436).[0m
+[36m[AUDIT][0m [33menv_test[0m -> 🚀 [32mProject started successfully (PID: 20360).[0m
+[36m[AUDIT][0m [33mfilereader[0m -> 🚀 [32mProject started successfully (PID: 33288).[0m
+[36m[AUDIT][0m [33mfocus_timer[0m -> 🚀 [32mProject started successfully (PID: 39492).[0m
+[36m[AUDIT][0m [33msoru_test[0m -> 🚀 [32mProject started successfully (PID: 14960).[0m
+[36m[AUDIT][0m [33msurvivor_test[0m -> 🚀 [32mProject started successfully (PID: 16340).[0m
+[36m[AUDIT][0m [33mzombi_test[0m -> 🚀 [32mProject started successfully (PID: 35448).[0m
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🚀 [32mProject started successfully (PID: 41476).[0m
+[1;31m[CRASH][0m Project 'CrashTest' crashed after 6s.
+[36m[AUDIT][0m [33mCrashTest[0m -> ⚪ Process exited normally.
+[36m[AUDIT][0m [33menv_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'env_test' stopped by user after 6s.
+[36m[AUDIT][0m [33mfilereader[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'filereader' stopped by user after 7s.
+[36m[AUDIT][0m [33mfocus_timer[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'focus_timer' stopped by user after 7s.
+[36m[AUDIT][0m [33msoru_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'soru_test' stopped by user after 7s.
+[36m[AUDIT][0m [33msurvivor_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'survivor_test' stopped by user after 7s.
+[36m[AUDIT][0m [33mzombi_test[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'zombi_test' stopped by user after 7s.
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'pc_kapama_forgames' stopped by user after 7s.
+[36m[AUDIT][0m [33mfilereader[0m -> 🚀 [32mProject started successfully (PID: 29040).[0m
+[36m[AUDIT][0m [33mfilereader[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'filereader' stopped by user after 3s.
+[36m[AUDIT][0m [33mfiber[0m -> 🚀 [32mProject started successfully (PID: 36044).[0m
+[36m[AUDIT][0m [33mfiber[0m -> 🛑 Stop signal sent. Terminating process tree...
+[1;33m[INFO][0m Project 'fiber' stopped by user after 8s.

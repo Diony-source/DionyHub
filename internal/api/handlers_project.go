@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"net/http"
@@ -17,8 +18,6 @@ import (
 	"github.com/Diony-source/DionyHub/internal/detector"
 )
 
-// YANLIŞLIKLA SİLDİĞİM O KRİTİK VERİ YAPISI (DTO) BURADA!
-// Bu yapı arayüzün "Loading..." hatasını çözen yapıdır.
 type ProjectResponse struct {
 	ID           string  `json:"id"`
 	Name         string  `json:"name"`
@@ -37,7 +36,6 @@ type ProjectResponse struct {
 	RAM          float64 `json:"ram"`
 }
 
-// Güvenli veri dönüştürücümüz (Arayüze giden veriyi düzleştirir)
 func toProjectResponse(p config.Project, status string, cpu, ram float64) ProjectResponse {
 	return ProjectResponse{
 		ID:           p.ID,
@@ -58,7 +56,6 @@ func toProjectResponse(p config.Project, status string, cpu, ram float64) Projec
 	}
 }
 
-// Arka plan işçisini veritabanı ile senkronize eden köprümüz
 func (s *Server) syncMemory() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -67,7 +64,6 @@ func (s *Server) syncMemory() {
 	}
 }
 
-// YENİ: Zeka Motoru (Dedektif) Uç Noktası
 func (s *Server) handleDetectProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -81,8 +77,6 @@ func (s *Server) handleDetectProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("Processing smart detection request", slog.String("path", targetPath))
-
-	// Klasörü analiz edip sonucu JSON olarak arayüze gönderiyoruz
 	result := detector.AnalyzePath(targetPath)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -165,7 +159,6 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202A", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\u202C", "")
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
-	req.Tag = strings.TrimSpace(req.Tag)
 	req.ID = strings.TrimSpace(req.ID)
 
 	if req.ID == "" || req.Name == "" || cleanPath == "" {
@@ -191,13 +184,21 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	s.db.DB.Exec(`DELETE FROM project_tags WHERE project_id=?`, req.ID)
 	if req.Tag != "" {
-		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
-		var tagID int
-		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
-			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", req.ID, tagID)
+		tags := strings.Split(req.Tag, ",")
+		for _, tName := range tags {
+			tName = strings.TrimSpace(tName)
+			if tName == "" {
+				continue
+			}
+			s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", tName, "#6366f1")
+			var tagID int
+			if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", tName).Scan(&tagID); err == nil {
+				s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", req.ID, tagID)
+			}
 		}
 	}
 
+	s.db.DB.Exec(`DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)`)
 	s.syncMemory()
 	w.WriteHeader(http.StatusOK)
 }
@@ -254,10 +255,17 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Tag != "" {
-		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
-		var tagID int
-		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
-			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+		tags := strings.Split(req.Tag, ",")
+		for _, tName := range tags {
+			tName = strings.TrimSpace(tName)
+			if tName == "" {
+				continue
+			}
+			s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", tName, "#6366f1")
+			var tagID int
+			if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", tName).Scan(&tagID); err == nil {
+				s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+			}
 		}
 	}
 
@@ -322,23 +330,6 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("git", "clone", req.RepoURL, destPath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		safeErr := strings.ReplaceAll(string(output), "\n", " ")
-		safeErr = strings.ReplaceAll(safeErr, "\"", "'")
-		if safeErr == "" {
-			safeErr = err.Error()
-		}
-		http.Error(w, fmt.Sprintf(`{"error": "Git Clone Failed: %s"}`, safeErr), http.StatusInternalServerError)
-		return
-	}
-
-	if req.CreateEnv {
-		envPath := filepath.Join(destPath, ".env")
-		os.WriteFile(envPath, []byte(req.InitialEnv), 0644)
-	}
-
 	newID := fmt.Sprintf("%d", time.Now().UnixMilli())
 
 	query := `INSERT INTO projects (id, name, path, command, interactive, auto_start, auto_restart, auto_close, clear_on_start, source, order_index) 
@@ -351,10 +342,17 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Tag != "" {
-		s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", req.Tag, "#6366f1")
-		var tagID int
-		if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", req.Tag).Scan(&tagID); err == nil {
-			s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+		tags := strings.Split(req.Tag, ",")
+		for _, tName := range tags {
+			tName = strings.TrimSpace(tName)
+			if tName == "" {
+				continue
+			}
+			s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", tName, "#6366f1")
+			var tagID int
+			if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", tName).Scan(&tagID); err == nil {
+				s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", newID, tagID)
+			}
 		}
 	}
 
@@ -362,9 +360,77 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
 	p, _ := s.db.GetProjectByID(newID)
 	json.NewEncoder(w).Encode(toProjectResponse(p, "stopped", 0, 0))
+
+	go func(projectID, targetPath, repoURL string, createEnv bool, initEnv string) {
+		type WSLog struct {
+			ID   string `json:"id"`
+			Data string `json:"data"`
+		}
+
+		sendLog := func(data string) {
+			msg, _ := json.Marshal(WSLog{ID: projectID, Data: data})
+			s.broadcaster.Write(msg)
+		}
+
+		sendLog(fmt.Sprintf("\x1b[36m>>> Starting git clone from %s...\x1b[0m\r\n", repoURL))
+
+		cmd := exec.Command("git", "clone", "--progress", repoURL, targetPath)
+		stderr, pipeErr := cmd.StderrPipe()
+
+		if pipeErr == nil {
+			cmd.Start()
+			buf := make([]byte, 1024)
+			for {
+				n, readErr := stderr.Read(buf)
+				if n > 0 {
+					sendLog(string(buf[:n]))
+				}
+				if readErr != nil {
+					break
+				}
+			}
+			err = cmd.Wait()
+		} else {
+			err = cmd.Run()
+		}
+
+		if err != nil {
+			sendLog(fmt.Sprintf("\r\n\x1b[31m>>> Git clone failed: %v\x1b[0m\r\n", err))
+		} else {
+			sendLog("\r\n\x1b[32m>>> Git clone completed successfully!\x1b[0m\r\n")
+			if createEnv {
+				envPath := filepath.Join(targetPath, ".env")
+				os.WriteFile(envPath, []byte(initEnv), 0644)
+			}
+
+			sendLog("\x1b[33m>>> Smart Detective analyzing the downloaded files...\x1b[0m\r\n")
+			res := detector.AnalyzePath(targetPath)
+
+			if res.Detected {
+				sendLog(fmt.Sprintf("\x1b[32m>>> Detective found a %s project! Auto-configuring command: %s\x1b[0m\r\n", res.Language, res.Command))
+
+				s.db.DB.Exec("UPDATE projects SET command = ? WHERE id = ?", res.Command, projectID)
+
+				s.db.DB.Exec("INSERT OR IGNORE INTO tags (name, color) VALUES (?, ?)", res.Language, "#6366f1")
+				var tagID int
+				if err := s.db.DB.QueryRow("SELECT id FROM tags WHERE name=?", res.Language).Scan(&tagID); err == nil {
+					s.db.DB.Exec("INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)", projectID, tagID)
+				}
+
+				s.syncMemory()
+				sendLog("\x1b[36m>>> Project is fully configured and ready.\x1b[0m\r\n")
+
+				// --- YENİ EKLENEN SİHİR: ARAYÜZE "YENİLE" EMRİ VER ---
+				reloadMsg, _ := json.Marshal(map[string]string{"id": projectID, "action": "reload"})
+				s.broadcaster.Write(reloadMsg)
+
+			} else {
+				sendLog("\x1b[31m>>> Detective could not determine project type. Please set the command manually.\x1b[0m\r\n")
+			}
+		}
+	}(newID, destPath, req.RepoURL, req.CreateEnv, req.InitialEnv)
 }
 
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -393,7 +459,19 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if removeFiles && targetProject.Source == "github" {
-		os.RemoveAll(targetProject.Path)
+		settings, _ := config.LoadSettings("app_config.json")
+		workspace := "C:/DionyHub/apps"
+		if settings.Workspace != "" {
+			workspace = settings.Workspace
+		}
+		cleanWorkspace := filepath.ToSlash(filepath.Clean(workspace))
+		cleanTarget := filepath.ToSlash(filepath.Clean(targetProject.Path))
+
+		if strings.HasPrefix(strings.ToLower(cleanTarget), strings.ToLower(cleanWorkspace)) && len(cleanTarget) > len(cleanWorkspace) {
+			os.RemoveAll(targetProject.Path)
+		} else {
+			slog.Warn("Security Alert: Blocked attempt to delete folder outside of authorized workspace", slog.String("path", targetProject.Path))
+		}
 	}
 
 	_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
@@ -402,6 +480,7 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.db.DB.Exec(`DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)`)
 	s.syncMemory()
 	w.WriteHeader(http.StatusOK)
 }
@@ -422,6 +501,13 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	settings, _ := config.LoadSettings("app_config.json")
+	workspace := "C:/DionyHub/apps"
+	if settings.Workspace != "" {
+		workspace = settings.Workspace
+	}
+	cleanWorkspace := filepath.ToSlash(filepath.Clean(workspace))
+
 	deletedCount := 0
 	for _, rawID := range req.IDs {
 		id := strings.TrimSpace(rawID)
@@ -435,7 +521,12 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if req.RemoveFiles && target.Source == "github" {
-			os.RemoveAll(target.Path)
+			cleanTarget := filepath.ToSlash(filepath.Clean(target.Path))
+			if strings.HasPrefix(strings.ToLower(cleanTarget), strings.ToLower(cleanWorkspace)) && len(cleanTarget) > len(cleanWorkspace) {
+				os.RemoveAll(target.Path)
+			} else {
+				slog.Warn("Security Alert: Blocked bulk-delete folder outside workspace", slog.String("path", target.Path))
+			}
 		}
 
 		_, err = s.db.DB.Exec(`DELETE FROM projects WHERE id=?`, id)
@@ -444,6 +535,7 @@ func (s *Server) handleDeleteBulk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.db.DB.Exec(`DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)`)
 	s.syncMemory()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -505,6 +597,7 @@ func (s *Server) handleStartProject(w http.ResponseWriter, r *http.Request) {
 
 	if target.ClearOnStart {
 		logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+		os.MkdirAll(filepath.Dir(logPath), 0755)
 		os.WriteFile(logPath, []byte(""), 0666)
 		wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
 		s.broadcaster.Write(wsMsg)
@@ -585,6 +678,7 @@ func (s *Server) handleStartBulk(w http.ResponseWriter, r *http.Request) {
 
 		if target.ClearOnStart {
 			logPath := filepath.Join(target.Path, "dionyhub_log", "output.log")
+			os.MkdirAll(filepath.Dir(logPath), 0755)
 			os.WriteFile(logPath, []byte(""), 0666)
 			wsMsg, _ := json.Marshal(map[string]string{"id": target.ID, "action": "clear"})
 			s.broadcaster.Write(wsMsg)
@@ -768,17 +862,37 @@ func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
 		logPath = filepath.Join(target.Path, "dionyhub_log", "output.log")
 	}
 
-	content, err := os.ReadFile(logPath)
+	file, err := os.Open(logPath)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"logs": ""}`))
+		return
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"logs": ""}`))
 		return
 	}
 
-	strContent := string(content)
-	if len(strContent) > 15000 {
-		strContent = strContent[len(strContent)-15000:]
+	var size int64 = 15000
+	if stat.Size() < size {
+		size = stat.Size()
 	}
+
+	_, err = file.Seek(-size, io.SeekEnd)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"logs": ""}`))
+		return
+	}
+
+	buf := make([]byte, size)
+	n, _ := io.ReadFull(file, buf)
+
+	strContent := string(buf[:n])
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"logs": strContent})
