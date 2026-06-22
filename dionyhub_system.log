@@ -328,3 +328,381 @@ time=2026-06-21T16:33:51.025+03:00 level=INFO msg="Terminating all running backg
 time=2026-06-21T16:33:51.025+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
 time=2026-06-21T16:33:51.025+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
 time=2026-06-21T16:33:52.026+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-21T17:12:33.229+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-21T17:12:33.258+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-21T17:12:33.259+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-21T17:12:33.260+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-21T17:12:34.300+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-21T17:12:34.300+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-21T17:12:34.300+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-21T17:12:34.300+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-21T17:12:34.314+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=127.0.0.1:55324
+time=2026-06-21T17:12:34.314+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=127.0.0.1:55324 total_active_clients=1
+time=2026-06-21T17:12:56.528+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=46.2913ms
+time=2026-06-21T17:12:56.849+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-21T17:12:56.849+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-21T17:12:56.851+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-21T17:12:56.851+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-21T17:12:56.851+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=127.0.0.1:55324 error="write tcp 127.0.0.1:8080->127.0.0.1:55324: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-21T17:12:56.851+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5046ms
+time=2026-06-21T17:12:56.859+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=9.3692ms
+time=2026-06-21T17:12:56.948+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.2µs
+time=2026-06-21T17:12:56.965+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:64940
+time=2026-06-21T17:12:56.965+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:64940 total_active_clients=1
+time=2026-06-21T17:13:43.901+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-21T17:13:43.902+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-21T17:13:43.902+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-21T17:13:43.902+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-21T17:13:44.903+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-23T00:03:05.370+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-23T00:03:05.388+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-23T00:03:05.390+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-23T00:03:05.391+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-23T00:03:07.230+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-23T00:03:07.231+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-23T00:03:07.231+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-23T00:03:07.231+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-23T00:03:07.231+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-23T00:03:10.892+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=39.1861ms
+time=2026-06-23T00:03:15.595+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:03:15.595+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:03:15.602+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:03:15.602+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:03:15.602+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=7.4343ms
+time=2026-06-23T00:03:15.603+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=7.9627ms
+time=2026-06-23T00:03:15.703+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58240
+time=2026-06-23T00:03:15.703+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=1.0299ms
+time=2026-06-23T00:03:15.703+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58240 total_active_clients=1
+time=2026-06-23T00:03:32.848+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:32.848+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:32.848+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:32.848+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:03:49.270+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:49.270+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:49.270+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:03:49.270+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:03:53.731+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.0235ms
+time=2026-06-23T00:03:53.748+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:04:07.242+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:58240 error="write tcp [::1]:8080->[::1]:58240: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:04:07.735+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:64229
+time=2026-06-23T00:04:07.735+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:64229 total_active_clients=1
+time=2026-06-23T00:04:12.503+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-23T00:04:12.505+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:04:12.505+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:04:12.505+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:04:12.509+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=30812
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 30812).[0m
+time=2026-06-23T00:04:12.510+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=5.2492ms
+time=2026-06-23T00:04:12.526+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=16.3522ms exit_error="exit status 1"
+time=2026-06-23T00:04:12.526+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:04:18.496+03:00 level=WARN msg="Pre-flight check failed: binary not found" binary=hayalet_motor
+time=2026-06-23T00:04:18.496+03:00 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=424 duration=4.153ms
+time=2026-06-23T00:04:18.498+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.248ms
+time=2026-06-23T00:04:22.141+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-23T00:04:22.222+03:00 level=WARN msg="Port conflict detected" port=8080 pid=35616
+time=2026-06-23T00:04:22.222+03:00 level=WARN msg="API Request Failed (Client Error)" method=POST path=/api/projects/start status=409 duration=81.0976ms
+time=2026-06-23T00:04:25.159+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:04:25.159+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:04:25.160+03:00 level=INFO msg="Requesting process start" project_id=1781996463345 command=go interactive=false
+time=2026-06-23T00:04:25.163+03:00 level=INFO msg="OS Process successfully spawned" project_id=1781996463345 pid=12424
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🚀 [32mProject started successfully (PID: 12424).[0m
+time=2026-06-23T00:04:25.163+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.201ms
+time=2026-06-23T00:04:25.163+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=4.7052ms
+time=2026-06-23T00:04:27.352+03:00 level=INFO msg="Stop sequence initiated for process" project_id=1781996463345
+[36m[AUDIT][0m [33mpc_kapama_forgames[0m -> 🛑 Stop signal sent. Terminating process tree...
+time=2026-06-23T00:04:27.352+03:00 level=DEBUG msg="Summoning Zombie Reaper" project_id=1781996463345 pid=12424
+time=2026-06-23T00:04:27.352+03:00 level=DEBUG msg="Zombie Reaper activated: Scanning for process tree" parent_pid=12424
+time=2026-06-23T00:04:27.445+03:00 level=DEBUG msg="Process terminated normally due to user stop signal" project_id=1781996463345
+time=2026-06-23T00:04:27.445+03:00 level=INFO msg="Project process stopped by user" project_id=1781996463345 project_name=pc_kapama_forgames uptime=2s
+time=2026-06-23T00:04:27.530+03:00 level=INFO msg="Zombie Reaper successfully cleared process tree" project_id=1781996463345 pid=12424
+time=2026-06-23T00:04:27.530+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/stop status=200 duration=177.73ms
+time=2026-06-23T00:04:28.329+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:04:28.330+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:04:28.330+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:04:28.333+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=33736
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 33736).[0m
+time=2026-06-23T00:04:28.334+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.1359ms
+time=2026-06-23T00:04:28.350+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=17.1794ms exit_error="exit status 1"
+time=2026-06-23T00:04:28.350+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:04:31.661+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:04:31.661+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:04:31.661+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:04:31.664+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=8736
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 8736).[0m
+time=2026-06-23T00:04:31.664+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.7678ms
+time=2026-06-23T00:04:31.679+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=14.5803ms exit_error="exit status 1"
+time=2026-06-23T00:04:31.679+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:04:59.777+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:04:59.777+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:04:59.777+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:04:59.780+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=35032
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 35032).[0m
+time=2026-06-23T00:04:59.780+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.6817ms
+time=2026-06-23T00:04:59.794+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=13.5407ms exit_error="exit status 1"
+time=2026-06-23T00:04:59.794+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:07.908+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:07.908+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:07.908+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:07.913+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=35536
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 35536).[0m
+time=2026-06-23T00:06:07.913+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.92ms
+time=2026-06-23T00:06:07.927+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=14.2276ms exit_error="exit status 1"
+time=2026-06-23T00:06:07.927+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:08.703+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:08.703+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:08.703+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:08.707+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=19204
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 19204).[0m
+time=2026-06-23T00:06:08.707+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.7972ms
+time=2026-06-23T00:06:08.733+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=26.1928ms exit_error="exit status 1"
+time=2026-06-23T00:06:08.733+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:08.878+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:08.878+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:08.878+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:08.882+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=19740
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 19740).[0m
+time=2026-06-23T00:06:08.882+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.647ms
+time=2026-06-23T00:06:08.896+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=13.9953ms exit_error="exit status 1"
+time=2026-06-23T00:06:08.896+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:09.040+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:09.041+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:09.041+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:09.043+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=35248
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 35248).[0m
+time=2026-06-23T00:06:09.043+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.1082ms
+time=2026-06-23T00:06:09.057+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=13.1744ms exit_error="exit status 1"
+time=2026-06-23T00:06:09.057+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:09.208+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:09.209+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:09.209+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:09.211+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=4500
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 4500).[0m
+time=2026-06-23T00:06:09.212+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.7711ms
+time=2026-06-23T00:06:09.226+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=14.2974ms exit_error="exit status 1"
+time=2026-06-23T00:06:09.226+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:09.380+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:06:09.380+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:06:09.380+03:00 level=INFO msg="Requesting process start" project_id=1782162233730 command=go interactive=false
+time=2026-06-23T00:06:09.383+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162233730 pid=33716
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 33716).[0m
+time=2026-06-23T00:06:09.383+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.6548ms
+time=2026-06-23T00:06:09.398+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162233730 uptime=14.687ms exit_error="exit status 1"
+time=2026-06-23T00:06:09.398+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162233730 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:06:44.473+03:00 level=INFO msg="API Request Executed" method=DELETE path=/api/projects/delete status=200 duration=1.0273ms
+time=2026-06-23T00:06:44.476+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:06:52.704+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:06:52.704+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:06:52.704+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:06:52.704+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:07:47.901+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=505.9µs
+time=2026-06-23T00:07:47.903+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:07:49.679+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-23T00:07:49.680+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:07:49.681+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:07:49.681+03:00 level=INFO msg="Requesting process start" project_id=1782162467901 command=go interactive=false
+time=2026-06-23T00:07:49.683+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782162467901 pid=5124
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 5124).[0m
+time=2026-06-23T00:07:49.683+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=3.095ms
+time=2026-06-23T00:07:49.700+03:00 level=WARN msg="Process terminated with non-zero exit code (Crash)" project_id=1782162467901 uptime=16.2564ms exit_error="exit status 1"
+time=2026-06-23T00:07:49.700+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782162467901 project_name=Renk_testi uptime=0s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:08:04.809+03:00 level=INFO msg="API Request Executed" method=DELETE path=/api/projects/delete status=200 duration=1.5044ms
+time=2026-06-23T00:08:04.812+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:08:46.526+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:08:46.526+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:08:46.526+03:00 level=WARN msg="Detective failed: Invalid directory path" path=C:/Users/Diony/Desktop/DionyHub/apps/C:/Users/Diony/Desktop/DionyHub/apps/renk_testi
+time=2026-06-23T00:08:46.526+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:38:14.413+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-23T00:38:14.414+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-23T00:38:14.415+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-23T00:38:14.416+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-23T00:38:15.417+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-23T00:38:18.480+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-23T00:38:18.498+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-23T00:38:18.500+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-23T00:38:18.500+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-23T00:38:19.602+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-23T00:38:19.602+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-23T00:38:19.602+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-23T00:38:19.602+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-23T00:38:19.602+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-23T00:38:19.602+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-23T00:38:19.603+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-23T00:38:19.603+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-23T00:38:19.603+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-23T00:38:19.603+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-23T00:38:19.603+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-23T00:38:19.625+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58771
+time=2026-06-23T00:38:19.625+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58771 total_active_clients=1
+time=2026-06-23T00:38:53.376+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=27.6058ms
+time=2026-06-23T00:38:53.684+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:38:53.684+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:38:53.684+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:58771 error="write tcp [::1]:8080->[::1]:58771: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:38:53.685+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:38:53.685+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:38:53.685+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=528.5µs
+time=2026-06-23T00:38:53.692+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=8.7517ms
+time=2026-06-23T00:38:53.782+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51698
+time=2026-06-23T00:38:53.782+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51698 total_active_clients=1
+time=2026-06-23T00:38:53.783+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=787.7µs
+time=2026-06-23T00:38:54.087+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-23T00:38:54.263+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:38:54.263+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:38:54.263+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51698 error="write tcp [::1]:8080->[::1]:51698: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:38:54.263+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:38:54.264+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:38:54.264+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5044ms
+time=2026-06-23T00:38:54.270+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=7.0657ms
+time=2026-06-23T00:38:54.315+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:62478
+time=2026-06-23T00:38:54.316+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:62478 total_active_clients=1
+time=2026-06-23T00:38:54.316+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.6µs
+time=2026-06-23T00:38:54.754+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-23T00:38:54.914+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:38:54.914+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:38:54.914+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:62478 error="write tcp [::1]:8080->[::1]:62478: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:38:54.914+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:38:54.915+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:38:54.915+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=521.4µs
+time=2026-06-23T00:38:54.920+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=5.8547ms
+time=2026-06-23T00:38:54.969+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:60884
+time=2026-06-23T00:38:54.969+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:60884 total_active_clients=1
+time=2026-06-23T00:38:54.970+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=512.8µs
+time=2026-06-23T00:38:55.668+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-23T00:38:55.842+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:38:55.842+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:38:55.844+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:60884 error="write tcp [::1]:8080->[::1]:60884: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:38:55.844+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:38:55.844+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:38:55.844+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5038ms
+time=2026-06-23T00:38:55.851+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=8.2283ms
+time=2026-06-23T00:38:55.895+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:38:55.896+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58037
+time=2026-06-23T00:38:55.896+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58037 total_active_clients=1
+time=2026-06-23T00:38:57.091+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-23T00:38:57.269+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:38:57.269+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:38:57.269+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:38:57.269+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:38:57.269+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=2026-06-23T00:38:57.269+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:58037 error="write tcp [::1]:8080->[::1]:58037: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:38:57.275+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.2804ms
+time=2026-06-23T00:38:57.316+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:63146
+time=2026-06-23T00:38:57.316+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:63146 total_active_clients=1
+time=2026-06-23T00:38:57.316+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=503.5µs
+time=2026-06-23T00:39:14.151+03:00 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=2026-06-23T00:39:14.151+03:00 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=2026-06-23T00:39:17.471+03:00 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\renk_testi
+time=2026-06-23T00:39:17.471+03:00 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:39:17.471+03:00 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=3.3201486s
+time=2026-06-23T00:39:17.474+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:39:17.474+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:39:17.474+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:39:18.988+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=1.0258ms
+time=2026-06-23T00:39:19.007+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:39:21.550+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-23T00:39:21.551+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:39:21.551+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:39:21.551+03:00 level=INFO msg="Requesting process start" project_id=1782164358987 command=go interactive=false
+time=2026-06-23T00:39:21.555+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782164358987 pid=36372
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 36372).[0m
+time=2026-06-23T00:39:21.556+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=4.6729ms
+time=2026-06-23T00:39:37.135+03:00 level=WARN msg="Process terminated unexpectedly but cleanly" project_id=1782164358987
+time=2026-06-23T00:39:37.135+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782164358987 project_name=Renk_testi uptime=15s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:40:07.048+03:00 level=INFO msg="Stop sequence initiated for process" project_id=1782164358987
+time=2026-06-23T00:40:07.048+03:00 level=WARN msg="Attempted to stop a non-running process" project_id=1782164358987
+time=2026-06-23T00:40:07.048+03:00 level=ERROR msg="API Request Failed (Server Error)" method=POST path=/api/projects/stop status=500 duration=0s
+time=2026-06-23T00:44:42.520+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-23T00:44:42.520+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-23T00:44:42.520+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-23T00:44:42.520+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-23T00:44:43.521+03:00 level=DEBUG msg="Closing SQLite Engine"
+time=2026-06-23T00:44:53.444+03:00 level=INFO msg="Starting DionyHub Command Center Initialization..."
+time=2026-06-23T00:44:53.461+03:00 level=DEBUG msg="Initializing SQLite Engine" path=data/dionyhub.db
+time=2026-06-23T00:44:53.463+03:00 level=DEBUG msg="Running database migrations..."
+time=2026-06-23T00:44:53.463+03:00 level=INFO msg="SQLite Engine successfully started and migrated" path=data/dionyhub.db
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Cleared potential port 8080 conflicts via PowerShell"
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Attempting to load projects configuration" filename=config.json
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Projects configuration file does not exist, returning empty slice" filename=config.json
+time=2026-06-23T00:44:54.528+03:00 level=INFO msg="Successfully loaded project configurations" count=0
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Initializing core process manager"
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Initializing core API server instance with SQLite integration"
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Starting to register API endpoints..."
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Registering WebSocket endpoint under /ws"
+time=2026-06-23T00:44:54.528+03:00 level=DEBUG msg="Booting up background metrics worker..."
+time=2026-06-23T00:44:54.528+03:00 level=INFO msg="All API routes and background workers registered successfully"
+time=2026-06-23T00:44:54.528+03:00 level=INFO msg="Server is successfully running and listening" url=http://localhost:8080
+time=2026-06-23T00:44:54.655+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:58517
+time=2026-06-23T00:44:54.655+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:58517 total_active_clients=1
+time=2026-06-23T00:44:59.007+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=20.9147ms
+time=2026-06-23T00:44:59.236+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:44:59.238+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:44:59.238+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:44:59.238+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:44:59.238+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:58517 error="write tcp [::1]:8080->[::1]:58517: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:44:59.238+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=1.5035ms
+time=2026-06-23T00:44:59.244+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=7.8154ms
+time=2026-06-23T00:44:59.333+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:44:59.333+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:51116
+time=2026-06-23T00:44:59.333+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:51116 total_active_clients=1
+time=2026-06-23T00:44:59.713+03:00 level=INFO msg="API Request Executed" method=GET path=/ status=200 duration=0s
+time=2026-06-23T00:44:59.876+03:00 level=DEBUG msg="Fetching system settings"
+time=2026-06-23T00:44:59.876+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:44:59.876+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:44:59.876+03:00 level=DEBUG msg="Successfully retrieved system settings"
+time=2026-06-23T00:44:59.876+03:00 level=WARN msg="WebSocket client disconnected or write failed, cleaning up" client_ip=[::1]:51116 error="write tcp [::1]:8080->[::1]:51116: wsasend: An established connection was aborted by the software in your host machine."
+time=2026-06-23T00:44:59.876+03:00 level=INFO msg="API Request Executed" method=GET path=/api/settings status=200 duration=0s
+time=2026-06-23T00:44:59.883+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=6.5494ms
+time=2026-06-23T00:44:59.933+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=1.5045ms
+time=2026-06-23T00:44:59.933+03:00 level=DEBUG msg="Incoming WebSocket upgrade request" client_ip=[::1]:56312
+time=2026-06-23T00:44:59.933+03:00 level=INFO msg="New WebSocket client connected successfully" client_ip=[::1]:56312 total_active_clients=1
+time=2026-06-23T00:45:05.789+03:00 level=INFO msg="API Request Executed" method=DELETE path=/api/projects/delete status=200 duration=1.5647ms
+time=2026-06-23T00:45:05.809+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=521µs
+time=2026-06-23T00:45:32.722+03:00 level=DEBUG msg="Opening native OS folder picker dialogue"
+time=2026-06-23T00:45:32.722+03:00 level=DEBUG msg="Invoking native OS folder picker dialog" os=windows
+time=2026-06-23T00:45:38.023+03:00 level=DEBUG msg="Folder picker dialog completed successfully" selected_path=C:\Users\Diony\Desktop\renk_testi
+time=2026-06-23T00:45:38.023+03:00 level=INFO msg="Folder successfully selected via native picker" path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:45:38.023+03:00 level=INFO msg="API Request Executed" method=GET path=/api/system/browse status=200 duration=5.3007915s
+time=2026-06-23T00:45:38.027+03:00 level=DEBUG msg="Processing smart detection request" path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:45:38.027+03:00 level=DEBUG msg="Smart Detective initiated deep scan (VLC Mode)" target_path=C:/Users/Diony/Desktop/renk_testi
+time=2026-06-23T00:45:38.027+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/detect status=200 duration=0s
+time=2026-06-23T00:45:40.359+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/add status=201 duration=505.4µs
+time=2026-06-23T00:45:40.362+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects status=200 duration=0s
+time=2026-06-23T00:45:41.491+03:00 level=INFO msg="API Request Executed" method=GET path=/api/projects/logs status=200 duration=0s
+time=2026-06-23T00:45:41.491+03:00 level=DEBUG msg="Attempting to load application settings" filename=app_config.json
+time=2026-06-23T00:45:41.491+03:00 level=DEBUG msg="Successfully loaded application settings" filename=app_config.json
+time=2026-06-23T00:45:41.491+03:00 level=INFO msg="Requesting process start" project_id=1782164740359 command=go interactive=false
+time=2026-06-23T00:45:41.495+03:00 level=INFO msg="OS Process successfully spawned" project_id=1782164740359 pid=22792
+[36m[AUDIT][0m [33mRenk_testi[0m -> 🚀 [32mProject started successfully (PID: 22792).[0m
+time=2026-06-23T00:45:41.496+03:00 level=INFO msg="API Request Executed" method=POST path=/api/projects/start status=200 duration=5.2073ms
+time=2026-06-23T00:45:56.765+03:00 level=WARN msg="Process terminated unexpectedly but cleanly" project_id=1782164740359
+time=2026-06-23T00:45:56.765+03:00 level=ERROR msg="Project process crashed unexpectedly!" project_id=1782164740359 project_name=Renk_testi uptime=15s
+[36m[AUDIT][0m [33mRenk_testi[0m -> ⚪ Process exited normally.
+time=2026-06-23T00:50:19.642+03:00 level=WARN msg="Shutdown signal received! Initiating Graceful Shutdown..."
+time=2026-06-23T00:50:19.642+03:00 level=INFO msg="Terminating all running background processes..."
+time=2026-06-23T00:50:19.642+03:00 level=INFO msg="Global shutdown hook triggered: Terminating all active process trees" active_count=0
+time=2026-06-23T00:50:19.642+03:00 level=INFO msg="DionyHub shutdown sequence complete. Goodbye!"
+time=2026-06-23T00:50:20.643+03:00 level=DEBUG msg="Closing SQLite Engine"

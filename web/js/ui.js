@@ -702,6 +702,8 @@ function showPortConflictModal(port, pName, pid, projectId, safeName, btn) {
     });
 }
 
+// --- DİĞER TÜM KODLAR AYNI KALACAK, SADECE EN ALT KISIM DEĞİŞİYOR ---
+
 function showMissingDependencyModal(binary) {
     let modal = document.getElementById('dependencyModal');
     if (!modal) {
@@ -747,13 +749,90 @@ function showMissingDependencyModal(binary) {
     });
 }
 
+// --- 🚀 YENİ: VİZYONER BROWSER LİMİTASYON MODALI ---
+function showBrowserLimitationModal(folderName) {
+    let modal = document.getElementById('browserLimitModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'browserLimitModal';
+        modal.className = 'fixed inset-0 z-[1050] flex items-center justify-center bg-[#0a0c10]/90 backdrop-blur-md transition-opacity opacity-0';
+        modal.innerHTML = `
+        <div class="bg-[#11151f] border border-gray-700 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] p-8 w-[550px] transform scale-95 transition-transform duration-300 relative overflow-hidden" id="browserLimitBox">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex items-start gap-5 mb-6 relative z-10">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-white tracking-wide">Tarayıcı Güvenlik Kalkanı</h3>
+                    <p class="text-sm text-gray-400 mt-1.5 leading-relaxed">Web standartları gereği, tarayıcılar sürüklenen dosyaların bilgisayardaki <span class="text-indigo-300 font-mono text-xs bg-indigo-500/10 px-1.5 py-0.5 rounded">C:/.../</span> tam adresini okuyamazlar.</p>
+                </div>
+            </div>
+            
+            <div class="bg-[#0a0c10] border border-gray-800 p-5 rounded-2xl mb-6 relative z-10">
+                <p class="text-sm text-gray-300 leading-relaxed mb-4">
+                    Bu kısıtlamayı tamamen ortadan kaldırmak ve kusursuz bir deneyim sunmak için <strong class="text-white">DionyHub Masaüstü Uygulaması</strong> geliştirilmektedir.
+                </p>
+                <div class="flex items-center justify-between bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-indigo-300">DionyHub Desktop</span>
+                            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Windows, Mac, Linux</span>
+                        </div>
+                    </div>
+                    <span class="text-xs font-black bg-indigo-500 text-white px-2 py-1 rounded-md shadow-lg rotate-3 cursor-default">YAKINDA</span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between relative z-10">
+                <button id="btnCancelLimit" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-white transition-colors">İptal Et</button>
+                <button id="btnContinueBrowser" class="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    Klasörü Manuel Seç
+                </button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        
+        document.getElementById('btnCancelLimit').addEventListener('click', () => {
+            modal.classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('browserLimitBox').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        });
+    }
+    
+    const continueBtn = document.getElementById('btnContinueBrowser');
+    continueBtn.onclick = () => {
+        // Modalı Kapat
+        modal.classList.replace('opacity-100', 'opacity-0');
+        document.getElementById('browserLimitBox').classList.replace('scale-100', 'scale-95');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+        
+        // Klasör Ekleme Ekranını Aç ve OS Seçiciyi (Büyüteç) Tetikle
+        openModal();
+        document.querySelector('input[name="sourceMode"][value="local"]').checked = true;
+        toggleSourceMode();
+        document.getElementById('projName').value = folderName;
+        
+        // İşletim sisteminin klasör seçicisini doğrudan tetikle
+        browseFolder('projPath', true);
+    };
+    
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.classList.replace('opacity-0', 'opacity-100');
+        document.getElementById('browserLimitBox').classList.replace('scale-95', 'scale-100');
+    });
+}
+
 // --- YENİ MİMARİ: KUSURSUZ AKIŞKAN SÜRÜKLE BIRAK (DRAG & DROP) ---
 function initGlobalDragAndDrop() {
     let overlay = document.getElementById('dragOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'dragOverlay';
-        // Zırhımız başlangıçta tıklamaları geçirmemeli (pointer-events-none)
         overlay.className = 'fixed inset-0 z-[1000] hidden bg-[#0a0c10]/80 backdrop-blur-sm flex items-center justify-center pointer-events-none transition-all duration-300 opacity-0';
         overlay.innerHTML = `
             <div class="bg-[#11151f] p-12 rounded-3xl shadow-[0_0_80px_rgba(99,102,241,0.3)] flex flex-col items-center border-2 border-dashed border-indigo-500/70 transform scale-110 transition-transform duration-300" id="dragOverlayBox">
@@ -761,13 +840,12 @@ function initGlobalDragAndDrop() {
                     <svg class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                 </div>
                 <h2 class="text-3xl font-black text-white mb-3 tracking-wide drop-shadow-md">Projeyi Buraya Bırak</h2>
-                <p class="text-indigo-300/80 font-bold text-lg text-center">GitHub Linki veya Klasör Sürükleyebilirsiniz<br><span class="text-xs text-rose-400 mt-2 block">(Not: Web güvenliği gereği klasörler sadece Workspace içinden sürüklenmelidir)</span></p>
+                <p class="text-indigo-300/80 font-bold text-lg text-center">GitHub Linki veya Klasör Sürükleyebilirsiniz</p>
             </div>
         `;
         document.body.appendChild(overlay);
     }
 
-    // Tarayıcının dosyayı veya linki yeni sekmede açmasını kesin olarak engelliyoruz!
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         window.addEventListener(eventName, preventDefaults, false);
     });
@@ -785,7 +863,6 @@ function initGlobalDragAndDrop() {
             if (dragCounter === 1) {
                 overlay.classList.remove('hidden');
                 overlay.classList.add('flex');
-                // Ekrana girince zırhı aktifleştir ki diğer elementler titreşim yapmasın
                 overlay.style.pointerEvents = 'auto';
                 requestAnimationFrame(() => {
                     overlay.classList.remove('opacity-0');
@@ -807,7 +884,6 @@ function initGlobalDragAndDrop() {
         dragCounter = 0;
         hideOverlay();
 
-        // 1. GITHUB LİNKİ SÜRÜKLENDİYSE (Chrome sekmesinden vs)
         const textData = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
         if (textData && (textData.includes('github.com') || textData.includes('gitlab.com'))) {
             openModal();
@@ -820,25 +896,13 @@ function initGlobalDragAndDrop() {
             return;
         }
 
-        // 2. LOKAL KLASÖR SÜRÜKLENDİYSE
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const cleanName = file.name.replace(/[^a-zA-Z0-9_-]/g, ' ');
+            const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
             
-            openModal();
-            document.querySelector('input[name="sourceMode"][value="local"]').checked = true;
-            toggleSourceMode();
-            
-            // Tarayıcı güvenliği tam yolu vermez, klasörün Workspace içinde olduğunu varsayarız
-            const useWsCb = document.getElementById('useWorkspace');
-            if (useWsCb) useWsCb.checked = true;
-            toggleWorkspaceMode();
-            
-            document.getElementById('projPath').value = file.name;
-            document.getElementById('projName').value = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-            
-            const ws = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-            triggerSmartDetection(ws + file.name, false);
+            // --- YENİ VİZYON: VİZYONER BROWSER LİMİTASYON MODALI TETİKLENİR ---
+            showBrowserLimitationModal(formattedName);
         }
     });
 
@@ -853,7 +917,6 @@ function initGlobalDragAndDrop() {
     }
 }
 
-// BÜTÜN DİNLEYİCİLERİ DOM YÜKLENDİĞİNDE BAŞLAT
 document.addEventListener('DOMContentLoaded', () => {
     const pathInput = document.getElementById('projPath');
     let detectTimeout;
@@ -864,6 +927,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Drag & Drop Sihrini Başlat
     initGlobalDragAndDrop();
 });

@@ -4,9 +4,7 @@ function connectWebSocket() {
         try {
             const msg = JSON.parse(e.data);
             
-            // --- YENİ EKLENEN SİHİR: OTONOM YENİLEME ---
             if (msg.action === 'reload') {
-                // Sayfayı asla F5'lemeden arka planda projeleri ve etiketleri yeniler
                 loadProjects(); 
                 return;
             }
@@ -50,17 +48,66 @@ function connectWebSocket() {
                 });
                 return; 
             }
+            
             let projName = "Unknown";
             if (msg.id === 'system') projName = "DionyHub System Logs";
             else { const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); projName = p ? (p.name || p.Name) : msg.id; }
             
             const termInstance = getOrCreateTerminal(msg.id, projName);
-            if (msg.id === 'system') termInstance.term.write('\x1b[36m' + msg.data + '\x1b[0m');
-            else termInstance.term.write(msg.data); 
+            
+            // --- 🚀 YENİ: VS CODE TARZI CTRL + CLICK LİNK MOTORU ---
+            if (!termInstance.__linkEngineReady && termInstance.term && typeof termInstance.term.registerLinkProvider === 'function') {
+                termInstance.__linkEngineReady = true;
+                termInstance.term.registerLinkProvider({
+                    provideLinks: (bufferLineNumber, callback) => {
+                        const line = termInstance.term.buffer.active.getLine(bufferLineNumber - 1);
+                        if (!line) { callback([]); return; }
+                        const text = line.translateToString(true);
+                        const links = [];
+                        
+                        // Terminal içindeki temiz URL'leri yakalayan regex
+                        const regex = /(https?:\/\/[a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=\%]+)/g;
+                        let match;
+                        while ((match = regex.exec(text)) !== null) {
+                            links.push({
+                                range: { 
+                                    start: { x: match.index + 1, y: bufferLineNumber }, 
+                                    end: { x: match.index + match[0].length, y: bufferLineNumber } 
+                                },
+                                text: match[0],
+                                activate: (event, uri) => {
+                                    if (event.ctrlKey || event.metaKey) {
+                                        window.open(uri, '_blank'); // Yan sekmede tertemiz açar
+                                    } else {
+                                        // VS Code hissini tamamlayan o tatlı uyarı
+                                        if (typeof showToast === 'function') {
+                                            showToast("Linke gitmek için CTRL + Click yapın", "success");
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        callback(links);
+                    }
+                });
+            }
+            
+            // --- SMART CANVAS (AKILLI VURGU MOTORU) ---
+            let textData = msg.data;
+            if (msg.id !== 'system' && !textData.includes('\x1b[')) {
+                textData = textData.replace(/\b(ERROR|ERR|FAIL|FAILED|FATAL|EXCEPTION|PANIC)\b/gi, "\x1b[1;31m$1\x1b[0m");
+                textData = textData.replace(/\b(WARN|WARNING)\b/gi, "\x1b[1;33m$1\x1b[0m");
+                textData = textData.replace(/\b(SUCCESS|OK|READY|STARTED|LISTENING)\b/gi, "\x1b[1;32m$1\x1b[0m");
+                textData = textData.replace(/(https?:\/\/[^\s]+)/gi, "\x1b[4;36m$1\x1b[0m");
+            }
+            
+            termInstance.term.write(textData); 
+            
         } catch (err) {
             if(terminalPool['system']) terminalPool['system'].term.write(e.data);
         }
     };
+    
     socket.onclose = () => {
         if (terminalPool['system']) terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
         setTimeout(connectWebSocket, 3000);
