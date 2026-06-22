@@ -1,3 +1,5 @@
+// --- web/js/terminal.js ---
+
 function getOrCreateTerminal(id, name) {
     if (terminalPool[id]) return terminalPool[id];
     const grid = document.getElementById('terminals-grid');
@@ -18,24 +20,57 @@ function getOrCreateTerminal(id, name) {
     titleSpan.innerHTML = `<div class="w-2 h-2 rounded-full ${dotColor}"></div><span class="${textColor} drop-shadow-md truncate">${name}</span>`;
     
     const actionsDiv = document.createElement('div');
-    actionsDiv.className = "flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300";
+    // Arama kutusu açıkken opacity düşmesin diye group-hover mantığını revize ettik
+    actionsDiv.className = "flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all duration-300";
+
+    // --- YENİ: GELİŞMİŞ ARAMA KUTUSU (SEARCH ADDON) ---
+    const searchContainer = document.createElement('div');
+    searchContainer.className = "hidden flex items-center bg-[#0a0c10] border border-indigo-500/50 rounded-lg overflow-hidden shadow-[0_0_10px_rgba(99,102,241,0.2)] mr-2";
+    searchContainer.id = `search-container-${id}`;
 
     const searchInput = document.createElement('input');
     searchInput.type = "text"; 
     searchInput.id = `search-input-${id}`;
-    searchInput.className = "hidden bg-[#0f111a] border border-gray-600 text-gray-300 text-xs px-2 py-1 rounded w-32 neon-focus shadow-inner";
-    searchInput.placeholder = "Find in logs...";
+    searchInput.className = "bg-transparent text-gray-300 text-xs px-2.5 py-1.5 w-40 focus:outline-none placeholder-gray-500 font-mono";
+    searchInput.placeholder = "Find in logs... (Enter)";
+
+    // Öncekini Bul Butonu (Shift+Enter alternatifi)
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = `<svg class="w-3.5 h-3.5 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>`;
+    prevBtn.className = "px-1.5 hover:bg-gray-800 transition-colors";
+    prevBtn.title = "Previous (Shift + Enter)";
+
+    // Sonrakini Bul Butonu (Enter alternatifi)
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = `<svg class="w-3.5 h-3.5 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    nextBtn.className = "px-1.5 hover:bg-gray-800 transition-colors border-l border-gray-800";
+    nextBtn.title = "Next (Enter)";
+
+    searchContainer.appendChild(searchInput);
+    searchContainer.appendChild(prevBtn);
+    searchContainer.appendChild(nextBtn);
 
     const searchBtn = document.createElement('button');
     searchBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
     searchBtn.className = "text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-colors";
-    searchBtn.title = "Search Logs";
+    searchBtn.title = "Search Logs (Ctrl+F)";
+    
+    // Arama Kutusu Toggle Mantığı
     searchBtn.onclick = () => {
-        if (searchInput.classList.contains('hidden')) { 
-            searchInput.classList.remove('hidden'); searchInput.focus(); 
+        if (searchContainer.classList.contains('hidden')) { 
+            searchContainer.classList.remove('hidden'); 
+            searchContainer.classList.add('flex');
+            searchInput.focus(); 
+            searchBtn.classList.add('bg-indigo-500/20', 'text-indigo-400');
         } else { 
-            searchInput.classList.add('hidden'); searchInput.value = ''; 
-            if (terminalPool[id].searchAddon) terminalPool[id].searchAddon.clearDecorations(); 
+            searchContainer.classList.add('hidden'); 
+            searchContainer.classList.remove('flex');
+            searchInput.value = ''; 
+            searchBtn.classList.remove('bg-indigo-500/20', 'text-indigo-400');
+            if (terminalPool[id] && terminalPool[id].searchAddon) {
+                terminalPool[id].searchAddon.clearDecorations(); 
+            }
+            if (terminalPool[id]) terminalPool[id].term.focus();
         }
     };
 
@@ -69,7 +104,7 @@ function getOrCreateTerminal(id, name) {
     clearBtn.title = "Clear Logs";
     clearBtn.onclick = () => terminalPool[id].term.clear();
 
-    actionsDiv.appendChild(searchInput); 
+    actionsDiv.appendChild(searchContainer);
     actionsDiv.appendChild(searchBtn); 
     actionsDiv.appendChild(exportBtn); 
     actionsDiv.appendChild(minBtn); 
@@ -131,22 +166,58 @@ function getOrCreateTerminal(id, name) {
         })
         .catch(err => console.error("Failed to fetch historical logs:", err));
 
+    // --- YENİ: ARAMA MOTORU EVENT LİSTENER'LARI ---
+    
+    // Xterm İçinde CTRL+F Algılayıcı
     term.attachCustomKeyEventHandler((e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.type === 'keydown') {
-            e.preventDefault(); searchInput.classList.remove('hidden'); searchInput.focus(); return false;
+            e.preventDefault(); 
+            if (searchContainer.classList.contains('hidden')) {
+                searchBtn.click();
+            } else {
+                searchInput.focus();
+                searchInput.select();
+            }
+            return false;
         }
         return true;
     });
 
+    const executeSearch = (direction = 'next') => {
+        const val = searchInput.value;
+        if (!val) return;
+        if (direction === 'next') {
+            searchAddon.findNext(val, { decorations: true, regex: false });
+        } else {
+            searchAddon.findPrevious(val, { decorations: true, regex: false });
+        }
+    };
+
+    // Anlık Yazarken Ara
     searchInput.addEventListener('input', (e) => { 
-        if(e.target.value) searchAddon.findNext(e.target.value, { decorations: true }); 
-    });
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { 
-            if (e.shiftKey) searchAddon.findPrevious(e.target.value, { decorations: true }); 
-            else searchAddon.findNext(e.target.value, { decorations: true }); 
+        if(e.target.value) {
+            searchAddon.findNext(e.target.value, { decorations: true, regex: false }); 
+        } else {
+            searchAddon.clearDecorations();
         }
     });
+
+    // Enter ve Shift+Enter Tuş Kombinasyonları
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { 
+            e.preventDefault();
+            if (e.shiftKey) executeSearch('prev');
+            else executeSearch('next');
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            searchBtn.click();
+        }
+    });
+
+    // Buton Tıklamaları
+    prevBtn.onclick = () => executeSearch('prev');
+    nextBtn.onclick = () => executeSearch('next');
+
 
     if (id !== 'system') {
         term.onData(data => {
@@ -236,12 +307,7 @@ function closeTerminal(id) {
         return; 
     }
 
-    // YENİ: Sistemin güncel durumuna (RAM) bakıyoruz.
     const p = cachedProjects.find(x => (x.id || x.ID) === id);
-
-    // KRİTİK: Eğer proje tamamen silinmişse (p undefined) VEYA
-    // durumu "running" değilse, terminali acımadan yok et!
-    // (Böylece takılı kalan lastStatus bug'ını aşıyoruz)
     const isActuallyRunning = p && p.status === 'running';
 
     if (isActuallyRunning) {
@@ -255,7 +321,6 @@ function closeTerminal(id) {
         return;
     }
 
-    // Silme ve Temizlik İşlemleri
     termInstance.term.dispose(); 
     termInstance.container.remove();
     
