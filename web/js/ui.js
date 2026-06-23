@@ -108,39 +108,193 @@ function closeCmdPalette() {
 }
 
 function handleCmdSearch(e) {
-    const query = e.target.value.toLowerCase().replace(/\s+/g, '');
-    
-    const allActions = [
-        { name: "Global > Open Dashboard", searchKey: "globalopendashboardviewprojects", icon: "📊", action: () => { switchView('dashboard'); } },
-        { name: "Global > Open Settings", searchKey: "globalopensettingsconfigurations", icon: "⚙️", action: () => { switchView('settings'); } },
-        { name: "Project > Add New", searchKey: "projectaddnewcreate", icon: "➕", action: () => { openModal(); } },
-        { name: "Terminal > Clear All Logs", searchKey: "terminalclearalllogs", icon: "🧹", action: () => { clearAllTerminals(); } },
-        { name: "Filter > Show All Projects", searchKey: "filtershowallprojectsclear", icon: "🌐", action: () => { setFilter(null); } }
+    const query = e.target.value.toLowerCase().trim();
+    let allActions = [];
+
+    // 1. INPUT BOŞKEN (Tertemiz Rehber ve Kusursuz Sıralama)
+    if (query === '') {
+        currentCmdActions = [
+            { name: "Tüm Aksiyonları Listele", desc: "Sistemdeki tüm komutları ve yetenekleri gör", shortcut: ">", icon: "⚡", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>'; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi hızlıca çalıştır", shortcut: ">start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Projeyi Durdur", desc: "Çalışan bir süreci anında sonlandır", shortcut: ">stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Tag ile Filtrele", desc: "Tüm etiketleri gör ve projeleri filtrele", shortcut: ">tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", action: () => { openModal(); } },
+            { name: "Acil Kapatma", desc: "Çalışan tüm projeleri tek tuşla öldür", shortcut: "Kill All", icon: "💀", action: () => { 
+                showConfirmModal(
+                    "Sistemi Durdur (Kill All)",
+                    "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
+                    "Hepsini Durdur",
+                    "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
+                    `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                    () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
+                );
+            } },
+            { name: "Sistemi Temizle", desc: "Tüm terminal geçmişini sil ve rahatlat", shortcut: "Clear", icon: "🧹", action: () => { 
+                showConfirmModal(
+                    "Logları Temizle",
+                    "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
+                    "Geçmişi Sil",
+                    "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+                    `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+                    () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
+                );
+            } },
+            { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", action: () => { switchView('dashboard'); } },
+            { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", action: () => { switchView('settings'); } },
+            { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", action: () => { setFilter(null); } }
+        ];
+        cmdSelectedIndex = 0;
+        renderCmdResults();
+        return;
+    }
+
+    const generalCommands = [
+        { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", searchKey: "projectaddnewcreate", action: () => { openModal(); } },
+        { name: "Acil Kapatma", desc: "Çalışan tüm projeleri durdurur", shortcut: "Kill All", icon: "💀", searchKey: "terminalkillallprocesses", action: () => { 
+            showConfirmModal(
+                "Sistemi Durdur (Kill All)",
+                "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
+                "Hepsini Durdur",
+                "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
+                `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
+            );
+        } },
+        { name: "Terminal Loglarını Temizle", desc: "Tüm sekmelerdeki geçmişi siler", shortcut: "Clear", icon: "🧹", searchKey: "terminalclearalllogs", action: () => { 
+            showConfirmModal(
+                "Logları Temizle",
+                "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
+                "Geçmişi Sil",
+                "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+                `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+                () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
+            );
+        } },
+        { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", searchKey: "globalopendashboardviewprojects", action: () => { switchView('dashboard'); } },
+        { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", searchKey: "globalopensettingsconfigurations", action: () => { switchView('settings'); } },
+        { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", searchKey: "filtershowallprojectsclear", action: () => { setFilter(null); } }
     ];
 
-    availableTags.forEach(tag => {
-        allActions.push({ name: `Filter by Tag: #${tag}`, searchKey: `filtertag${tag.toLowerCase()}`, icon: "🏷️", action: () => { setFilter(tag); }});
-    });
-
-    cachedProjects.forEach(p => {
-        const pId = p.id || p.ID;
-        const safeName = p.name || p.Name;
-        const isRunning = p.status === 'running';
-
-        allActions.push({ name: `Start: ${safeName}`, searchKey: `startprojectrun${safeName.toLowerCase()}`, icon: "▶️", action: () => { startProject(pId, safeName, null); }});
-        
-        if (isRunning) {
-            allActions.push({ name: `Stop: ${safeName}`, searchKey: `stopprojectkill${safeName.toLowerCase()}`, icon: "⏹️", action: () => { stopProject(pId, null); }});
-            allActions.push({ name: `Restart: ${safeName}`, searchKey: `restartprojectreboot${safeName.toLowerCase()}`, icon: "🔄", action: () => { restartProject(pId, safeName, null); }});
-            allActions.push({ name: `Focus Terminal: ${safeName}`, searchKey: `focusterminalviewlogs${safeName.toLowerCase()}`, icon: "📟", action: () => { restoreTerminal(pId); }});
-            allActions.push({ name: `Export Logs: ${safeName}`, searchKey: `exportlogsdownload${safeName.toLowerCase()}`, icon: "💾", action: () => { exportTerminalLogs(pId, safeName); }});
+    // 2. KOMUT MODU (>)
+    if (query.startsWith('>')) {
+        if (query.startsWith('>start')) {
+            const target = query.replace('>start', '').trim();
+            cachedProjects.filter(p => p.status !== 'running').forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Başlat: ${safeName}`, desc: p.path || p.Path, shortcut: "Start", icon: "▶️", action: () => startProject(p.id || p.ID, safeName, null) });
+                }
+            });
         }
-        
-        allActions.push({ name: `Edit Config & Env: ${safeName}`, searchKey: `editprojectconfigenv${safeName.toLowerCase()}`, icon: "✏️", action: () => { openEditModal(pId); }});
-        allActions.push({ name: `Delete: ${safeName}`, searchKey: `deleteprojectremove${safeName.toLowerCase()}`, icon: "🗑️", action: () => { openDeleteModal(pId); }});
-    });
+        else if (query.startsWith('>stop')) {
+            const target = query.replace('>stop', '').trim();
+            cachedProjects.filter(p => p.status === 'running').forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Aktif süreci sonlandır", shortcut: "Stop", icon: "⏹️", action: () => stopProject(p.id || p.ID, null) });
+                }
+            });
+        }
+        else if (query.startsWith('>delete')) {
+            const target = query.replace('>delete', '').trim();
+            cachedProjects.forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kaldır", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(p.id || p.ID) });
+                }
+            });
+        }
+        else if (query.startsWith('>tag')) {
+            const target = query.replace('>tag', '').trim();
+            if (typeof availableTags !== 'undefined') {
+                availableTags.forEach(tag => {
+                    if (target === '' || tag.toLowerCase().includes(target)) {
+                        allActions.push({ name: `Filtre: #${tag}`, desc: "Bu etikete sahip projeleri listele", shortcut: "Tag", icon: "🏷️", action: () => setFilter(tag) });
+                    }
+                });
+            }
+            if (target === '') {
+                allActions.push({ name: "Tüm Filtreleri Kaldır", desc: "Tüm projeleri göster", shortcut: "Reset", icon: "🌐", action: () => setFilter(null) });
+            }
+        }
+        else {
+            // Sadece ">" yazıldığında içi dolu dolu gelir
+            const cmdQuery = query.substring(1).trim();
+            
+            const prefixCommands = [
+                { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi çalıştır", shortcut: ">start", searchKey: "start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Projeyi Durdur", desc: "Çalışan bir süreci sonlandır", shortcut: ">stop", searchKey: "stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", searchKey: "delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Tag ile Filtrele", desc: "Projeleri etiketlerine göre listele", shortcut: ">tag", searchKey: "tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } }
+            ];
+            
+            const combined = [...prefixCommands, ...generalCommands];
+            combined.forEach(c => {
+                if (c.searchKey.includes(cmdQuery.replace(/\s+/g, '')) || c.name.toLowerCase().includes(cmdQuery)) {
+                    allActions.push(c);
+                }
+            });
+        }
+    } 
+    // 3. NORMAL ARAMA (Odaklanma ve Proje Yönetimi)
+    else {
+        cachedProjects.forEach(p => {
+            const safeName = (p.name || p.Name);
+            const pId = p.id || p.ID;
+            const isRunning = p.status === 'running';
 
-    currentCmdActions = allActions.filter(a => a.searchKey.includes(query)).slice(0, 12);
+            if (safeName.toLowerCase().includes(query)) {
+                allActions.push({ 
+                    name: `Odaklan: ${safeName}`, 
+                    desc: p.path || p.Path, 
+                    shortcut: "Focus", 
+                    icon: "🎯", 
+                    action: () => {
+                        const row = document.querySelector(`tr[data-id="${pId}"]`);
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+                            row.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+                            setTimeout(() => {
+                                row.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+                                row.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+                            }, 2000);
+                        } else {
+                            setFilter(null);
+                            setTimeout(() => {
+                                const newRow = document.querySelector(`tr[data-id="${pId}"]`);
+                                if(newRow) {
+                                    newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    newRow.classList.add('bg-indigo-500/30');
+                                    setTimeout(() => newRow.classList.remove('bg-indigo-500/30'), 2000);
+                                }
+                            }, 300);
+                        }
+                    }
+                });
+
+                if (!isRunning) {
+                    allActions.push({ name: `Başlat: ${safeName}`, desc: "Projeyi ayağa kaldır", shortcut: "Start", icon: "▶️", action: () => startProject(pId, safeName, null) });
+                } else {
+                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Çalışan projeyi durdur", shortcut: "Stop", icon: "⏹️", action: () => stopProject(pId, null) });
+                    allActions.push({ name: `Yeniden Başlat: ${safeName}`, desc: "Projeyi kapatıp tekrar aç", shortcut: "Restart", icon: "🔄", action: () => restartProject(pId, safeName, null) });
+                    allActions.push({ name: `Terminali Aç: ${safeName}`, desc: "Logları tam ekranda görüntüle", shortcut: "Logs", icon: "📟", action: () => restoreTerminal(pId) });
+                }
+                
+                allActions.push({ name: `Düzenle: ${safeName}`, desc: "Proje ayarlarını ve .env dosyasını aç", shortcut: "Edit", icon: "✏️", action: () => openEditModal(pId) });
+                allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kalıcı olarak sil", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(pId) });
+            }
+        });
+        
+        generalCommands.forEach(c => {
+            if (c.searchKey.includes(query.replace(/\s+/g, '')) || c.name.toLowerCase().includes(query)) {
+                allActions.push(c);
+            }
+        });
+    }
+
+    currentCmdActions = allActions.slice(0, 15);
     cmdSelectedIndex = 0;
     renderCmdResults();
 }
@@ -168,17 +322,45 @@ function renderCmdResults() {
     const resultsDiv = document.getElementById('cmdResults');
     if (!resultsDiv) return;
     resultsDiv.innerHTML = '';
+    
     if (currentCmdActions.length === 0) {
-        resultsDiv.innerHTML = `<div class="px-4 py-3 text-gray-500 text-sm text-center font-bold">No matching commands found.</div>`;
+        resultsDiv.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 text-gray-500 opacity-60">
+                <svg class="w-8 h-8 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span class="text-[13px] font-mono tracking-wide">Sonuç bulunamadı...</span>
+            </div>`;
         return;
     }
+    
     currentCmdActions.forEach((a, idx) => {
         const btn = document.createElement('button');
         const isActive = idx === cmdSelectedIndex;
-        btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 transition-colors group ${isActive ? 'bg-indigo-500/20 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
-        btn.innerHTML = `<span class="cmd-icon text-lg opacity-70 transition-transform ${isActive ? 'scale-110' : ''}">${a.icon}</span> <span class="font-mono text-sm font-bold tracking-wide">${a.name}</span>`;
+        
+        // --- NİHAİ VİZYON: MAC SPOTLIGHT / RAYCAST TASARIMI ---
+        btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center transition-all duration-150 group ${isActive ? 'bg-indigo-500/20 shadow-[inset_3px_0_0_#6366f1]' : 'hover:bg-gray-800/40'}`;
+        
+        btn.innerHTML = `
+            <div class="w-8 h-8 flex items-center justify-center mr-4 text-xl drop-shadow-md cmd-icon transition-transform ${isActive ? 'scale-110' : 'opacity-80'}">${a.icon}</div>
+            <div class="flex flex-col flex-1 min-w-0">
+                <span class="text-[14.px] font-bold tracking-wide truncate font-sans ${isActive ? 'text-white' : 'text-gray-200'}">${a.name}</span>
+                ${a.desc ? `<span class="text-[11px] truncate mt-0.5 font-mono ${isActive ? 'text-indigo-300' : 'text-gray-500'} opacity-90">${a.desc}</span>` : ''}
+            </div>
+            ${a.shortcut ? `<kbd class="ml-auto text-[10px] px-2 py-0.5 rounded border transition-colors ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm' : 'bg-[#0f111a] border-gray-700 text-gray-500'} font-bold font-mono tracking-wider hidden md:block shrink-0">${a.shortcut}</kbd>` : ''}
+        `;
+        
         btn.addEventListener('mouseenter', () => { cmdSelectedIndex = idx; updateCmdSelection(); });
-        btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); closeCmdPalette(); a.action(); });
+        
+        btn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            if (a.isPrefix) {
+                a.action();
+            } else {
+                closeCmdPalette(); 
+                a.action(); 
+            }
+        });
+        
         resultsDiv.appendChild(btn);
     });
     updateCmdSelection();
@@ -702,8 +884,6 @@ function showPortConflictModal(port, pName, pid, projectId, safeName, btn) {
     });
 }
 
-// --- DİĞER TÜM KODLAR AYNI KALACAK, SADECE EN ALT KISIM DEĞİŞİYOR ---
-
 function showMissingDependencyModal(binary) {
     let modal = document.getElementById('dependencyModal');
     if (!modal) {
@@ -749,7 +929,6 @@ function showMissingDependencyModal(binary) {
     });
 }
 
-// --- 🚀 YENİ: VİZYONER BROWSER LİMİTASYON MODALI ---
 function showBrowserLimitationModal(folderName) {
     let modal = document.getElementById('browserLimitModal');
     if (!modal) {
@@ -805,18 +984,15 @@ function showBrowserLimitationModal(folderName) {
     
     const continueBtn = document.getElementById('btnContinueBrowser');
     continueBtn.onclick = () => {
-        // Modalı Kapat
         modal.classList.replace('opacity-100', 'opacity-0');
         document.getElementById('browserLimitBox').classList.replace('scale-100', 'scale-95');
         setTimeout(() => { modal.style.display = 'none'; }, 300);
         
-        // Klasör Ekleme Ekranını Aç ve OS Seçiciyi (Büyüteç) Tetikle
         openModal();
         document.querySelector('input[name="sourceMode"][value="local"]').checked = true;
         toggleSourceMode();
         document.getElementById('projName').value = folderName;
         
-        // İşletim sisteminin klasör seçicisini doğrudan tetikle
         browseFolder('projPath', true);
     };
     
@@ -827,7 +1003,6 @@ function showBrowserLimitationModal(folderName) {
     });
 }
 
-// --- YENİ MİMARİ: KUSURSUZ AKIŞKAN SÜRÜKLE BIRAK (DRAG & DROP) ---
 function initGlobalDragAndDrop() {
     let overlay = document.getElementById('dragOverlay');
     if (!overlay) {
@@ -901,7 +1076,6 @@ function initGlobalDragAndDrop() {
             const cleanName = file.name.replace(/[^a-zA-Z0-9_-]/g, ' ');
             const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
             
-            // --- YENİ VİZYON: VİZYONER BROWSER LİMİTASYON MODALI TETİKLENİR ---
             showBrowserLimitationModal(formattedName);
         }
     });
@@ -929,3 +1103,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initGlobalDragAndDrop();
 });
+
+// --- YENİ: KUSURSUZ VE ŞIK ONAY (CONFIRM) MODALI ---
+function showConfirmModal(title, message, btnText, btnClass, iconHtml, onConfirm) {
+    let modal = document.getElementById('customConfirmModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'customConfirmModal';
+        modal.className = 'fixed inset-0 z-[4000] flex items-center justify-center bg-[#0a0c10]/80 backdrop-blur-md transition-opacity opacity-0';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="bg-[#11151f] border border-gray-700 rounded-2xl shadow-2xl p-6 w-[420px] transform scale-95 transition-transform duration-200" id="customConfirmBox">
+            <div class="flex items-start gap-4 mb-2">
+                <div class="w-12 h-12 rounded-full bg-gray-800/50 border border-gray-700 flex items-center justify-center shrink-0 shadow-inner">
+                    ${iconHtml}
+                </div>
+                <div class="pt-1">
+                    <h3 class="text-lg font-black text-white tracking-wide">${title}</h3>
+                    <p class="text-sm text-gray-400 mt-2 leading-relaxed">${message}</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-800/60">
+                <button id="btnCancelConfirm" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-white transition-colors">İptal</button>
+                <button id="btnExecuteConfirm" class="px-5 py-2 text-sm font-bold text-white rounded-xl transition-all ${btnClass}">${btnText}</button>
+            </div>
+        </div>
+    `;
+
+    const close = () => {
+        modal.classList.replace('opacity-100', 'opacity-0');
+        document.getElementById('customConfirmBox').classList.replace('scale-100', 'scale-95');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    };
+
+    document.getElementById('btnCancelConfirm').onclick = close;
+    document.getElementById('btnExecuteConfirm').onclick = () => {
+        close();
+        onConfirm();
+    };
+
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.classList.replace('opacity-0', 'opacity-100');
+        document.getElementById('customConfirmBox').classList.replace('scale-95', 'scale-100');
+    });
+}
