@@ -122,8 +122,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else if (e.key === 'Enter') {
                 e.preventDefault();
                 if (currentCmdActions[cmdSelectedIndex]) {
-                    closeCmdPalette();
-                    currentCmdActions[cmdSelectedIndex].action();
+                    const actionObj = currentCmdActions[cmdSelectedIndex];
+                    
+                    // KRİTİK DÜZELTME: Seçilen eylem sadece bir prefix ise (örneğin '>start ' yazdıran rehber tuşu) menüyü kapatma
+                    if (actionObj.isPrefix) {
+                        actionObj.action();
+                    } else {
+                        // Gerçek bir eylem ise menüyü kapat ve işlemi çalıştır
+                        closeCmdPalette();
+                        actionObj.action();
+                    }
                 }
             }
         });
