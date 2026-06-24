@@ -29,6 +29,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	// YENİ: Akıllı Dedektif (Heuristics) Endpoint'i
 	mux.HandleFunc("/api/projects/detect", s.handleDetectProject)
 
+	// YENİ: IDE Köprüsü (VS Code Entegrasyonu) Endpoint'i
+	mux.HandleFunc("/api/projects/vscode", s.handleOpenVSCode)
+
 	// System Operations
 	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/api/system/browse", s.handleBrowseFolder)

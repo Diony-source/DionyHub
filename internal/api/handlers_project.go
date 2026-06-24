@@ -940,3 +940,44 @@ func (s *Server) handleProjectLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"logs": strContent})
 }
+
+// --- YENİ EKLENEN VİZYON: IDE KÖPRÜSÜ (VS CODE) ---
+func (s *Server) handleOpenVSCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
+	if id == "" {
+		http.Error(w, `{"error": "Missing project ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	target, err := s.db.GetProjectByID(id)
+	if err != nil {
+		slog.Warn("VS Code open requested for unknown project", slog.String("project_id", id), slog.Any("error", err))
+		http.Error(w, `{"error": "Project not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Arka planda VS Code'u hedef dizinde başlatır
+	cmd := exec.Command("code", ".")
+	cmd.Dir = target.Path
+
+	err = cmd.Start()
+	if err != nil {
+		slog.Error("Failed to open VS Code", slog.String("path", target.Path), slog.Any("error", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "VS Code başlatılamadı. 'code' komutunun PATH'te olduğundan emin olun.",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "VS Code başarıyla başlatıldı",
+	})
+}
