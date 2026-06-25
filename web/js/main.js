@@ -92,16 +92,117 @@ document.addEventListener("DOMContentLoaded", async () => {
        }
     });
 
+    // --- YENİ VİZYON: AKILLI ODAK DESTEKLİ KISAYOL HARİTASI ---
     document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault();
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const mod = isMac ? e.metaKey : e.ctrlKey;
+
+        const activeEl = document.activeElement;
+        const activeTag = activeEl ? activeEl.tagName : '';
+        
+        const isXterm = activeEl && (activeEl.classList.contains('xterm-helper-textarea') || activeEl.closest('.xterm') !== null);
+        const isCmdInput = activeEl && activeEl.id === 'cmdInput';
+
+        const isFormTyping = !isXterm && !isCmdInput && (activeTag === 'INPUT' || activeTag === 'TEXTAREA');
+
+        if (isFormTyping) {
+            if (e.key === 'Escape') activeEl.blur(); 
+            return; 
+        }
+
+        // 1. Komut Paleti (VS Code: Ctrl+P veya Ctrl+K)
+        if (mod && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p')) {
+            e.preventDefault(); e.stopPropagation();
             toggleCmdPalette();
         }
+
+        // 2. Ayarlar (VS Code: Ctrl+,)
+        if (mod && e.key === ',') {
+            e.preventDefault(); e.stopPropagation();
+            switchView('settings');
+            if (typeof showToast === 'function') showToast("Ayarlar Açıldı (Kısayol)", "success");
+        }
+
+        // 3. Explorer / Dashboard (VS Code: Ctrl+Shift+E)
+        if (mod && e.shiftKey && e.key.toLowerCase() === 'e') {
+            e.preventDefault(); e.stopPropagation();
+            switchView('dashboard');
+            if (typeof showToast === 'function') showToast("Kütüphane Açıldı (Kısayol)", "success");
+        }
+
+        // 4. AKILLI TERMINAL TAM EKRAN (Odak Tespitli)
+        if (mod && (e.key === '`' || e.code === 'Backquote' || e.key === 'é' || e.key === '"' || e.key === '~')) {
+            e.preventDefault(); e.stopPropagation();
+            
+            let targetId = 'system';
+            
+            // ADIM 1: İmleç (Focus) şu an bir terminalin içindeyse o terminali bul
+            if (isXterm) {
+                let parent = activeEl;
+                let found = false;
+                // DOM ağacında yukarı çıkarak içinde bulunduğumuz terminalin ID'sini tespit ediyoruz
+                while (parent && parent !== document.body) {
+                    if (parent.id && typeof terminalPool !== 'undefined') {
+                        for (let pId in terminalPool) {
+                            if (parent.id.includes(pId)) {
+                                targetId = pId;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (found) break;
+                    parent = parent.parentElement;
+                }
+            } 
+            // ADIM 2: İmleç terminalde değil ama tabloda 1 tane proje MAVİ olarak seçiliyse onu bul
+            else if (typeof selectedProjectIds !== 'undefined' && selectedProjectIds.size === 1) {
+                targetId = Array.from(selectedProjectIds)[0];
+            }
+
+            // Hangi terminali bulduysak (veya bulamadıysak System) onu tam ekran yap
+            if (typeof toggleMaximizeTerminal === 'function') toggleMaximizeTerminal(targetId);
+        }
+
+        // 5. Seçili Projeleri Yeniden Başlat (VS Code: Ctrl+Shift+R)
+        if (mod && e.shiftKey && e.key.toLowerCase() === 'r') {
+            e.preventDefault(); e.stopPropagation();
+            if (selectedProjectIds.size > 0) {
+                Array.from(selectedProjectIds).forEach(id => {
+                    const p = cachedProjects.find(x => (x.id || x.ID) === id);
+                    if (p) restartProject(id, p.name || p.Name, null);
+                });
+            } else {
+                if (typeof showToast === 'function') showToast("Yeniden başlatmak için tablodan bir proje seçin", "error");
+            }
+        }
+
+        // 6. Terminal Temizle (VS Code: Ctrl+L)
+        if (mod && e.key.toLowerCase() === 'l') {
+            e.preventDefault(); e.stopPropagation();
+            if (typeof clearAllTerminals === 'function') clearAllTerminals();
+            if (typeof showToast === 'function') showToast("Terminaller temizlendi (Kısayol)", "success");
+        }
+
+        // Escape
         if (e.key === 'Escape') {
             closeCmdPalette();
             hideContextMenu();
+            const modals = ['addModal', 'editModal', 'deleteModal', 'bulkDeleteModal', 'tagModal', 'customConfirmModal'];
+            modals.forEach(m => {
+                const el = document.getElementById(m);
+                if (el && !el.classList.contains('hidden') && el.style.display !== 'none') {
+                    if (m === 'customConfirmModal') {
+                        const cancelBtn = document.getElementById('btnCancelConfirm');
+                        if (cancelBtn) cancelBtn.click();
+                    } else {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    }
+                }
+            });
         }
-    });
+    }, { capture: true }); 
 
     const cmdInput = document.getElementById('cmdInput');
     if (cmdInput) {
@@ -123,12 +224,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 e.preventDefault();
                 if (currentCmdActions[cmdSelectedIndex]) {
                     const actionObj = currentCmdActions[cmdSelectedIndex];
-                    
-                    // KRİTİK DÜZELTME: Seçilen eylem sadece bir prefix ise (örneğin '>start ' yazdıran rehber tuşu) menüyü kapatma
                     if (actionObj.isPrefix) {
                         actionObj.action();
                     } else {
-                        // Gerçek bir eylem ise menüyü kapat ve işlemi çalıştır
                         closeCmdPalette();
                         actionObj.action();
                     }
