@@ -230,7 +230,6 @@ async function saveNewOrder() {
     } catch(e) { showToast("Network error", "error"); }
 }
 
-// --- GÜNCELLENDİ: PRE-FLIGHT (424) VE PORT (409) YAKALAYICISI EKLENDİ ---
 async function startProject(id, name, btn, force = false) { 
     getOrCreateTerminal(id, name); 
     const originalHTML = toggleButtonLoading(btn, true);
@@ -323,4 +322,22 @@ async function deleteTag() {
         if (res.ok) { closeTagModal(); if (currentTagFilter === originalTag) currentTagFilter = null; await loadSettings(); await loadProjects(); showToast("Tag deleted", "success"); } 
         else { const err = await res.json(); showToast(err.error || "Failed to delete tag", "error"); }
     } catch (err) { showToast("Network error", "error"); }
+}
+
+// --- YENİ VİZYON: IDE KÖPRÜSÜ (VS CODE) ---
+async function openInVSCode(id, btn) {
+    const originalHTML = toggleButtonLoading(btn, true);
+    try {
+        const res = await fetch(`/api/projects/vscode?id=${id}`, { method: 'POST' });
+        if (res.ok) {
+            showToast("VS Code başlatıldı!", "success");
+        } else {
+            const data = await res.json();
+            showToast(data.error || "VS Code açılamadı (CLI yüklü mü?)", "error");
+        }
+    } catch (e) {
+        showToast("Bağlantı hatası", "error");
+    } finally {
+        toggleButtonLoading(btn, false, originalHTML);
+    }
 }
