@@ -27,6 +27,7 @@ function showContextMenu(e, pId, pName, status) {
         { label: 'Restart Project', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'text-blue-400', action: () => restartProject(pId, pName, null), disabled: !isRunning },
         { label: 'Stop Project', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10h6v4H9z', color: 'text-rose-400', action: () => stopProject(pId, null), disabled: !isRunning },
         { label: 'divider' },
+        { label: 'Open in VS Code', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', color: 'text-blue-400', action: () => openInVSCode(pId, null), disabled: false },
         { label: 'Edit Project', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'text-gray-400', action: () => openEditModal(pId), disabled: false },
         { label: 'Environment (.env)', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', color: 'text-teal-400', action: () => openEditModal(pId), disabled: false },
         { label: 'Export Backup', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4', color: 'text-amber-400', action: () => backupProject(pId, null), disabled: false },
@@ -105,275 +106,6 @@ function closeCmdPalette() {
     pal.classList.add('opacity-0');
     box.classList.add('scale-95');
     setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
-}
-
-function handleCmdSearch(e) {
-    const query = e.target.value.toLowerCase().trim();
-    let allActions = [];
-
-    // 1. INPUT BOŞKEN (Tertemiz Rehber ve Kusursuz Sıralama)
-    if (query === '') {
-        currentCmdActions = [
-            { name: "Tüm Aksiyonları Listele", desc: "Sistemdeki tüm komutları ve yetenekleri gör", shortcut: ">", icon: "⚡", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>'; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi hızlıca çalıştır", shortcut: ">start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            { name: "Projeyi Durdur", desc: "Çalışan bir süreci anında sonlandır", shortcut: ">stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            { name: "Tag ile Filtrele", desc: "Tüm etiketleri gör ve projeleri filtrele", shortcut: ">tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", action: () => { openModal(); } },
-            { name: "Acil Kapatma", desc: "Çalışan tüm projeleri tek tuşla öldür", shortcut: "Kill All", icon: "💀", action: () => { 
-                showConfirmModal(
-                    "Sistemi Durdur (Kill All)",
-                    "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
-                    "Hepsini Durdur",
-                    "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
-                    `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
-                    () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
-                );
-            } },
-            { name: "Sistemi Temizle", desc: "Tüm terminal geçmişini sil ve rahatlat", shortcut: "Clear", icon: "🧹", action: () => { 
-                showConfirmModal(
-                    "Logları Temizle",
-                    "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
-                    "Geçmişi Sil",
-                    "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
-                    `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
-                    () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
-                );
-            } },
-            { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", action: () => { switchView('dashboard'); } },
-            { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", action: () => { switchView('settings'); } },
-            { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", action: () => { setFilter(null); } }
-        ];
-        cmdSelectedIndex = 0;
-        renderCmdResults();
-        return;
-    }
-
-    const generalCommands = [
-        { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", searchKey: "projectaddnewcreate", action: () => { openModal(); } },
-        { name: "Acil Kapatma", desc: "Çalışan tüm projeleri durdurur", shortcut: "Kill All", icon: "💀", searchKey: "terminalkillallprocesses", action: () => { 
-            showConfirmModal(
-                "Sistemi Durdur (Kill All)",
-                "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
-                "Hepsini Durdur",
-                "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
-                `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
-                () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
-            );
-        } },
-        { name: "Terminal Loglarını Temizle", desc: "Tüm sekmelerdeki geçmişi siler", shortcut: "Clear", icon: "🧹", searchKey: "terminalclearalllogs", action: () => { 
-            showConfirmModal(
-                "Logları Temizle",
-                "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
-                "Geçmişi Sil",
-                "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
-                `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
-                () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
-            );
-        } },
-        { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", searchKey: "globalopendashboardviewprojects", action: () => { switchView('dashboard'); } },
-        { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", searchKey: "globalopensettingsconfigurations", action: () => { switchView('settings'); } },
-        { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", searchKey: "filtershowallprojectsclear", action: () => { setFilter(null); } }
-    ];
-
-    // 2. KOMUT MODU (>)
-    if (query.startsWith('>')) {
-        if (query.startsWith('>start')) {
-            const target = query.replace('>start', '').trim();
-            cachedProjects.filter(p => p.status !== 'running').forEach(p => {
-                const safeName = p.name || p.Name;
-                if (target === '' || safeName.toLowerCase().includes(target)) {
-                    allActions.push({ name: `Başlat: ${safeName}`, desc: p.path || p.Path, shortcut: "Start", icon: "▶️", action: () => startProject(p.id || p.ID, safeName, null) });
-                }
-            });
-        }
-        else if (query.startsWith('>stop')) {
-            const target = query.replace('>stop', '').trim();
-            cachedProjects.filter(p => p.status === 'running').forEach(p => {
-                const safeName = p.name || p.Name;
-                if (target === '' || safeName.toLowerCase().includes(target)) {
-                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Aktif süreci sonlandır", shortcut: "Stop", icon: "⏹️", action: () => stopProject(p.id || p.ID, null) });
-                }
-            });
-        }
-        else if (query.startsWith('>delete')) {
-            const target = query.replace('>delete', '').trim();
-            cachedProjects.forEach(p => {
-                const safeName = p.name || p.Name;
-                if (target === '' || safeName.toLowerCase().includes(target)) {
-                    allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kaldır", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(p.id || p.ID) });
-                }
-            });
-        }
-        else if (query.startsWith('>tag')) {
-            const target = query.replace('>tag', '').trim();
-            if (typeof availableTags !== 'undefined') {
-                availableTags.forEach(tag => {
-                    if (target === '' || tag.toLowerCase().includes(target)) {
-                        allActions.push({ name: `Filtre: #${tag}`, desc: "Bu etikete sahip projeleri listele", shortcut: "Tag", icon: "🏷️", action: () => setFilter(tag) });
-                    }
-                });
-            }
-            if (target === '') {
-                allActions.push({ name: "Tüm Filtreleri Kaldır", desc: "Tüm projeleri göster", shortcut: "Reset", icon: "🌐", action: () => setFilter(null) });
-            }
-        }
-        else {
-            // Sadece ">" yazıldığında içi dolu dolu gelir
-            const cmdQuery = query.substring(1).trim();
-            
-            const prefixCommands = [
-                { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi çalıştır", shortcut: ">start", searchKey: "start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-                { name: "Projeyi Durdur", desc: "Çalışan bir süreci sonlandır", shortcut: ">stop", searchKey: "stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-                { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", searchKey: "delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-                { name: "Tag ile Filtrele", desc: "Projeleri etiketlerine göre listele", shortcut: ">tag", searchKey: "tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } }
-            ];
-            
-            const combined = [...prefixCommands, ...generalCommands];
-            combined.forEach(c => {
-                if (c.searchKey.includes(cmdQuery.replace(/\s+/g, '')) || c.name.toLowerCase().includes(cmdQuery)) {
-                    allActions.push(c);
-                }
-            });
-        }
-    } 
-    // 3. NORMAL ARAMA (Odaklanma ve Proje Yönetimi)
-    else {
-        cachedProjects.forEach(p => {
-            const safeName = (p.name || p.Name);
-            const pId = p.id || p.ID;
-            const isRunning = p.status === 'running';
-
-            if (safeName.toLowerCase().includes(query)) {
-                allActions.push({ 
-                    name: `Odaklan: ${safeName}`, 
-                    desc: p.path || p.Path, 
-                    shortcut: "Focus", 
-                    icon: "🎯", 
-                    action: () => {
-                        const row = document.querySelector(`tr[data-id="${pId}"]`);
-                        if (row) {
-                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            row.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
-                            row.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
-                            setTimeout(() => {
-                                row.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
-                                row.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
-                            }, 2000);
-                        } else {
-                            setFilter(null);
-                            setTimeout(() => {
-                                const newRow = document.querySelector(`tr[data-id="${pId}"]`);
-                                if(newRow) {
-                                    newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    newRow.classList.add('bg-indigo-500/30');
-                                    setTimeout(() => newRow.classList.remove('bg-indigo-500/30'), 2000);
-                                }
-                            }, 300);
-                        }
-                    }
-                });
-
-                if (!isRunning) {
-                    allActions.push({ name: `Başlat: ${safeName}`, desc: "Projeyi ayağa kaldır", shortcut: "Start", icon: "▶️", action: () => startProject(pId, safeName, null) });
-                } else {
-                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Çalışan projeyi durdur", shortcut: "Stop", icon: "⏹️", action: () => stopProject(pId, null) });
-                    allActions.push({ name: `Yeniden Başlat: ${safeName}`, desc: "Projeyi kapatıp tekrar aç", shortcut: "Restart", icon: "🔄", action: () => restartProject(pId, safeName, null) });
-                    allActions.push({ name: `Terminali Aç: ${safeName}`, desc: "Logları tam ekranda görüntüle", shortcut: "Logs", icon: "📟", action: () => restoreTerminal(pId) });
-                }
-                
-                allActions.push({ name: `Düzenle: ${safeName}`, desc: "Proje ayarlarını ve .env dosyasını aç", shortcut: "Edit", icon: "✏️", action: () => openEditModal(pId) });
-                allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kalıcı olarak sil", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(pId) });
-            }
-        });
-        
-        generalCommands.forEach(c => {
-            if (c.searchKey.includes(query.replace(/\s+/g, '')) || c.name.toLowerCase().includes(query)) {
-                allActions.push(c);
-            }
-        });
-    }
-
-    currentCmdActions = allActions.slice(0, 15);
-    cmdSelectedIndex = 0;
-    renderCmdResults();
-}
-
-function updateCmdSelection() {
-    const resultsDiv = document.getElementById('cmdResults');
-    if (!resultsDiv) return;
-    const allBtns = resultsDiv.querySelectorAll('.cmd-item');
-    allBtns.forEach((btn, idx) => {
-        const iconSpan = btn.querySelector('.cmd-icon');
-        if (idx === cmdSelectedIndex) {
-            btn.classList.add('bg-indigo-500/20', 'text-white');
-            btn.classList.remove('text-gray-300', 'hover:bg-gray-800');
-            if (iconSpan) iconSpan.classList.add('scale-110');
-            btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        } else {
-            btn.classList.remove('bg-indigo-500/20', 'text-white');
-            btn.classList.add('text-gray-300', 'hover:bg-gray-800');
-            if (iconSpan) iconSpan.classList.remove('scale-110');
-        }
-    });
-}
-
-function renderCmdResults() {
-    const resultsDiv = document.getElementById('cmdResults');
-    if (!resultsDiv) return;
-    resultsDiv.innerHTML = '';
-    
-    if (currentCmdActions.length === 0) {
-        resultsDiv.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-10 text-gray-500 opacity-60">
-                <svg class="w-8 h-8 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <span class="text-[13px] font-mono tracking-wide">Sonuç bulunamadı...</span>
-            </div>`;
-        return;
-    }
-    
-    currentCmdActions.forEach((a, idx) => {
-        const btn = document.createElement('button');
-        const isActive = idx === cmdSelectedIndex;
-        
-        // --- NİHAİ VİZYON: MAC SPOTLIGHT / RAYCAST TASARIMI ---
-        btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center transition-all duration-150 group ${isActive ? 'bg-indigo-500/20 shadow-[inset_3px_0_0_#6366f1]' : 'hover:bg-gray-800/40'}`;
-        
-        btn.innerHTML = `
-            <div class="w-8 h-8 flex items-center justify-center mr-4 text-xl drop-shadow-md cmd-icon transition-transform ${isActive ? 'scale-110' : 'opacity-80'}">${a.icon}</div>
-            <div class="flex flex-col flex-1 min-w-0">
-                <span class="text-[14.px] font-bold tracking-wide truncate font-sans ${isActive ? 'text-white' : 'text-gray-200'}">${a.name}</span>
-                ${a.desc ? `<span class="text-[11px] truncate mt-0.5 font-mono ${isActive ? 'text-indigo-300' : 'text-gray-500'} opacity-90">${a.desc}</span>` : ''}
-            </div>
-            ${a.shortcut ? `<kbd class="ml-auto text-[10px] px-2 py-0.5 rounded border transition-colors ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm' : 'bg-[#0f111a] border-gray-700 text-gray-500'} font-bold font-mono tracking-wider hidden md:block shrink-0">${a.shortcut}</kbd>` : ''}
-        `;
-        
-        btn.addEventListener('mouseenter', () => { cmdSelectedIndex = idx; updateCmdSelection(); });
-        
-        btn.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            e.stopPropagation(); 
-            if (a.isPrefix) {
-                a.action();
-            } else {
-                closeCmdPalette(); 
-                a.action(); 
-            }
-        });
-        
-        resultsDiv.appendChild(btn);
-    });
-    updateCmdSelection();
-}
-
-function getDragAfterElement(container, x) {
-    const draggableElements = [...container.querySelectorAll('.min-tab:not(.dragging-tab)')];
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = x - box.left - box.width / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function showToast(message, type = 'success') {
@@ -481,6 +213,7 @@ function createProjectRow(p, index, sourceArray) {
                     <button onclick="stopProject('${pId}', this)" class="btn-action w-16 bg-rose-600/90 hover:bg-rose-500 text-white py-1.5 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.2)] text-xs font-bold text-center transition-colors">Stop</button>
                 </div>
                 <div class="flex items-center gap-1.5">
+                    <button onclick="openInVSCode('${pId}', this)" class="btn-action bg-gray-800 hover:bg-blue-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]" title="VS Code'da Aç"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg></button>
                     <button onclick="backupProject('${pId}', this)" class="btn-action bg-gray-800 hover:bg-amber-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
                     <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-teal-500 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg></button>
                     <button onclick="openEditModal('${pId}')" class="btn-action bg-gray-800 hover:bg-indigo-600 text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors hover:shadow-[0_0_10px_rgba(79,70,229,0.3)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
@@ -1075,7 +808,6 @@ function initGlobalDragAndDrop() {
             const file = e.dataTransfer.files[0];
             const cleanName = file.name.replace(/[^a-zA-Z0-9_-]/g, ' ');
             const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-            
             showBrowserLimitationModal(formattedName);
         }
     });
@@ -1100,11 +832,308 @@ document.addEventListener('DOMContentLoaded', () => {
             detectTimeout = setTimeout(() => triggerSmartDetection(e.target.value, false), 600);
         });
     }
-
     initGlobalDragAndDrop();
 });
 
-// --- YENİ: KUSURSUZ VE ŞIK ONAY (CONFIRM) MODALI ---
+function handleCmdSearch(e) {
+    const query = e.target.value.toLowerCase().trim();
+    let allActions = [];
+
+    // 1. INPUT BOŞKEN (Tertemiz Rehber ve Kusursuz Sıralama)
+    if (query === '') {
+        currentCmdActions = [
+            { name: "Tüm Aksiyonları Listele", desc: "Sistemdeki tüm komutları ve yetenekleri gör", shortcut: ">", icon: "⚡", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>'; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi hızlıca çalıştır", shortcut: ">start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Projeyi Durdur", desc: "Çalışan bir süreci anında sonlandır", shortcut: ">stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            
+            // --- YENİ EKLENEN: VS CODE GLOBAL KOMUTU ---
+            { name: "VS Code'da Aç", desc: "Kod editöründe açmak için bir proje seç", shortcut: ">code", icon: "💻", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>code '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            
+            { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Tag ile Filtrele", desc: "Tüm etiketleri gör ve projeleri filtrele", shortcut: ">tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", action: () => { openModal(); } },
+            { name: "Acil Kapatma", desc: "Çalışan tüm projeleri tek tuşla öldür", shortcut: "Kill All", icon: "💀", action: () => { 
+                showConfirmModal(
+                    "Sistemi Durdur (Kill All)",
+                    "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
+                    "Hepsini Durdur",
+                    "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
+                    `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                    () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
+                );
+            } },
+            { name: "Sistemi Temizle", desc: "Tüm terminal geçmişini sil ve rahatlat", shortcut: "Clear", icon: "🧹", action: () => { 
+                showConfirmModal(
+                    "Logları Temizle",
+                    "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
+                    "Geçmişi Sil",
+                    "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+                    `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+                    () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
+                );
+            } },
+            { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", action: () => { switchView('dashboard'); } },
+            { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", action: () => { switchView('settings'); } },
+            { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", action: () => { setFilter(null); } }
+        ];
+        cmdSelectedIndex = 0;
+        renderCmdResults();
+        return;
+    }
+
+    const generalCommands = [
+        { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", searchKey: "projectaddnewcreate", action: () => { openModal(); } },
+        { name: "Acil Kapatma", desc: "Çalışan tüm projeleri durdurur", shortcut: "Kill All", icon: "💀", searchKey: "terminalkillallprocesses", action: () => { 
+            showConfirmModal(
+                "Sistemi Durdur (Kill All)",
+                "Çalışan <b class='text-white'>TÜM</b> projeleri ve süreçleri anında durdurmak istediğinize emin misiniz?",
+                "Hepsini Durdur",
+                "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
+                `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                () => { cachedProjects.filter(p => p.status === 'running').forEach(p => stopProject(p.id || p.ID, null)); showToast("Tüm süreçler sonlandırılıyor...", "success"); }
+            );
+        } },
+        { name: "Terminal Loglarını Temizle", desc: "Tüm sekmelerdeki geçmişi siler", shortcut: "Clear", icon: "🧹", searchKey: "terminalclearalllogs", action: () => { 
+            showConfirmModal(
+                "Logları Temizle",
+                "Tüm sekmelerdeki terminal geçmişlerini kalıcı olarak silmek istediğinize emin misiniz?",
+                "Geçmişi Sil",
+                "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+                `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+                () => { clearAllTerminals(); showToast("Terminal bellekleri temizlendi.", "success"); }
+            );
+        } },
+        { name: "Dashboard'u Aç", desc: "Aktif projeler listesine geri dön", shortcut: "View", icon: "📊", searchKey: "globalopendashboardviewprojects", action: () => { switchView('dashboard'); } },
+        { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", searchKey: "globalopensettingsconfigurations", action: () => { switchView('settings'); } },
+        { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", searchKey: "filtershowallprojectsclear", action: () => { setFilter(null); } }
+    ];
+
+    if (query.startsWith('>')) {
+        if (query.startsWith('>start')) {
+            const target = query.replace('>start', '').trim();
+            cachedProjects.filter(p => p.status !== 'running').forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Başlat: ${safeName}`, desc: p.path || p.Path, shortcut: "Start", icon: "▶️", action: () => startProject(p.id || p.ID, safeName, null) });
+                }
+            });
+        }
+        else if (query.startsWith('>stop')) {
+            const target = query.replace('>stop', '').trim();
+            cachedProjects.filter(p => p.status === 'running').forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Aktif süreci sonlandır", shortcut: "Stop", icon: "⏹️", action: () => stopProject(p.id || p.ID, null) });
+                }
+            });
+        }
+        // --- YENİ EKLENEN: VS CODE FİLTRELEME MOTORU ---
+        else if (query.startsWith('>code')) {
+            const target = query.replace('>code', '').trim();
+            cachedProjects.forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `VS Code'da Aç: ${safeName}`, desc: p.path || p.Path, shortcut: "Code", icon: "💻", action: () => openInVSCode(p.id || p.ID, null) });
+                }
+            });
+        }
+        else if (query.startsWith('>delete')) {
+            const target = query.replace('>delete', '').trim();
+            cachedProjects.forEach(p => {
+                const safeName = p.name || p.Name;
+                if (target === '' || safeName.toLowerCase().includes(target)) {
+                    allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kaldır", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(p.id || p.ID) });
+                }
+            });
+        }
+        else if (query.startsWith('>tag')) {
+            const target = query.replace('>tag', '').trim();
+            if (typeof availableTags !== 'undefined') {
+                availableTags.forEach(tag => {
+                    if (target === '' || tag.toLowerCase().includes(target)) {
+                        allActions.push({ name: `Filtre: #${tag}`, desc: "Bu etikete sahip projeleri listele", shortcut: "Tag", icon: "🏷️", action: () => setFilter(tag) });
+                    }
+                });
+            }
+            if (target === '') {
+                allActions.push({ name: "Tüm Filtreleri Kaldır", desc: "Tüm projeleri göster", shortcut: "Reset", icon: "🌐", action: () => setFilter(null) });
+            }
+        }
+        else {
+            const cmdQuery = query.substring(1).trim();
+            const prefixCommands = [
+                { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi çalıştır", shortcut: ">start", searchKey: "start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Projeyi Durdur", desc: "Çalışan bir süreci sonlandır", shortcut: ">stop", searchKey: "stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                // > (All Actions) alt menüsünde görünmesi için VS Code kısayolu eklendi
+                { name: "VS Code'da Aç", desc: "Projeyi kod editöründe aç", shortcut: ">code", searchKey: "code vscode", icon: "💻", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>code '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", searchKey: "delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+                { name: "Tag ile Filtrele", desc: "Projeleri etiketlerine göre listele", shortcut: ">tag", searchKey: "tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } }
+            ];
+            const combined = [...prefixCommands, ...generalCommands];
+            combined.forEach(c => {
+                if (c.searchKey.includes(cmdQuery.replace(/\s+/g, '')) || c.name.toLowerCase().includes(cmdQuery)) {
+                    allActions.push(c);
+                }
+            });
+        }
+    } 
+    else {
+        cachedProjects.forEach(p => {
+            const safeName = (p.name || p.Name);
+            const pId = p.id || p.ID;
+            const isRunning = p.status === 'running';
+
+            if (safeName.toLowerCase().includes(query)) {
+                allActions.push({ 
+                    name: `Odaklan: ${safeName}`, 
+                    desc: p.path || p.Path, 
+                    shortcut: "Focus", 
+                    icon: "🎯", 
+                    action: () => {
+                        const row = document.querySelector(`tr[data-id="${pId}"]`);
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.remove('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+                            row.classList.add('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+                            setTimeout(() => {
+                                row.classList.remove('bg-indigo-500/30', 'shadow-[inset_4px_0_0_rgba(99,102,241,1)]');
+                                row.classList.add('bg-[#0f111a]/30', 'hover:bg-gray-800/40');
+                            }, 2000);
+                        } else {
+                            setFilter(null);
+                            setTimeout(() => {
+                                const newRow = document.querySelector(`tr[data-id="${pId}"]`);
+                                if(newRow) {
+                                    newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    newRow.classList.add('bg-indigo-500/30');
+                                    setTimeout(() => newRow.classList.remove('bg-indigo-500/30'), 2000);
+                                }
+                            }, 300);
+                        }
+                    }
+                });
+
+                if (!isRunning) {
+                    allActions.push({ name: `Başlat: ${safeName}`, desc: "Projeyi ayağa kaldır", shortcut: "Start", icon: "▶️", action: () => startProject(pId, safeName, null) });
+                } else {
+                    allActions.push({ name: `Durdur: ${safeName}`, desc: "Çalışan projeyi durdur", shortcut: "Stop", icon: "⏹️", action: () => stopProject(pId, null) });
+                    allActions.push({ name: `Yeniden Başlat: ${safeName}`, desc: "Projeyi kapatıp tekrar aç", shortcut: "Restart", icon: "🔄", action: () => restartProject(pId, safeName, null) });
+                    allActions.push({ name: `Terminali Aç: ${safeName}`, desc: "Logları tam ekranda görüntüle", shortcut: "Logs", icon: "📟", action: () => restoreTerminal(pId) });
+                }
+                
+                allActions.push({ name: `VS Code'da Aç: ${safeName}`, desc: "Projeyi kod editöründe anında aç", shortcut: "Code", icon: "💻", action: () => openInVSCode(pId, null) });
+                
+                allActions.push({ name: `Düzenle: ${safeName}`, desc: "Proje ayarlarını ve .env dosyasını aç", shortcut: "Edit", icon: "✏️", action: () => openEditModal(pId) });
+                allActions.push({ name: `Sil: ${safeName}`, desc: "Projeyi sistemden kalıcı olarak sil", shortcut: "Delete", icon: "🗑️", action: () => openDeleteModal(pId) });
+            }
+        });
+        
+        generalCommands.forEach(c => {
+            if (c.searchKey.includes(query.replace(/\s+/g, '')) || c.name.toLowerCase().includes(query)) {
+                allActions.push(c);
+            }
+        });
+    }
+
+    currentCmdActions = allActions.slice(0, 15);
+    cmdSelectedIndex = 0;
+    renderCmdResults();
+}
+
+function renderCmdResults() {
+    const resultsDiv = document.getElementById('cmdResults');
+    if (!resultsDiv) return;
+    resultsDiv.innerHTML = '';
+    
+    if (currentCmdActions.length === 0) {
+        resultsDiv.innerHTML = `<div class="px-4 py-6 text-gray-500 text-[13px] font-mono tracking-wide text-center">Sonuç bulunamadı...</div>`;
+        return;
+    }
+    
+    currentCmdActions.forEach((a, idx) => {
+        const btn = document.createElement('button');
+        const isActive = idx === cmdSelectedIndex;
+        
+        btn.className = `cmd-item w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 transition-colors group ${isActive ? 'bg-indigo-500/20 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
+        
+        btn.innerHTML = `
+            <div class="w-8 h-8 flex items-center justify-center mr-4 text-xl drop-shadow-md cmd-icon transition-transform ${isActive ? 'scale-110' : 'opacity-80'}">${a.icon}</div>
+            <div class="flex flex-col flex-1 min-w-0">
+                <span class="text-[14px] font-bold tracking-wide truncate font-sans ${isActive ? 'text-white' : 'text-gray-200'}">${a.name}</span>
+                ${a.desc ? `<span class="text-[11px] truncate mt-0.5 font-mono ${isActive ? 'text-indigo-300' : 'text-gray-500'} opacity-90">${a.desc}</span>` : ''}
+            </div>
+            ${a.shortcut ? `<kbd class="ml-auto text-[10px] px-2 py-0.5 rounded border transition-colors ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm' : 'bg-[#0f111a] border-gray-700 text-gray-500'} font-bold font-mono tracking-wider hidden md:block shrink-0">${a.shortcut}</kbd>` : ''}
+        `;
+        
+        btn.addEventListener('mouseenter', () => { cmdSelectedIndex = idx; updateCmdSelection(); });
+        
+        btn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            if (a.isPrefix) {
+                a.action();
+            } else {
+                closeCmdPalette(); 
+                a.action(); 
+            }
+        });
+        
+        resultsDiv.appendChild(btn);
+    });
+    updateCmdSelection();
+}
+
+function updateCmdSelection() {
+    const resultsDiv = document.getElementById('cmdResults');
+    if (!resultsDiv) return;
+    const allBtns = resultsDiv.querySelectorAll('.cmd-item');
+    allBtns.forEach((btn, idx) => {
+        const iconSpan = btn.querySelector('.cmd-icon');
+        if (idx === cmdSelectedIndex) {
+            btn.classList.add('bg-indigo-500/20', 'shadow-[inset_3px_0_0_#6366f1]');
+            btn.classList.remove('hover:bg-gray-800/40');
+            
+            btn.querySelector('.font-sans').classList.replace('text-gray-200', 'text-white');
+            const desc = btn.querySelector('.font-mono:not(kbd)');
+            if (desc) desc.classList.replace('text-gray-500', 'text-indigo-300');
+            
+            const kbd = btn.querySelector('kbd');
+            if (kbd) {
+                kbd.classList.replace('bg-[#0f111a]', 'bg-indigo-600');
+                kbd.classList.replace('border-gray-700', 'border-indigo-400');
+                kbd.classList.replace('text-gray-500', 'text-white');
+                kbd.classList.add('shadow-sm');
+            }
+
+            if (iconSpan) {
+                iconSpan.classList.add('scale-110');
+                iconSpan.classList.remove('opacity-80');
+            }
+            btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+            btn.classList.remove('bg-indigo-500/20', 'shadow-[inset_3px_0_0_#6366f1]');
+            btn.classList.add('hover:bg-gray-800/40');
+            
+            btn.querySelector('.font-sans').classList.replace('text-white', 'text-gray-200');
+            const desc = btn.querySelector('.font-mono:not(kbd)');
+            if (desc) desc.classList.replace('text-indigo-300', 'text-gray-500');
+
+            const kbd = btn.querySelector('kbd');
+            if (kbd) {
+                kbd.classList.replace('bg-indigo-600', 'bg-[#0f111a]');
+                kbd.classList.replace('border-indigo-400', 'border-gray-700');
+                kbd.classList.replace('text-white', 'text-gray-500');
+                kbd.classList.remove('shadow-sm');
+            }
+
+            if (iconSpan) {
+                iconSpan.classList.remove('scale-110');
+                iconSpan.classList.add('opacity-80');
+            }
+        }
+    });
+}
+
 function showConfirmModal(title, message, btnText, btnClass, iconHtml, onConfirm) {
     let modal = document.getElementById('customConfirmModal');
     if (!modal) {
