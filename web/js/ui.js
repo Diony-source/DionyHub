@@ -14,12 +14,9 @@ function drawSparkline(id, cpuVal) {
 }
 
 function showContextMenu(e, pId, pName, status) {
-    e.preventDefault();
-    closeCmdPalette(); 
-    const menu = document.getElementById('contextMenu');
-    if (!menu) return;
+    e.preventDefault(); closeCmdPalette(); 
+    const menu = document.getElementById('contextMenu'); if (!menu) return;
     menu.innerHTML = ''; 
-
     const isRunning = status === 'running';
 
     const items = [
@@ -36,81 +33,37 @@ function showContextMenu(e, pId, pName, status) {
     ];
 
     items.forEach(item => {
-        if (item.label === 'divider') {
-            const divider = document.createElement('div');
-            divider.className = 'h-px bg-gray-700/50 my-1 mx-2';
-            menu.appendChild(divider);
-            return;
-        }
+        if (item.label === 'divider') { const divider = document.createElement('div'); divider.className = 'h-px bg-gray-700/50 my-1 mx-2'; menu.appendChild(divider); return; }
         const btn = document.createElement('button');
-        const baseColor = item.disabled ? 'text-gray-600' : item.color;
-        const hoverClass = item.disabled ? 'cursor-not-allowed' : 'hover:bg-gray-700/50 group';
-        const textClass = item.disabled ? 'text-gray-600' : 'group-hover:text-white text-gray-300';
-        const iconScale = item.disabled ? '' : 'group-hover:scale-110';
-        
+        const baseColor = item.disabled ? 'text-gray-600' : item.color; const hoverClass = item.disabled ? 'cursor-not-allowed' : 'hover:bg-gray-700/50 group'; const textClass = item.disabled ? 'text-gray-600' : 'group-hover:text-white text-gray-300'; const iconScale = item.disabled ? '' : 'group-hover:scale-110';
         btn.className = `w-full text-left px-4 py-2 transition-colors flex items-center gap-3 ${hoverClass}`;
         btn.innerHTML = `<svg class="w-4 h-4 ${baseColor} ${iconScale} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg><span class="${textClass} transition-colors">${item.label}</span>`;
-        
-        btn.addEventListener('mousedown', (ev) => { 
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (item.disabled) return;
-            hideContextMenu(); 
-            item.action(); 
-        });
+        btn.addEventListener('mousedown', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (item.disabled) return; hideContextMenu(); item.action(); });
         menu.appendChild(btn);
     });
 
-    menu.style.display = 'flex';
-    menu.style.flexDirection = 'column';
-    menu.style.pointerEvents = 'auto';
-    void menu.offsetWidth; 
-    menu.style.left = `${e.pageX}px`;
-    menu.style.top = `${e.pageY}px`;
-    menu.classList.remove('scale-95', 'opacity-0');
-    menu.classList.add('scale-100', 'opacity-100');
+    menu.style.display = 'flex'; menu.style.flexDirection = 'column'; menu.style.pointerEvents = 'auto'; void menu.offsetWidth; 
+    menu.style.left = `${e.pageX}px`; menu.style.top = `${e.pageY}px`; menu.classList.remove('scale-95', 'opacity-0'); menu.classList.add('scale-100', 'opacity-100');
 }
 
-function hideContextMenu() {
-    const menu = document.getElementById('contextMenu');
-    if (!menu) return;
-    menu.style.display = 'none';
-    menu.classList.remove('scale-100', 'opacity-100');
-    menu.classList.add('scale-95', 'opacity-0');
-}
+function hideContextMenu() { const menu = document.getElementById('contextMenu'); if (!menu) return; menu.style.display = 'none'; menu.classList.remove('scale-100', 'opacity-100'); menu.classList.add('scale-95', 'opacity-0'); }
 
 function toggleCmdPalette() {
-    const pal = document.getElementById('cmdPalette');
-    const box = document.getElementById('cmdPaletteBox');
-    const input = document.getElementById('cmdInput');
-    if (!pal || !box || !input) return;
-    hideContextMenu(); 
+    const pal = document.getElementById('cmdPalette'); const box = document.getElementById('cmdPaletteBox'); const input = document.getElementById('cmdInput');
+    if (!pal || !box || !input) return; hideContextMenu(); 
     if (pal.classList.contains('hidden')) {
-        pal.classList.replace('hidden', 'flex');
-        input.value = '';
-        handleCmdSearch({target: {value: ''}}); 
-        requestAnimationFrame(() => {
-            pal.classList.remove('opacity-0');
-            box.classList.remove('scale-95');
-            input.focus();
-        });
-    } else {
-        closeCmdPalette();
-    }
+        pal.classList.replace('hidden', 'flex'); input.value = ''; handleCmdSearch({target: {value: ''}}); 
+        requestAnimationFrame(() => { pal.classList.remove('opacity-0'); box.classList.remove('scale-95'); input.focus(); });
+    } else { closeCmdPalette(); }
 }
 
 function closeCmdPalette() {
-    const pal = document.getElementById('cmdPalette');
-    const box = document.getElementById('cmdPaletteBox');
-    if (!pal || !box) return;
-    pal.classList.add('opacity-0');
-    box.classList.add('scale-95');
-    setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
+    const pal = document.getElementById('cmdPalette'); const box = document.getElementById('cmdPaletteBox'); if (!pal || !box) return;
+    pal.classList.add('opacity-0'); box.classList.add('scale-95'); setTimeout(() => pal.classList.replace('flex', 'hidden'), 200);
 }
 
 function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+    const container = document.getElementById('toast-container'); if (!container) return;
     while (container.childElementCount >= 3) { container.removeChild(container.firstChild); }
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-rose-500/10 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]';
@@ -123,8 +76,7 @@ function showToast(message, type = 'success') {
 }
 
 function formatWorkspacePath(path) {
-    const maxLength = 22; let cleanPath = path.replace(/\\/g, '/'); 
-    if (!cleanPath.endsWith('/')) cleanPath += '/';
+    const maxLength = 22; let cleanPath = path.replace(/\\/g, '/'); if (!cleanPath.endsWith('/')) cleanPath += '/';
     if (cleanPath.length <= maxLength) return cleanPath;
     const startPart = cleanPath.substring(0, 3); const endPartLength = maxLength - startPart.length - 3; 
     return startPart + '...' + cleanPath.substring(cleanPath.length - endPartLength);
@@ -133,20 +85,16 @@ function formatWorkspacePath(path) {
 function toggleButtonLoading(btn, isLoading, originalContent = '') {
     if (!btn || !(btn instanceof Element)) return originalContent;
     if (isLoading) {
-        const currentContent = btn.innerHTML;
-        btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
+        const currentContent = btn.innerHTML; btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 mx-auto inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
         return currentContent;
     } else {
-        btn.disabled = false; btn.classList.remove('opacity-75', 'cursor-not-allowed'); btn.innerHTML = originalContent; 
-        return '';
+        btn.disabled = false; btn.classList.remove('opacity-75', 'cursor-not-allowed'); btn.innerHTML = originalContent; return '';
     }
 }
 
 function switchView(viewName) {
-    const dashboardView = document.getElementById('dashboard-view'); const settingsView = document.getElementById('settings-view');
-    const viewTitle = document.getElementById('view-title'); const addBtn = document.getElementById('header-add-btn');
-    const navDashboard = document.getElementById('nav-dashboard'); const navSettings = document.getElementById('nav-settings');
+    const dashboardView = document.getElementById('dashboard-view'); const settingsView = document.getElementById('settings-view'); const viewTitle = document.getElementById('view-title'); const addBtn = document.getElementById('header-add-btn'); const navDashboard = document.getElementById('nav-dashboard'); const navSettings = document.getElementById('nav-settings');
     if (viewName === 'dashboard') {
         dashboardView.classList.remove('hidden'); settingsView.classList.add('hidden'); viewTitle.innerText = "Active Library"; addBtn.classList.remove('hidden');
         if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all shadow-[inset_3px_0_0_#6366f1] group";
@@ -157,6 +105,122 @@ function switchView(viewName) {
         if (navDashboard) navDashboard.className = "w-full flex items-center justify-between px-4 py-2.5 text-gray-400 hover:bg-gray-800/40 hover:text-gray-200 rounded-xl transition-all border border-transparent font-semibold group";
         if (navSettings) navSettings.className = "w-full flex items-center gap-3 px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 font-bold transition-all mt-6 shadow-[inset_3px_0_0_#6366f1] group";
     }
+}
+
+function renderWorkspaceSettings() {
+    const container = document.getElementById('workspace-settings-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (typeof globalWorkspaces === 'undefined') return;
+
+    globalWorkspaces.forEach((ws, idx) => {
+        const isActive = ws === globalWorkspace;
+        const div = document.createElement('div');
+        div.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[inset_4px_0_0_#6366f1]' : 'bg-[#0a0d14] border-gray-700/50 hover:border-gray-600'}`;
+        
+        const folderName = ws.split('/').pop() || ws;
+        
+        div.innerHTML = `
+            <div class="flex flex-col min-w-0 flex-1 cursor-pointer" onclick="switchWorkspace('${ws}')">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold ${isActive ? 'text-indigo-300' : 'text-gray-300'} truncate">${folderName}</span>
+                    ${isActive ? '<span class="text-[9px] bg-indigo-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wider font-black shadow-sm">Active</span>' : ''}
+                </div>
+                <span class="text-[11px] font-mono text-gray-500 truncate mt-1" title="${ws}">${ws}</span>
+            </div>
+            ${!isActive ? `<button onclick="removeWorkspace('${ws}', event)" class="p-2 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors ml-4 shrink-0" title="Kaldır"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
+        `;
+        container.appendChild(div);
+    });
+}
+
+function removeWorkspace(ws, event) {
+    if(event) event.stopPropagation();
+    if (ws === globalWorkspace) return; 
+    globalWorkspaces = globalWorkspaces.filter(w => w !== ws);
+    saveSettings(); 
+}
+
+// WINDOWS 11 GÖREV GÖRÜNÜMÜ RENDER MOTORU
+function renderWorkspaceSwitcher() {
+    const grid = document.getElementById('workspaceSwitcherGrid');
+    if (!grid || typeof globalWorkspaces === 'undefined') return;
+    grid.innerHTML = '';
+
+    globalWorkspaces.forEach((ws, idx) => {
+        const isActive = ws === globalWorkspace;
+        const folderName = ws.split('/').pop() || ws;
+        const btn = document.createElement('button');
+        
+        btn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] duration-200 group focus:outline-none w-48 h-32 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
+        
+        btn.innerHTML = `
+            ${isActive ? '<div class="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,1)]"></div>' : ''}
+            <div class="w-full flex-1 rounded-md mb-3 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors">
+                <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <svg class="w-8 h-8 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </div>
+            <span class="text-xs font-bold tracking-wide truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors">Masaüstü ${idx + 1}</span>
+            <span class="text-[9px] text-gray-500 truncate w-full text-center opacity-70 group-hover:opacity-100 mt-0.5" title="${ws}">${folderName}</span>
+        `;
+        
+        btn.onclick = () => switchWorkspace(ws);
+        grid.appendChild(btn);
+    });
+
+    // WINDOWS TARZI YENİ MASAÜSTÜ EKLEME KARTI (+)
+    const addBtn = document.createElement('button');
+    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group focus:outline-none w-32 h-32 relative shrink-0`;
+    addBtn.innerHTML = `
+        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        </div>
+        <span class="text-[11px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider">Yeni Masaüstü</span>
+    `;
+    addBtn.onclick = () => { if (typeof addNewWorkspace === 'function') addNewWorkspace(); };
+    grid.appendChild(addBtn);
+}
+
+function toggleWorkspaceSwitcher() {
+    const overlay = document.getElementById('workspaceSwitcherOverlay');
+    const bar = document.getElementById('workspaceSwitcherBar');
+    if (!overlay || !bar) return;
+    
+    if (overlay.classList.contains('flex')) {
+        closeWorkspaceSwitcher();
+    } else { 
+        hideContextMenu(); closeCmdPalette();
+        renderWorkspaceSwitcher(); 
+        overlay.classList.replace('hidden', 'flex');
+        // Aşağıdan yukarı kayarak gelme animasyonu (Windows Style)
+        requestAnimationFrame(() => { 
+            overlay.classList.remove('opacity-0'); 
+            bar.classList.remove('translate-y-full');
+        });
+    }
+}
+
+function closeWorkspaceSwitcher() {
+    const overlay = document.getElementById('workspaceSwitcherOverlay');
+    const bar = document.getElementById('workspaceSwitcherBar');
+    if (!overlay || !bar) return;
+    
+    overlay.classList.add('opacity-0');
+    bar.classList.add('translate-y-full');
+    setTimeout(() => { overlay.classList.replace('flex', 'hidden'); }, 300);
+}
+
+function cycleWorkspace(direction) {
+    if (typeof globalWorkspaces === 'undefined' || globalWorkspaces.length <= 1) return;
+    let currentIndex = globalWorkspaces.indexOf(globalWorkspace);
+    if (currentIndex === -1) currentIndex = 0;
+    
+    let nextIndex = currentIndex + direction;
+    if (nextIndex >= globalWorkspaces.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = globalWorkspaces.length - 1;
+    
+    switchWorkspace(globalWorkspaces[nextIndex]);
 }
 
 function createProjectRow(p, index, sourceArray) {
@@ -839,16 +903,13 @@ function handleCmdSearch(e) {
     const query = e.target.value.toLowerCase().trim();
     let allActions = [];
 
-    // 1. INPUT BOŞKEN (Tertemiz Rehber ve Kusursuz Sıralama)
     if (query === '') {
         currentCmdActions = [
             { name: "Tüm Aksiyonları Listele", desc: "Sistemdeki tüm komutları ve yetenekleri gör", shortcut: ">", icon: "⚡", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>'; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "Çalışma Alanı Değiştir", desc: "Kayıtlı klasörleriniz (Workspace) arasında geçiş yapın", shortcut: ">workspace", icon: "📁", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>workspace '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
+            { name: "VS Code'da Aç", desc: "Kod editöründe açmak için bir proje seç", shortcut: ">code", icon: "💻", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>code '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
             { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi hızlıca çalıştır", shortcut: ">start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
             { name: "Projeyi Durdur", desc: "Çalışan bir süreci anında sonlandır", shortcut: ">stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            
-            // --- YENİ EKLENEN: VS CODE GLOBAL KOMUTU ---
-            { name: "VS Code'da Aç", desc: "Kod editöründe açmak için bir proje seç", shortcut: ">code", icon: "💻", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>code '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-            
             { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
             { name: "Tag ile Filtrele", desc: "Tüm etiketleri gör ve projeleri filtrele", shortcut: ">tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
             { name: "Yeni Proje Ekle", desc: "Local klasör veya Github reposu klonla", shortcut: "Add", icon: "➕", action: () => { openModal(); } },
@@ -876,6 +937,23 @@ function handleCmdSearch(e) {
             { name: "Ayarları Aç", desc: "Sistem ve global env ayarlarını yapılandır", shortcut: "Config", icon: "⚙️", action: () => { switchView('settings'); } },
             { name: "Tüm Filtreleri Kaldır", desc: "Aktif tag filtrelemesini sıfırlar", shortcut: "Reset", icon: "🌐", action: () => { setFilter(null); } }
         ];
+
+        // CMD Kısayollarını ekle (Fotoğraftaki vizyon)
+        if (typeof globalWorkspaces !== 'undefined') {
+            globalWorkspaces.forEach((ws, idx) => {
+                if (idx < 9) {
+                    const folderName = ws.split('/').pop() || ws;
+                    currentCmdActions.push({ 
+                        name: `${idx + 1}. Çalışma Alanına Geç (${folderName})`, 
+                        desc: ws, 
+                        shortcut: `Ctrl+${idx + 1}`, 
+                        icon: "📁", 
+                        action: () => switchWorkspace(ws) 
+                    });
+                }
+            });
+        }
+
         cmdSelectedIndex = 0;
         renderCmdResults();
         return;
@@ -909,7 +987,19 @@ function handleCmdSearch(e) {
     ];
 
     if (query.startsWith('>')) {
-        if (query.startsWith('>start')) {
+        if (query.startsWith('>workspace') || query.startsWith('>work')) {
+            const target = query.replace('>workspace', '').replace('>work', '').trim();
+            if (typeof globalWorkspaces !== 'undefined') {
+                globalWorkspaces.forEach((ws, idx) => {
+                    const folderName = ws.split('/').pop() || ws;
+                    if (target === '' || folderName.toLowerCase().includes(target) || ws.toLowerCase().includes(target)) {
+                        const isActive = ws === globalWorkspace;
+                        allActions.push({ name: `Geçiş Yap: ${folderName} ${isActive ? '(Aktif)' : ''}`, desc: ws, shortcut: idx < 9 ? `Ctrl+${idx+1}` : "Switch", icon: "📁", action: () => switchWorkspace(ws) });
+                    }
+                });
+            }
+        }
+        else if (query.startsWith('>start')) {
             const target = query.replace('>start', '').trim();
             cachedProjects.filter(p => p.status !== 'running').forEach(p => {
                 const safeName = p.name || p.Name;
@@ -927,7 +1017,6 @@ function handleCmdSearch(e) {
                 }
             });
         }
-        // --- YENİ EKLENEN: VS CODE FİLTRELEME MOTORU ---
         else if (query.startsWith('>code')) {
             const target = query.replace('>code', '').trim();
             cachedProjects.forEach(p => {
@@ -962,9 +1051,9 @@ function handleCmdSearch(e) {
         else {
             const cmdQuery = query.substring(1).trim();
             const prefixCommands = [
+                { name: "Çalışma Alanı Değiştir", desc: "Kayıtlı klasörleriniz arasında geçiş yapın", shortcut: ">workspace", searchKey: "workspace switch folder", icon: "📁", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>workspace '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
                 { name: "Projeyi Başlat", desc: "Sistemde duran bir projeyi çalıştır", shortcut: ">start", searchKey: "start", icon: "🚀", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>start '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
                 { name: "Projeyi Durdur", desc: "Çalışan bir süreci sonlandır", shortcut: ">stop", searchKey: "stop", icon: "🛑", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>stop '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
-                // > (All Actions) alt menüsünde görünmesi için VS Code kısayolu eklendi
                 { name: "VS Code'da Aç", desc: "Projeyi kod editöründe aç", shortcut: ">code", searchKey: "code vscode", icon: "💻", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>code '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
                 { name: "Projeyi Sil", desc: "Projeyi sistemden kalıcı olarak sil", shortcut: ">delete", searchKey: "delete", icon: "🗑️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>delete '; inp.dispatchEvent(new Event('input')); inp.focus(); } },
                 { name: "Tag ile Filtrele", desc: "Projeleri etiketlerine göre listele", shortcut: ">tag", searchKey: "tag", icon: "🏷️", isPrefix: true, action: () => { const inp = document.getElementById('cmdInput'); inp.value = '>tag '; inp.dispatchEvent(new Event('input')); inp.focus(); } }

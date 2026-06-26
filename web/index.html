@@ -92,8 +92,7 @@
         </div>
 
         <div id="tag-list" class="space-y-1">
-          <!-- JS render area -->
-        </div>
+          </div>
 
         <div class="mt-auto pt-6">
           <button
@@ -365,16 +364,7 @@
                       <th class="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="local-project-list">
-                    <tr>
-                      <td
-                        colspan="5"
-                        class="p-6 text-center text-gray-500 font-medium text-xs italic"
-                      >
-                        Loading local modules...
-                      </td>
-                    </tr>
-                  </tbody>
+                  <tbody id="local-project-list"></tbody>
                 </table>
               </div>
             </div>
@@ -413,16 +403,7 @@
                       <th class="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="github-project-list">
-                    <tr>
-                      <td
-                        colspan="5"
-                        class="p-6 text-center text-gray-500 font-medium text-xs italic"
-                      >
-                        Loading remote modules...
-                      </td>
-                    </tr>
-                  </tbody>
+                  <tbody id="github-project-list"></tbody>
                 </table>
               </div>
             </div>
@@ -510,20 +491,20 @@
         class="hidden flex-col flex-1 overflow-y-auto px-8 py-8"
       >
         <div class="max-w-3xl mx-auto w-full space-y-6">
-          <div
-            class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter"
-          >
-            <h2
-              class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3"
-            >
-              Global Workspace
-            </h2>
-            <input
-              type="text"
-              id="setting-workspace"
-              class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm neon-focus shadow-inner"
-            />
+          
+          <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter flex flex-col">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg> Workspaces
+                </h2>
+                <button onclick="addNewWorkspaceFromSettings()" class="text-xs font-bold bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Add Workspace
+                </button>
+            </div>
+            <div id="workspace-settings-list" class="space-y-3"></div>
+            <input type="hidden" id="setting-workspace" />
           </div>
+
           <div
             class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-1"
           >
@@ -538,6 +519,39 @@
               class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-4 py-3 text-emerald-400 font-mono text-sm resize-y neon-focus-emerald shadow-inner"
             ></textarea>
           </div>
+
+          <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-1">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-3">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Sistem Kısayolları (Cheat Sheet)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Komut Paleti (Arama)</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + K / P</kbd>
+                </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Çalışma Alanları Menüsü</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + W</kbd>
+                </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Hızlı Sekme Geçişi</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + 1..9</kbd>
+                </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Alanlar Arası Kaydırma</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + Alt + ⬅/➡</kbd>
+                </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Terminal Tam Ekran</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + é / `</kbd>
+                </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Seçili Projeleri Yeniden Başlat</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + Shift + R</kbd>
+                </div>
+            </div>
+          </div>
+
           <div class="flex justify-end modal-enter anim-delay-2">
             <button
               id="save-settings-btn"
@@ -551,7 +565,19 @@
       </div>
     </div>
 
-    <!-- TAG YÖNETİM MODALI -->
+    <div id="workspaceSwitcherOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-md hidden z-[200] flex-col justify-end opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 z-0" onclick="closeWorkspaceSwitcher()"></div>
+        
+        <div class="w-full bg-[#0a0d14]/95 border-t border-gray-700/50 p-6 pt-8 flex flex-col items-center shadow-[0_-10px_50px_rgba(0,0,0,0.8)] transform translate-y-full transition-transform duration-300 z-10" id="workspaceSwitcherBar">
+            <h2 class="text-xs font-black text-gray-500 mb-6 uppercase tracking-widest">Masaüstleri (Çalışma Alanları)</h2>
+            
+            <div id="workspaceSwitcherGrid" class="flex items-center justify-center gap-4 overflow-x-auto max-w-full px-4 pb-4 no-scrollbar">
+                </div>
+            
+            <p class="text-gray-600 text-[10px] mt-2 font-mono uppercase tracking-wider">Kapatmak için <kbd class="font-bold text-gray-400 bg-gray-900 border border-gray-700 px-1.5 py-0.5 rounded">ESC</kbd> veya boş bir alana tıklayın.</p>
+        </div>
+    </div>
+
     <div
       id="tagModal"
       class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-[150]"
@@ -651,7 +677,6 @@
       </div>
     </div>
 
-    <!-- ADD MODAL -->
     <div
       id="addModal"
       class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50"
@@ -1072,7 +1097,6 @@
       </div>
     </div>
 
-    <!-- EDIT MODAL -->
     <div
       id="editModal"
       class="fixed inset-0 bg-[#0a0d14]/80 backdrop-blur-md hidden items-center justify-center z-50"
@@ -1419,7 +1443,6 @@
       </div>
     </div>
 
-    <!-- BULK DELETE MODAL -->
     <div
       id="bulkDeleteModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50"
@@ -1450,7 +1473,7 @@
               </div>
               <div>
                 <span
-                  class="block text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors"
+                  class="text-sm font-bold text-rose-400 group-hover:text-rose-300 transition-colors"
                   >Permanently delete files</span
                 >
                 <span class="block text-xs text-rose-400/60 mt-0.5"
@@ -1516,7 +1539,6 @@
       </div>
     </div>
 
-    <!-- SINGLE DELETE MODAL -->
     <div
       id="deleteModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50"
@@ -1609,7 +1631,6 @@
       </div>
     </div>
 
-    <!-- COMMAND PALETTE -->
     <div
       id="cmdPalette"
       class="fixed inset-0 bg-[#0a0d14]/60 backdrop-blur-md hidden items-start pt-[15vh] justify-center z-[100] opacity-0 transition-opacity duration-300"
@@ -1670,5 +1691,5 @@
     <script src="/js/terminal.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/main.js"></script>
-</body>
+  </body>
 </html>
