@@ -114,7 +114,7 @@ function renderWorkspaceSettings() {
     
     if (typeof globalWorkspaces === 'undefined') return;
 
-    globalWorkspaces.forEach((ws, idx) => {
+    globalWorkspaces.forEach((ws) => {
         const isActive = ws === globalWorkspace;
         const div = document.createElement('div');
         div.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[inset_4px_0_0_#6366f1]' : 'bg-[#0a0d14] border-gray-700/50 hover:border-gray-600'}`;
@@ -142,7 +142,6 @@ function removeWorkspace(ws, event) {
     saveSettings(); 
 }
 
-// WINDOWS 11 GÖREV GÖRÜNÜMÜ RENDER MOTORU
 function renderWorkspaceSwitcher() {
     const grid = document.getElementById('workspaceSwitcherGrid');
     if (!grid || typeof globalWorkspaces === 'undefined') return;
@@ -153,13 +152,13 @@ function renderWorkspaceSwitcher() {
         const folderName = ws.split('/').pop() || ws;
         const btn = document.createElement('button');
         
-        btn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] duration-200 group focus:outline-none w-48 h-32 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
+        btn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] duration-200 group focus:outline-none w-48 h-32 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
         
         btn.innerHTML = `
             ${isActive ? '<div class="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,1)]"></div>' : ''}
-            <div class="w-full flex-1 rounded-md mb-3 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors">
+            <div class="w-full flex-1 rounded-md mb-2.5 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors">
                 <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <svg class="w-8 h-8 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <svg class="w-7 h-7 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
             </div>
             <span class="text-xs font-bold tracking-wide truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors">Masaüstü ${idx + 1}</span>
             <span class="text-[9px] text-gray-500 truncate w-full text-center opacity-70 group-hover:opacity-100 mt-0.5" title="${ws}">${folderName}</span>
@@ -169,14 +168,14 @@ function renderWorkspaceSwitcher() {
         grid.appendChild(btn);
     });
 
-    // WINDOWS TARZI YENİ MASAÜSTÜ EKLEME KARTI (+)
+    // ➕ WINDOWS GÖREV GÖRÜNÜMÜ TARZI "YENİ MASAÜSTÜ" (+) KARTI
     const addBtn = document.createElement('button');
-    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group focus:outline-none w-32 h-32 relative shrink-0`;
+    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group focus:outline-none w-36 h-32 relative shrink-0`;
     addBtn.innerHTML = `
-        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-2">
+        <div class="w-9 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         </div>
-        <span class="text-[11px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider">Yeni Masaüstü</span>
+        <span class="text-[10px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider">Yeni Masaüstü</span>
     `;
     addBtn.onclick = () => { if (typeof addNewWorkspace === 'function') addNewWorkspace(); };
     grid.appendChild(addBtn);
@@ -193,7 +192,6 @@ function toggleWorkspaceSwitcher() {
         hideContextMenu(); closeCmdPalette();
         renderWorkspaceSwitcher(); 
         overlay.classList.replace('hidden', 'flex');
-        // Aşağıdan yukarı kayarak gelme animasyonu (Windows Style)
         requestAnimationFrame(() => { 
             overlay.classList.remove('opacity-0'); 
             bar.classList.remove('translate-y-full');

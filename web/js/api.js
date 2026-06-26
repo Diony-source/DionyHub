@@ -44,21 +44,18 @@ async function switchWorkspace(newPath) {
         if (typeof closeWorkspaceSwitcher === 'function') closeWorkspaceSwitcher();
         return;
     }
-    
     globalWorkspace = newPath;
     if (!globalWorkspaces.includes(newPath)) globalWorkspaces.push(newPath);
     
-    // Güvenlik: UI elemanlarını kontrol et, yoksa global değişkenleri kullan
     const wsInput = document.getElementById('setting-workspace');
     if (wsInput) wsInput.value = newPath;
     
     const envInput = document.getElementById('setting-global-env');
-    const globalEnvToSave = envInput ? envInput.value : globalEnvText;
+    const envToSave = envInput ? envInput.value : globalEnvText;
     
     try {
         showToast("Çalışma alanına geçiliyor...", "success");
-        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, workspaces: globalWorkspaces, log_buffer: false, global_env: globalEnvToSave }) });
-        
+        const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, workspaces: globalWorkspaces, log_buffer: false, global_env: envToSave }) });
         if (response.ok) {
             if (typeof closeWorkspaceSwitcher === 'function') closeWorkspaceSwitcher();
             if (typeof setFilter === 'function') setFilter(null);
@@ -71,49 +68,42 @@ async function switchWorkspace(newPath) {
     } catch (e) { showToast("Bağlantı hatası.", "error"); }
 }
 
-// YENİ: Ortak ve Güvenli "Yeni Workspace Ekle" fonksiyonu (Hem Ayarlar hem de Win+Tab menüsü kullanacak)
+// 📁 MERKEZİ WORKSPACE EKLEME MOTORU (Tüm Tetikleyiciler Burayı Kullanır)
 async function addNewWorkspace() {
     try {
-        const res = await fetch('/api/system/browse'); 
-        const data = await res.json();
-        
+        const res = await fetch('/api/system/browse'); const data = await res.json();
         if (data.path && data.path !== "") {
             const clean = data.path.replace(/\\/g, '/');
-            if (typeof globalWorkspaces !== 'undefined' && !globalWorkspaces.includes(clean)) {
+            if (!globalWorkspaces.includes(clean)) {
                 globalWorkspaces.push(clean);
-                // switchWorkspace fonksiyonu zaten backend'e POST atıp kaydediyor ve listeyi güncelliyor
-                switchWorkspace(clean);
-            } else {
-                // Zaten listedeyse sadece geçiş yap
-                switchWorkspace(clean);
             }
+            await switchWorkspace(clean);
         }
     } catch (e) { showToast("Klasör seçici açılamadı.", "error"); }
 }
 
+// Ayarlar modülündeki eski tetikleyiciyi de bu güvenli motora bağlıyoruz
+async function addNewWorkspaceFromSettings() {
+    await addNewWorkspace();
+}
+
 async function triggerSmartDetection(fullPath, isEdit = false) {
     if (!fullPath) return;
-
     const useWsCb = document.getElementById('useWorkspace');
     if (useWsCb && useWsCb.checked && !isEdit) {
         const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
         fullPath = formattedWs + fullPath;
     }
-
     showToast("Dedektif klasörü analiz ediyor...", "success");
-
     try {
         const res = await fetch(`/api/projects/detect?path=${encodeURIComponent(fullPath)}`);
         if (res.ok) {
             const data = await res.json();
-            
             if (data.detected) {
                 const cmdInputId = isEdit ? 'editProjCmd' : 'projCmd'; const tagInputId = isEdit ? 'editProjTag' : 'projTag';
                 const cmdInput = document.getElementById(cmdInputId); const tagInput = document.getElementById(tagInputId);
-
                 if (cmdInput && cmdInput.value.trim() === "") cmdInput.value = data.command;
                 if (tagInput && tagInput.value.trim() === "") tagInput.value = data.language;
-
                 if (data.has_env && !isEdit) { const customCb = document.getElementById('addEnvCustom'); if (customCb && !customCb.checked) { customCb.checked = true; if (typeof toggleAddEnvMode === 'function') toggleAddEnvMode('custom'); } showToast(`Dedektif: ${data.language} projesi ve .env dosyası algıladı!`, "success"); } 
                 else { showToast(`Dedektif: ${data.language} projesi algıladı!`, "success"); }
             } else { showToast("Dedektif: Bu klasörde tanıdık bir proje bulunamadı.", "error"); }
@@ -138,9 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function submitNewProject(e) {
-    e.preventDefault(); 
-    const btn = e.target.querySelector('button[type="submit"]'); const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value;
-    const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
+    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value; const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
     const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
     let finalEnv = ""; let createEnv = true;
     if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } else if (customCb && customCb.checked) { finalEnv = document.getElementById('projInitialEnv').value; } else { finalEnv = ""; createEnv = false; }
@@ -175,8 +163,7 @@ async function submitEditProject(event) {
 }
 
 async function executeDelete() { 
-    const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); 
-    const diskCb = document.getElementById('deleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false; const deleteTagCheckbox = document.getElementById('deleteOrphanedTag'); const tagContainer = document.getElementById('deleteTagContainer'); const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
+    const btn = document.getElementById('confirmDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true); const diskCb = document.getElementById('deleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false; const deleteTagCheckbox = document.getElementById('deleteOrphanedTag'); const tagContainer = document.getElementById('deleteTagContainer'); const shouldDeleteTag = deleteTagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && deleteTagCheckbox.checked;
     try {
         const res = await fetch(`/api/projects/delete?id=${projectToDelete}&remove_files=${deleteFiles}`, { method: 'DELETE' }); 
         if(res.ok) { 
@@ -191,7 +178,6 @@ async function executeBulkDelete() {
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID);
     if (idsToProcess.length === 0) return;
-
     const diskCb = document.getElementById('bulkDeleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false; const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags'); const tagContainer = document.getElementById('bulkDeleteTagContainer'); const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
     const btn = document.getElementById('confirmBulkDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true);
     try {
@@ -205,8 +191,7 @@ async function executeBulkDelete() {
 
 async function executeBulkAction(action) {
     let idsToProcess = [];
-    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
-    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
+    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
     if (idsToProcess.length === 0) return;
     const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk'; const actionText = action === 'start' ? 'Başlatılıyor...' : 'Durduruluyor...'; showToast(`${idsToProcess.length} proje ${actionText}`, "success");
     try {

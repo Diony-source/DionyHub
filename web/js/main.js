@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return; 
         }
 
-        // --- YENİ VİZYON: MAC/WIN WORKSPACE KAYDIRMA (Ctrl+Alt+Sol/Sağ) ---
+        // 🔄 MASAÜSTLERİ ARASI ARKA ARKAYA HIZLI KAYDIRMA (Ctrl+Alt+Sol/Sağ)
         if (mod && e.altKey && e.key === 'ArrowRight') {
             e.preventDefault(); e.stopPropagation();
             if (typeof cycleWorkspace === 'function') cycleWorkspace(1);
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (typeof cycleWorkspace === 'function') cycleWorkspace(-1);
         }
 
-        // --- YENİ VİZYON: WINDOWS TASK VIEW HİSSİYATI (Alt+W) ---
+        // 💻 WINDOWS GÖREV GÖRÜNÜMÜ DETEKTÖRÜ (Alt + W)
         if (e.altKey && e.code === 'KeyW') {
             e.preventDefault(); e.stopPropagation();
             if (typeof toggleWorkspaceSwitcher === 'function') toggleWorkspaceSwitcher();
