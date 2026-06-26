@@ -100,24 +100,44 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 🛡️ WINDOWS TARZI MASAÜSTÜ İZOLASYON MOTORU
+	// Aktif konfigürasyondaki geçerli workspace yolunu alıyoruz
+	settings, err := config.LoadSettings("app_config.json")
+	currentWorkspace := "C:/DionyHub/apps"
+	if err == nil && settings.Workspace != "" {
+		currentWorkspace = strings.ReplaceAll(settings.Workspace, "\\", "/")
+	}
+
+	// Klasör yollarının prefix eşleşmelerini garantiye almak için sonuna eğik çizgi ekliyoruz
+	cleanWorkspaceLower := strings.ToLower(currentWorkspace)
+	if !strings.HasSuffix(cleanWorkspaceLower, "/") {
+		cleanWorkspaceLower += "/"
+	}
+
 	var response []ProjectResponse
 	for _, p := range dbProjects {
-		status := "stopped"
-		var cpu, ram float64
+		pPath := strings.ReplaceAll(p.Path, "\\", "/")
+		pPathLower := strings.ToLower(pPath)
 
-		if s.manager.IsRunning(p.ID) {
-			status = "running"
-			cpu, ram, _ = s.manager.GetStats(p.ID)
+		// Proje dizini aktif workspace yolunun altındaysa veya doğrudan kendisiyse listeye dahil et
+		if strings.HasPrefix(pPathLower, cleanWorkspaceLower) || pPathLower == strings.TrimSuffix(cleanWorkspaceLower, "/") {
+			status := "stopped"
+			var cpu, ram float64
 
-			if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
-				cpu = 0
+			if s.manager.IsRunning(p.ID) {
+				status = "running"
+				cpu, ram, _ = s.manager.GetStats(p.ID)
+
+				if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
+					cpu = 0
+				}
+				if math.IsNaN(ram) || math.IsInf(ram, 0) {
+					ram = 0
+				}
 			}
-			if math.IsNaN(ram) || math.IsInf(ram, 0) {
-				ram = 0
-			}
+
+			response = append(response, toProjectResponse(p, status, cpu, ram))
 		}
-
-		response = append(response, toProjectResponse(p, status, cpu, ram))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
