@@ -5,6 +5,7 @@ let availableTags = [];
 let cachedProjects = [];
 
 let globalWorkspace = "C:/DionyHub/apps";
+let globalWorkspaces = []; // YENİ: Çalışma alanları listesi
 let globalSavedTags = [];
 let globalEnvText = ""; 
 
