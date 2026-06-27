@@ -61,11 +61,68 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 		oldSettings, _ := config.LoadSettings("app_config.json")
 		newSettings.SavedTags = oldSettings.SavedTags
 
+		// 🚀 YENİ VİZYON: WORKSPACE SİLİNDİĞİNDE İÇİNDEKİ PROJELERİ DIONYHUB'DAN TAMAMEN SİL
+		// Arayüzden gelen yeni listeyle eskisini karşılaştırıp silinenleri buluyoruz
+		deletedWorkspaces := []string{}
+		for _, oldWs := range oldSettings.Workspaces {
+			found := false
+			for _, newWs := range newSettings.Workspaces {
+				if oldWs == newWs {
+					found = true
+					break
+				}
+			}
+			if !found {
+				deletedWorkspaces = append(deletedWorkspaces, oldWs)
+			}
+		}
+
+		// Eğer bir Workspace silinmişse, içindeki projeleri veritabanından kalıcı olarak kaldırıyoruz
+		if len(deletedWorkspaces) > 0 {
+			tx, err := s.db.DB.Begin()
+			if err == nil {
+				for _, dWs := range deletedWorkspaces {
+					projIDs := oldSettings.WorkspaceMap[dWs]
+					for _, pid := range projIDs {
+						// Proje çalışıyorsa önce güvenlice durdur
+						if s.manager.IsRunning(pid) {
+							_ = s.manager.Stop(pid)
+						}
+						// Veritabanı ve Tag temizliği (Diskteki fiziksel dosyalara dokunulmaz)
+						tx.Exec("DELETE FROM projects WHERE id=?", pid)
+						tx.Exec("DELETE FROM project_tags WHERE project_id=?", pid)
+					}
+					// Haritadan da bu workspace'i tamamen temizle
+					delete(oldSettings.WorkspaceMap, dWs)
+				}
+				// Boşta kalan tag'leri temizle
+				tx.Exec("DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)")
+				tx.Commit()
+				s.syncMemory()
+			}
+		}
+
+		// Kalan haritayı yeni ayarlara devret
+		newSettings.WorkspaceMap = oldSettings.WorkspaceMap
+
 		newSettings.Workspace = strings.TrimSpace(newSettings.Workspace)
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202A", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\u202C", "")
 		newSettings.Workspace = strings.ReplaceAll(newSettings.Workspace, "\\", "/")
 		newSettings.GlobalEnv = strings.TrimSpace(newSettings.GlobalEnv)
+
+		if newSettings.Workspace != "" {
+			workspaceFound := false
+			for _, w := range newSettings.Workspaces {
+				if w == newSettings.Workspace {
+					workspaceFound = true
+					break
+				}
+			}
+			if !workspaceFound {
+				newSettings.Workspaces = append(newSettings.Workspaces, newSettings.Workspace)
+			}
+		}
 
 		if err := config.SaveSettings("app_config.json", newSettings); err != nil {
 			slog.Error("System Error -> Failed to save settings to disk", slog.Any("error", err))
@@ -84,6 +141,7 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 }
 
+// ... handleManageTag aynen devam ediyor ...
 func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		slog.Warn("Invalid HTTP method for manage tag", slog.String("method", r.Method))
@@ -112,7 +170,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		slog.Int("affected_projects", len(req.ProjectIDs)),
 	)
 
-	// App_config içindeki kayıtlı tag'leri güncelle
 	settings, err := config.LoadSettings("app_config.json")
 	if err == nil {
 		var newSavedTags []string
@@ -140,7 +197,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// SQLite İşlemleri (JSON Zombisi tamamen yokedildi)
 	tx, err := s.db.DB.Begin()
 	if err != nil {
 		http.Error(w, `{"error": "Database transaction failed"}`, http.StatusInternalServerError)
@@ -148,7 +204,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	// 1. Etiket Tamamen Siliniyorsa
 	if req.NewTag == "" && len(req.ProjectIDs) == 0 {
 		_, err := tx.Exec("DELETE FROM tags WHERE name = ?", req.OriginalTag)
 		if err != nil {
@@ -156,28 +211,26 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		tx.Commit()
-		s.syncMemory() // RAM'i tazele
+		s.syncMemory()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Tag başarıyla silindi"})
 		return
 	}
 
-	// 2. Etiket Güncelleniyorsa VEYA Yeni Projelere Atanıyorsa
 	var tagID int
 	err = tx.QueryRow("SELECT id FROM tags WHERE name = ?", req.OriginalTag).Scan(&tagID)
 
-	if err != nil { // Veritabanında tag yoksa yenisini yarat
+	if err != nil {
 		if req.NewTag != "" {
 			res, _ := tx.Exec("INSERT INTO tags (name, color) VALUES (?, '#6366f1')", req.NewTag)
 			id, _ := res.LastInsertId()
 			tagID = int(id)
 		}
-	} else if req.NewTag != "" && req.NewTag != req.OriginalTag { // İsmi değiştiyse
+	} else if req.NewTag != "" && req.NewTag != req.OriginalTag {
 		tx.Exec("UPDATE tags SET name = ? WHERE id = ?", req.NewTag, tagID)
 	}
 
-	// Etiketin atandığı projeleri güncelle (Önce kopar, sonra bağla)
 	if tagID != 0 {
 		tx.Exec("DELETE FROM project_tags WHERE tag_id = ?", tagID)
 		for _, pid := range req.ProjectIDs {
@@ -185,7 +238,6 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// YENİ: Öksüz etiketleri sistem yönetiminden de süpüren Çöpçü
 	tx.Exec(`DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM project_tags)`)
 
 	if err := tx.Commit(); err != nil {
@@ -193,7 +245,7 @@ func (s *Server) handleManageTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.syncMemory() // RAM'i tazele
+	s.syncMemory()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Tag konfigürasyonu başarıyla kaydedildi"})

@@ -114,32 +114,54 @@ function renderWorkspaceSettings() {
     
     if (typeof globalWorkspaces === 'undefined') return;
 
-    globalWorkspaces.forEach((ws) => {
+    globalWorkspaces.forEach((ws, idx) => {
         const isActive = ws === globalWorkspace;
+        const isMain = idx === 0;
         const div = document.createElement('div');
         div.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[inset_4px_0_0_#6366f1]' : 'bg-[#0a0d14] border-gray-700/50 hover:border-gray-600'}`;
         
-        const folderName = ws.split('/').pop() || ws;
+        const folderName = isMain ? "Main Workspace (Hub)" : (ws.split('/').pop() || ws);
         
         div.innerHTML = `
             <div class="flex flex-col min-w-0 flex-1 cursor-pointer" onclick="switchWorkspace('${ws}')">
                 <div class="flex items-center gap-2">
                     <span class="text-sm font-bold ${isActive ? 'text-indigo-300' : 'text-gray-300'} truncate">${folderName}</span>
                     ${isActive ? '<span class="text-[9px] bg-indigo-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wider font-black shadow-sm">Active</span>' : ''}
+                    ${isMain && !isActive ? '<span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-black shadow-sm border border-gray-700">Main Hub</span>' : ''}
                 </div>
                 <span class="text-[11px] font-mono text-gray-500 truncate mt-1" title="${ws}">${ws}</span>
             </div>
-            ${!isActive ? `<button onclick="removeWorkspace('${ws}', event)" class="p-2 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors ml-4 shrink-0" title="Kaldır"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
+            ${!isMain && !isActive ? `<button onclick="confirmRemoveWorkspace('${ws}', event)" class="p-2 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors ml-4 shrink-0" title="Workspace'i Sil"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
         `;
         container.appendChild(div);
     });
 }
 
-function removeWorkspace(ws, event) {
-    if(event) event.stopPropagation();
+// 🛡️ YENİ VİZYON: SİLME ONAY EKRANI (İzolasyon ve Clear Mantığına Uygun)
+function confirmRemoveWorkspace(ws, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    
+    showConfirmModal(
+        "Workspace'i Kapat / Temizle",
+        `<b class="text-white">${ws}</b> adlı çalışma alanını tamamen temizlemek istediğinize emin misiniz?<br><br><span class="text-amber-400/80 text-xs font-medium leading-relaxed">Not: Yalnızca bu çalışma alanına özel proje kayıtları temizlenir. Eğer aynı projeyi daha önce Main Workspace'e (veya başka bir alana) eklediyseniz <b>oradaki kayıt kesinlikle silinmez</b>. Yerel dosyalarınız güvendedir.</span>`,
+        "Evet, Temizle",
+        "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.4)]",
+        `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+        () => removeWorkspace(ws)
+    );
+}
+
+function removeWorkspace(ws) {
     if (ws === globalWorkspace) return; 
     globalWorkspaces = globalWorkspaces.filter(w => w !== ws);
     saveSettings(); 
+    
+    // Açık olan menüleri anında güncelle
+    const overlay = document.getElementById('workspaceSwitcherOverlay');
+    if (overlay && overlay.classList.contains('flex')) { renderWorkspaceSwitcher(); }
+    
+    const settingsView = document.getElementById('settings-view');
+    if (settingsView && !settingsView.classList.contains('hidden')) { renderWorkspaceSettings(); }
 }
 
 function renderWorkspaceSwitcher() {
@@ -149,33 +171,103 @@ function renderWorkspaceSwitcher() {
 
     globalWorkspaces.forEach((ws, idx) => {
         const isActive = ws === globalWorkspace;
+        const isMain = idx === 0;
         const folderName = ws.split('/').pop() || ws;
-        const btn = document.createElement('button');
+        const displayName = isMain ? "Main Workspace" : `Workspace ${idx + 1}`;
+        const iconSvg = isMain 
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>'
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>';
+
+        // 🚀 DÜZELTME: Kart boyutları "w-56 h-36" yapılarak taşma (overflow) sorunu kökünden çözüldü
+        const card = document.createElement('div');
+        card.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_25px_rgba(0,0,0,0.4)] duration-200 group cursor-pointer w-56 h-36 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
         
-        btn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] duration-200 group focus:outline-none w-48 h-32 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
-        
-        btn.innerHTML = `
-            ${isActive ? '<div class="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,1)]"></div>' : ''}
-            <div class="w-full flex-1 rounded-md mb-2.5 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors">
-                <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <svg class="w-7 h-7 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        const deleteBtnHtml = !isMain && !isActive ? `
+            <div onclick="confirmRemoveWorkspace('${ws}', event)" class="absolute top-2 right-2 p-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 cursor-pointer shadow-sm" title="Workspace'i Sil">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
             </div>
-            <span class="text-xs font-bold tracking-wide truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors">Masaüstü ${idx + 1}</span>
-            <span class="text-[9px] text-gray-500 truncate w-full text-center opacity-70 group-hover:opacity-100 mt-0.5" title="${ws}">${folderName}</span>
+        ` : '';
+
+        card.innerHTML = `
+            ${deleteBtnHtml}
+            ${isActive ? '<div class="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,1)]"></div>' : ''}
+            <div class="w-full flex-1 rounded-md mb-2.5 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors pointer-events-none">
+                <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <svg class="w-8 h-8 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>
+            </div>
+            <span class="text-sm font-bold tracking-wide truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors pointer-events-none">${displayName}</span>
+            <span class="text-[10px] text-gray-500 truncate w-full text-center opacity-70 group-hover:opacity-100 mt-1 pointer-events-none" title="${ws}">${isMain ? 'Global / Hub' : folderName}</span>
         `;
         
-        btn.onclick = () => switchWorkspace(ws);
-        grid.appendChild(btn);
+        card.onclick = (e) => { 
+            if (!e.target.closest('.z-20')) { switchWorkspace(ws); }
+        };
+        grid.appendChild(card);
     });
 
-    // ➕ WINDOWS GÖREV GÖRÜNÜMÜ TARZI "YENİ MASAÜSTÜ" (+) KARTI
-    const addBtn = document.createElement('button');
-    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group focus:outline-none w-36 h-32 relative shrink-0`;
+    // 🚀 DÜZELTME: Add butonu da "h-36" yapılarak kartlarla aynı boyuta getirildi
+    const addBtn = document.createElement('div');
+    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group cursor-pointer w-40 h-36 relative shrink-0`;
     addBtn.innerHTML = `
-        <div class="w-9 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-2">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-3 pointer-events-none">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         </div>
-        <span class="text-[10px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider">Yeni Masaüstü</span>
+        <span class="text-[11px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider pointer-events-none text-center">Yeni<br>Workspace</span>
+    `;
+    addBtn.onclick = () => { if (typeof addNewWorkspace === 'function') addNewWorkspace(); };
+    grid.appendChild(addBtn);
+}
+
+function renderWorkspaceSwitcher() {
+    const grid = document.getElementById('workspaceSwitcherGrid');
+    if (!grid || typeof globalWorkspaces === 'undefined') return;
+    grid.innerHTML = '';
+
+    globalWorkspaces.forEach((ws, idx) => {
+        const isActive = ws === globalWorkspace;
+        const isMain = idx === 0;
+        const folderName = ws.split('/').pop() || ws;
+        const displayName = isMain ? "Main Workspace" : `Workspace ${idx + 1}`;
+        const iconSvg = isMain 
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>'
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>';
+
+        // DİKKAT: <button> yerine <div> kullanıyoruz (Taşma/Kayma sorunlarını önlemek için)
+        const card = document.createElement('div');
+        card.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] duration-200 group cursor-pointer w-48 h-32 relative shrink-0 ${isActive ? 'bg-[#1a1f2e] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-[#11151f] border-gray-700/50 hover:border-gray-500'}`;
+        
+        // ❌ YENİ: Sağ Üstte Çarpı Butonu (Sadece aktif ve ana olmayanlarda)
+        const deleteBtnHtml = !isMain && !isActive ? `
+            <div onclick="confirmRemoveWorkspace('${ws}', event)" class="absolute top-2 right-2 p-1 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 cursor-pointer shadow-sm" title="Workspace'i Sil">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+        ` : '';
+
+        card.innerHTML = `
+            ${deleteBtnHtml}
+            ${isActive ? '<div class="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,1)]"></div>' : ''}
+            <div class="w-full flex-1 rounded-md mb-2.5 border border-gray-700/50 overflow-hidden relative ${isActive ? 'bg-indigo-500/10' : 'bg-gray-900'} group-hover:border-gray-500 transition-colors pointer-events-none">
+                <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <svg class="w-7 h-7 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isActive ? 'text-indigo-400' : 'text-gray-600 group-hover:text-gray-400'} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>
+            </div>
+            <span class="text-xs font-bold tracking-wide truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors pointer-events-none">${displayName}</span>
+            <span class="text-[9px] text-gray-500 truncate w-full text-center opacity-70 group-hover:opacity-100 mt-0.5 pointer-events-none" title="${ws}">${isMain ? 'Global / Hub' : folderName}</span>
+        `;
+        
+        card.onclick = (e) => { 
+            // Sadece çarpı dışındaki bölgelere tıklandığında geçiş yap
+            if (!e.target.closest('.z-20')) { switchWorkspace(ws); }
+        };
+        grid.appendChild(card);
+    });
+
+    const addBtn = document.createElement('div');
+    addBtn.className = `flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-indigo-500 bg-transparent hover:bg-indigo-500/5 transition-all transform hover:-translate-y-1 duration-200 group cursor-pointer w-36 h-32 relative shrink-0`;
+    addBtn.innerHTML = `
+        <div class="w-9 h-10 rounded-full flex items-center justify-center bg-gray-800 text-gray-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-inner mb-2 pointer-events-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        </div>
+        <span class="text-[10px] font-bold text-gray-500 group-hover:text-indigo-400 transition-colors uppercase tracking-wider pointer-events-none">Yeni Masaüstü</span>
     `;
     addBtn.onclick = () => { if (typeof addNewWorkspace === 'function') addNewWorkspace(); };
     grid.appendChild(addBtn);
@@ -207,6 +299,18 @@ function closeWorkspaceSwitcher() {
     overlay.classList.add('opacity-0');
     bar.classList.add('translate-y-full');
     setTimeout(() => { overlay.classList.replace('flex', 'hidden'); }, 300);
+}
+
+function cycleWorkspace(direction) {
+    if (typeof globalWorkspaces === 'undefined' || globalWorkspaces.length <= 1) return;
+    let currentIndex = globalWorkspaces.indexOf(globalWorkspace);
+    if (currentIndex === -1) currentIndex = 0;
+    
+    let nextIndex = currentIndex + direction;
+    if (nextIndex >= globalWorkspaces.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = globalWorkspaces.length - 1;
+    
+    switchWorkspace(globalWorkspaces[nextIndex]);
 }
 
 function cycleWorkspace(direction) {
