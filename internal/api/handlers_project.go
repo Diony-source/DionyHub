@@ -86,7 +86,6 @@ func (s *Server) handleDetectProject(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		slog.Warn("Invalid HTTP method for getting projects", slog.String("method", r.Method))
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
@@ -95,32 +94,35 @@ func (s *Server) handleGetProjects(w http.ResponseWriter, r *http.Request) {
 
 	dbProjects, err := s.db.GetProjects()
 	if err != nil {
-		slog.Error("Failed to fetch projects from database", slog.Any("error", err))
 		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// 🛡️ WINDOWS TARZI MASAÜSTÜ İZOLASYON MOTORU
-	// Aktif konfigürasyondaki geçerli workspace yolunu alıyoruz
-	settings, err := config.LoadSettings("app_config.json")
-	currentWorkspace := "C:/DionyHub/apps"
-	if err == nil && settings.Workspace != "" {
-		currentWorkspace = strings.ReplaceAll(settings.Workspace, "\\", "/")
+	// 🛡️ SANAL MASAÜSTÜ (VIRTUAL DESKTOP) İZOLASYONU
+	settings, _ := config.LoadSettings("app_config.json")
+	activeWorkspace := settings.Workspace
+	if activeWorkspace == "" {
+		activeWorkspace = "Workspace 1"
 	}
 
-	// Klasör yollarının prefix eşleşmelerini garantiye almak için sonuna eğik çizgi ekliyoruz
-	cleanWorkspaceLower := strings.ToLower(currentWorkspace)
-	if !strings.HasSuffix(cleanWorkspaceLower, "/") {
-		cleanWorkspaceLower += "/"
+	// Projelerin hangi sanal masaüstüne ait olduğunu haritalandır
+	assignedProjects := make(map[string]string)
+	for wsName, projIDs := range settings.WorkspaceMap {
+		for _, pid := range projIDs {
+			assignedProjects[pid] = wsName
+		}
 	}
 
 	var response []ProjectResponse
 	for _, p := range dbProjects {
-		pPath := strings.ReplaceAll(p.Path, "\\", "/")
-		pPathLower := strings.ToLower(pPath)
+		ws, exists := assignedProjects[p.ID]
 
-		// Proje dizini aktif workspace yolunun altındaysa veya doğrudan kendisiyse listeye dahil et
-		if strings.HasPrefix(pPathLower, cleanWorkspaceLower) || pPathLower == strings.TrimSuffix(cleanWorkspaceLower, "/") {
+		if !exists {
+			ws = "Workspace 1"
+		}
+
+		// Sadece kullanıcının şu an aktif olduğu Sanal Masaüstündeki projeleri UI'a gönder
+		if ws == activeWorkspace {
 			status := "stopped"
 			var cpu, ram float64
 
@@ -274,6 +276,7 @@ func (s *Server) handleAddProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Database insert failed"}`, http.StatusInternalServerError)
 		return
 	}
+	config.AssignProjectToActiveWorkspace(newID)
 
 	if req.Tag != "" {
 		tags := strings.Split(req.Tag, ",")
@@ -361,6 +364,7 @@ func (s *Server) handleCloneProject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to save project to DB"}`, http.StatusInternalServerError)
 		return
 	}
+	config.AssignProjectToActiveWorkspace(newID)
 
 	if req.Tag != "" {
 		tags := strings.Split(req.Tag, ",")

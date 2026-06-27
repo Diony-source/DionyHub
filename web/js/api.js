@@ -10,7 +10,7 @@ async function loadSettings() {
         const response = await fetch('/api/settings');
         if (response.ok) {
             const settings = await response.json();
-            globalWorkspace = settings.workspace || 'C:/DionyHub/apps';
+            globalWorkspace = settings.workspace || 'Workspace 1';
             globalWorkspaces = settings.workspaces || [globalWorkspace];
             document.getElementById('setting-workspace').value = globalWorkspace;
             if (settings.global_env) { document.getElementById('setting-global-env').value = settings.global_env; globalEnvText = settings.global_env; } else globalEnvText = "";
@@ -44,6 +44,7 @@ async function switchWorkspace(newPath) {
         if (typeof closeWorkspaceSwitcher === 'function') closeWorkspaceSwitcher();
         return;
     }
+    
     globalWorkspace = newPath;
     if (!globalWorkspaces.includes(newPath)) globalWorkspaces.push(newPath);
     
@@ -54,8 +55,9 @@ async function switchWorkspace(newPath) {
     const envToSave = envInput ? envInput.value : globalEnvText;
     
     try {
-        showToast("Çalışma alanına geçiliyor...", "success");
+        showToast("Workspace'e geçiliyor...", "success");
         const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: globalWorkspace, workspaces: globalWorkspaces, log_buffer: false, global_env: envToSave }) });
+        
         if (response.ok) {
             if (typeof closeWorkspaceSwitcher === 'function') closeWorkspaceSwitcher();
             if (typeof setFilter === 'function') setFilter(null);
@@ -68,42 +70,46 @@ async function switchWorkspace(newPath) {
     } catch (e) { showToast("Bağlantı hatası.", "error"); }
 }
 
-// 📁 MERKEZİ WORKSPACE EKLEME MOTORU (Tüm Tetikleyiciler Burayı Kullanır)
 async function addNewWorkspace() {
-    try {
-        const res = await fetch('/api/system/browse'); const data = await res.json();
-        if (data.path && data.path !== "") {
-            const clean = data.path.replace(/\\/g, '/');
-            if (!globalWorkspaces.includes(clean)) {
-                globalWorkspaces.push(clean);
-            }
-            await switchWorkspace(clean);
-        }
-    } catch (e) { showToast("Klasör seçici açılamadı.", "error"); }
+    let nextIndex = globalWorkspaces.length + 1;
+    let newName = `Workspace ${nextIndex}`;
+    
+    while(globalWorkspaces.includes(newName)) {
+        nextIndex++;
+        newName = `Workspace ${nextIndex}`;
+    }
+    
+    globalWorkspaces.push(newName);
+    await switchWorkspace(newName);
 }
 
-// Ayarlar modülündeki eski tetikleyiciyi de bu güvenli motora bağlıyoruz
 async function addNewWorkspaceFromSettings() {
     await addNewWorkspace();
 }
 
 async function triggerSmartDetection(fullPath, isEdit = false) {
     if (!fullPath) return;
+
     const useWsCb = document.getElementById('useWorkspace');
     if (useWsCb && useWsCb.checked && !isEdit) {
-        const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/');
-        fullPath = formattedWs + fullPath;
+        const defaultAppDir = 'C:/DionyHub/apps/';
+        fullPath = defaultAppDir + fullPath;
     }
+
     showToast("Dedektif klasörü analiz ediyor...", "success");
+
     try {
         const res = await fetch(`/api/projects/detect?path=${encodeURIComponent(fullPath)}`);
         if (res.ok) {
             const data = await res.json();
+            
             if (data.detected) {
                 const cmdInputId = isEdit ? 'editProjCmd' : 'projCmd'; const tagInputId = isEdit ? 'editProjTag' : 'projTag';
                 const cmdInput = document.getElementById(cmdInputId); const tagInput = document.getElementById(tagInputId);
+
                 if (cmdInput && cmdInput.value.trim() === "") cmdInput.value = data.command;
                 if (tagInput && tagInput.value.trim() === "") tagInput.value = data.language;
+
                 if (data.has_env && !isEdit) { const customCb = document.getElementById('addEnvCustom'); if (customCb && !customCb.checked) { customCb.checked = true; if (typeof toggleAddEnvMode === 'function') toggleAddEnvMode('custom'); } showToast(`Dedektif: ${data.language} projesi ve .env dosyası algıladı!`, "success"); } 
                 else { showToast(`Dedektif: ${data.language} projesi algıladı!`, "success"); }
             } else { showToast("Dedektif: Bu klasörde tanıdık bir proje bulunamadı.", "error"); }
@@ -127,8 +133,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pathInput) { pathInput.addEventListener('input', (e) => { clearTimeout(detectTimeout); detectTimeout = setTimeout(() => triggerSmartDetection(e.target.value, false), 600); }); }
 });
 
+function toggleWorkspaceMode() {
+    const useWs = document.getElementById('useWorkspace'); const prefix = document.getElementById('workspacePrefix'); const input = document.getElementById('projPath');
+    if(useWs) {
+        prefix.classList.remove('hidden'); input.classList.remove('rounded-l-lg'); input.classList.add('border-l-0');
+        const defaultAppDir = 'C:/DionyHub/apps/';
+        prefix.title = defaultAppDir; prefix.innerText = formatWorkspacePath(defaultAppDir); input.placeholder = "folder_name";
+    } else {
+        prefix.classList.add('hidden'); input.classList.add('rounded-l-lg'); input.classList.remove('border-l-0'); input.placeholder = "C:/Users/Diony/Desktop/bot";
+    }
+}
+
 async function submitNewProject(e) {
-    e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value; const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
+    e.preventDefault(); 
+    const btn = e.target.querySelector('button[type="submit"]'); const sourceMode = document.querySelector('input[name="sourceMode"]:checked').value;
+    const originalHTML = toggleButtonLoading(btn, true, sourceMode === 'github' ? 'Cloning Repo...' : '');
     const globalCb = document.getElementById('addEnvGlobal'); const customCb = document.getElementById('addEnvCustom');
     let finalEnv = ""; let createEnv = true;
     if (globalCb && globalCb.checked) { finalEnv = globalEnvText; } else if (customCb && customCb.checked) { finalEnv = document.getElementById('projInitialEnv').value; } else { finalEnv = ""; createEnv = false; }
@@ -137,14 +156,17 @@ async function submitNewProject(e) {
     try {
         if (sourceMode === 'local') {
             let finalPath = document.getElementById('projPath').value.trim(); const useWs = document.getElementById('useWorkspace').checked;
-            if (useWs) { const formattedWs = globalWorkspace + (globalWorkspace.endsWith('/') || globalWorkspace.endsWith('\\') ? '' : '/'); finalPath = formattedWs + finalPath; }
+            if (useWs) { 
+                const defaultAppDir = 'C:/DionyHub/apps/'; 
+                finalPath = defaultAppDir + finalPath; 
+            }
             const data = { name: document.getElementById('projName').value, path: finalPath, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv };
             const res = await fetch('/api/projects/add', { method: 'POST', body: JSON.stringify(data) });
-            if (res.ok) { closeModal(); loadProjects(); showToast("Workspace created!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
+            if (res.ok) { closeModal(); loadProjects(); showToast("Proje Workspace'e eklendi!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
         } else {
             const data = { repo_url: document.getElementById('repoUrl').value, command: document.getElementById('projCmd').value, tag: document.getElementById('projTag').value, interactive: document.getElementById('projInteractive').checked, auto_start: document.getElementById('projAutoStart').checked, auto_restart: document.getElementById('projAutoRestart').checked, auto_close: document.getElementById('projAutoClose').checked, clear_on_start: clearOnStart, initial_env: finalEnv, create_env: createEnv };
             const res = await fetch('/api/projects/clone', { method: 'POST', body: JSON.stringify(data) });
-            if (res.ok) { closeModal(); loadProjects(); showToast("Repo cloned!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
+            if (res.ok) { closeModal(); loadProjects(); showToast("Repo Workspace'e klonlandı!", "success"); } else { const err = await res.json(); showToast(err.error, "error"); }
         }
     } catch (err) { showToast("Connection failed.", "error"); } finally { toggleButtonLoading(btn, false, originalHTML); }
 }
@@ -178,6 +200,7 @@ async function executeBulkDelete() {
     if (selectedProjectIds.size > 0) idsToProcess = Array.from(selectedProjectIds);
     else if (currentTagFilter) idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID);
     if (idsToProcess.length === 0) return;
+
     const diskCb = document.getElementById('bulkDeleteFilesFromDisk'); const deleteFiles = diskCb ? diskCb.checked : false; const tagCheckbox = document.getElementById('bulkDeleteOrphanedTags'); const tagContainer = document.getElementById('bulkDeleteTagContainer'); const shouldDeleteTags = tagCheckbox && tagContainer && !tagContainer.classList.contains('hidden') && tagCheckbox.checked;
     const btn = document.getElementById('confirmBulkDeleteBtn'); const originalHTML = toggleButtonLoading(btn, true);
     try {
@@ -191,7 +214,8 @@ async function executeBulkDelete() {
 
 async function executeBulkAction(action) {
     let idsToProcess = [];
-    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
+    if (selectedProjectIds.size > 0) { idsToProcess = Array.from(selectedProjectIds); } 
+    else if (currentTagFilter) { idsToProcess = cachedProjects.filter(p => p.tag && p.tag.split(',').map(t => t.trim().toLowerCase()).includes(currentTagFilter.toLowerCase())).map(p => p.id || p.ID); }
     if (idsToProcess.length === 0) return;
     const endpoint = action === 'start' ? '/api/projects/start-bulk' : '/api/projects/stop-bulk'; const actionText = action === 'start' ? 'Başlatılıyor...' : 'Durduruluyor...'; showToast(`${idsToProcess.length} proje ${actionText}`, "success");
     try {
