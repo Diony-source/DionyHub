@@ -526,32 +526,31 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                    <span class="text-sm font-bold text-gray-300">Komut Paleti (Arama)</span>
+                    <span class="text-sm font-bold text-gray-300">Komut Paleti (Arama / Prefix)</span>
                     <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + K / P</kbd>
                 </div>
                 <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                    <span class="text-sm font-bold text-gray-300">Çalışma Alanları Menüsü</span>
+                    <span class="text-sm font-bold text-gray-300">Workspace Seçim Menüsü</span>
                     <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + W</kbd>
                 </div>
                 <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                    <span class="text-sm font-bold text-gray-300">Hızlı Sekme Geçişi</span>
-                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + 1..9</kbd>
-                </div>
-                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                    <span class="text-sm font-bold text-gray-300">Alanlar Arası Kaydırma</span>
+                    <span class="text-sm font-bold text-gray-300">Workspace'ler Arası Hızlı Kaydırma</span>
                     <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + Alt + ⬅/➡</kbd>
                 </div>
                 <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                    <span class="text-sm font-bold text-gray-300">Terminal Tam Ekran</span>
+                    <span class="text-sm font-bold text-gray-300">Terminal Tam Ekran (Odak Odaklı)</span>
                     <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + é / `</kbd>
                 </div>
                 <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
                     <span class="text-sm font-bold text-gray-300">Seçili Projeleri Yeniden Başlat</span>
                     <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + Shift + R</kbd>
                 </div>
+                <div class="bg-[#0a0d14] border border-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-300">Tüm Terminalleri Temizle</span>
+                    <kbd class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Ctrl + L</kbd>
+                </div>
             </div>
           </div>
-
           <div class="flex justify-end modal-enter anim-delay-2">
             <button
               id="save-settings-btn"
@@ -568,10 +567,10 @@
     <div id="workspaceSwitcherOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-md hidden z-[200] flex-col justify-end opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 z-0" onclick="closeWorkspaceSwitcher()"></div>
         
-        <div class="w-full bg-[#0a0d14]/95 border-t border-gray-700/50 p-6 pt-8 flex flex-col items-center shadow-[0_-10px_50px_rgba(0,0,0,0.8)] transform translate-y-full transition-transform duration-300 z-10" id="workspaceSwitcherBar">
-            <h2 class="text-xs font-black text-gray-500 mb-6 uppercase tracking-widest">Masaüstleri (Çalışma Alanları)</h2>
+        <div class="w-full bg-[#0a0d14]/95 border-t border-gray-700/50 p-8 pt-12 pb-12 flex flex-col items-center shadow-[0_-10px_50px_rgba(0,0,0,0.8)] transform translate-y-full transition-transform duration-300 z-10" id="workspaceSwitcherBar">
+            <h2 class="text-sm font-black text-gray-500 mb-10 uppercase tracking-widest">Workspaces</h2>
             
-            <div id="workspaceSwitcherGrid" class="flex items-center justify-center gap-4 overflow-x-auto max-w-full px-4 pb-4 no-scrollbar">
+            <div id="workspaceSwitcherGrid" class="flex items-start justify-center gap-6 overflow-x-auto max-w-full px-6 py-4 no-scrollbar min-h-[200px]">
                 </div>
             
             <p class="text-gray-600 text-[10px] mt-2 font-mono uppercase tracking-wider">Kapatmak için <kbd class="font-bold text-gray-400 bg-gray-900 border border-gray-700 px-1.5 py-0.5 rounded">ESC</kbd> veya boş bir alana tıklayın.</p>
