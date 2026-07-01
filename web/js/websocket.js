@@ -27,22 +27,20 @@ function connectWebSocket() {
                     if (terminalPool[stat.id]) terminalPool[stat.id].lastStatus = stat.status;
 
                     if (stat.status === 'running') {
-                        badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors';
+                        badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] animate-pulse';
                         badge.innerText = 'Running';
-                        if (statsDiv) {
-                            const hrs = Math.floor(stat.uptime / 3600); const mins = Math.floor((stat.uptime % 3600) / 60); const secs = stat.uptime % 60;
-                            const uptimeStr = hrs > 0 ? `${hrs}h ${mins}m` : (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
-                            const sparkHtml = drawSparkline(stat.id, stat.cpu);
-                            statsDiv.innerHTML = `<div class="flex flex-col gap-0.5"><div class="flex gap-2"><span class="text-indigo-400">CPU: ${stat.cpu.toFixed(1)}%</span><span class="text-emerald-400">RAM: ${stat.ram.toFixed(1)} MB</span></div><span class="text-amber-400 font-bold opacity-80">UP: ${uptimeStr}</span></div> ${sparkHtml}`;
-                        }
-                        if (!terminalPool[stat.id]) { const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id); if(p) getOrCreateTerminal(p.id || p.ID, p.name || p.Name); }
-                    } else {
-                        badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-full border border-gray-700/50 font-bold transition-colors';
+                        statusSpan.innerText = 'Running';
+                        statusSpan.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] animate-pulse';
+                    } else if (stat.status === 'stopped') {
+                        badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all';
                         badge.innerText = 'Stopped';
-                        if (statsDiv) statsDiv.innerHTML = `<span class="text-gray-600">CPU: --</span><span class="text-gray-600">RAM: --</span>`;
-                        if (prevStatus === 'running' && terminalPool[stat.id]) {
-                            const p = cachedProjects.find(x => x.id === stat.id || x.ID === stat.id);
-                            if (p && (p.auto_close || p.AutoClose)) minimizeTerminal(stat.id, p.name || p.Name);
+                        statusSpan.innerText = 'Stopped';
+                        statusSpan.className = 'px-3 py-1 bg-rose-500/10 text-rose-400 text-xs rounded-full border border-rose-500/20 font-bold shadow-[0_0_10px_rgba(225,29,72,0.2)]';
+                        
+                        // 🛡️ YAYINCI ZIRHI: Proje 'running' durumdan aniden 'stopped' durumuna düşerse OBS'e acil durum sinyali gönder
+                        if (prevStatus === 'running' && typeof triggerObsEmergencyScene === 'function') {
+                            const pName = proj ? (proj.name || proj.Name) : 'Proje';
+                            triggerObsEmergencyScene(pName);
                         }
                     }
                 });
