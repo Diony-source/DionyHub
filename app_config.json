@@ -1,5 +1,17 @@
 {
-  "workspace": "C:/Users/Diony/Desktop/DionyHub/apps",
+  "workspace": "Workspace 1",
+  "workspaces": [
+    "Workspace 1",
+    "Workspace 2"
+  ],
+  "workspace_map": {
+    "Masaüstü 2": [
+      "1782596417636"
+    ],
+    "Workspace 3": [
+      "1782598896945"
+    ]
+  },
   "log_buffer": false,
   "global_env": "TEST_VAR=HarikaCalisiyor",
   "saved_tags": null

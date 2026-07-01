@@ -91,9 +91,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 🛡️ YAYINCI ZIRHI (Alt + P)
         if (e.altKey && e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); if (typeof togglePrivacyMode === 'function') togglePrivacyMode(); }
 
-        // 🧘 ODAK MODU (Alt + Z)
-        if (e.altKey && e.code === 'KeyZ') { e.preventDefault(); e.stopPropagation(); if (typeof toggleZenMode === 'function') toggleZenMode(); }
-        
+        // 🧘 ODAK MODU (ZEN MODE) - Yalnızca Alt + X olarak sabitlendi
+        if (e.altKey && (e.code === 'KeyX' || e.key.toLowerCase() === 'x')) { e.preventDefault(); e.stopPropagation(); if (typeof toggleZenMode === 'function') toggleZenMode(); }
+
         if (mod && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p')) { e.preventDefault(); e.stopPropagation(); toggleCmdPalette(); }
         if (mod && e.key === ',') { e.preventDefault(); e.stopPropagation(); switchView('settings'); }
         if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); e.stopPropagation(); switchView('dashboard'); }

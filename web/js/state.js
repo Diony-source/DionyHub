@@ -4,8 +4,8 @@ let draggedRow = null;
 let availableTags = [];
 let cachedProjects = [];
 
-let globalWorkspace = "C:/DionyHub/apps";
-let globalWorkspaces = []; // YENİ: Çalışma alanları listesi
+let globalWorkspace = "Workspace 1";
+let globalWorkspaces = []; 
 let globalSavedTags = [];
 let globalEnvText = ""; 
 
@@ -24,6 +24,7 @@ let cmdSelectedIndex = 0;
 let currentCmdActions = [];
 
 let isResizing = false;
+let isPrivacyMode = false; // 🛡️ YAYINCI ZIRHI STATÜSÜ
 
 const terminalResizeObserver = new ResizeObserver((entries) => {
     requestAnimationFrame(() => {

@@ -268,13 +268,11 @@ function toggleZenMode() {
     const terminalPane = document.getElementById('terminal-pane');
     
     if (isZenMode) {
-        // Dikkati dağıtacak tüm kalabalığı ortadan kaldır
         if (sidebar) sidebar.classList.add('hidden');
         if (header) header.classList.add('hidden');
         if (resizer) resizer.classList.add('hidden');
         if (tablePane) tablePane.classList.add('hidden');
         
-        // Terminal panelini tam ekran yap
         if (terminalPane) {
             terminalPane.style.height = '100vh';
             terminalPane.style.maxHeight = '100vh';
@@ -282,7 +280,6 @@ function toggleZenMode() {
             terminalPane.classList.add('p-0');
         }
         
-        // Eğer hâlihazırda büyütülmüş bir terminal yoksa, seçili projenin terminalini otomatik maksimize et
         if (typeof toggleMaximizeTerminal === 'function' && !maximizedTerminalId) {
             let targetId = 'system';
             if (typeof selectedProjectIds !== 'undefined' && selectedProjectIds.size === 1) {
@@ -293,7 +290,6 @@ function toggleZenMode() {
         
         if (typeof showToast === 'function') showToast("Zen Modu AKTİF. Odaklanma zamanı!", "success");
     } else {
-        // Her şeyi eski düzenine geri getir
         if (sidebar) sidebar.classList.remove('hidden');
         if (header) header.classList.remove('hidden');
         if (resizer) resizer.classList.remove('hidden');
@@ -306,7 +302,6 @@ function toggleZenMode() {
             terminalPane.classList.remove('p-0');
         }
         
-        // Zen modundan çıkarken maksimize edilmiş terminali eski esnek grid moduna döndür
         if (typeof toggleMaximizeTerminal === 'function' && maximizedTerminalId) {
             toggleMaximizeTerminal(maximizedTerminalId);
         }
@@ -314,7 +309,6 @@ function toggleZenMode() {
         if (typeof showToast === 'function') showToast("Zen Modu KAPATILDI.", "success");
     }
     
-    // xterm.js pencerelerinin yeni tam ekran ebatlarına kusursuz uyması için fitaddon'ı tetikle
     setTimeout(() => {
         if (typeof refreshAllTerminalFits === 'function') refreshAllTerminalFits();
     }, 150);

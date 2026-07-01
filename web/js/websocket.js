@@ -13,85 +13,66 @@ function connectWebSocket() {
                 if (terminalPool[msg.id]) terminalPool[msg.id].term.clear();
                 return;
             }
+            
             if (msg.id === 'metrics') {
                 const statsArray = JSON.parse(msg.data);
                 if (!statsArray) return; 
+                
                 statsArray.forEach(stat => {
-                    const proj = cachedProjects.find(x => (x.id || x.ID) === stat.id);
+                    const proj = cachedProjects.find(x => String(x.id || x.ID) === String(stat.id));
                     if (proj) proj.status = stat.status;
 
                     const badge = document.getElementById('status-' + stat.id);
                     const statsDiv = document.getElementById('stats-' + stat.id);
-                    if (!badge) return;
+                    if (!badge) return; // Etiket yoksa pas geç (Güvenlik kilidi)
+                    
                     let prevStatus = terminalPool[stat.id] ? terminalPool[stat.id].lastStatus : null;
                     if (terminalPool[stat.id]) terminalPool[stat.id].lastStatus = stat.status;
 
+                    // YENİ VE TEMİZLENMİŞ GÜNCELLEME BLOKLARI (statusSpan çöpleri silindi)
                     if (stat.status === 'running') {
                         badge.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] animate-pulse';
                         badge.innerText = 'Running';
-                        statusSpan.innerText = 'Running';
-                        statusSpan.className = 'px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] animate-pulse';
+                        
+                        if (statsDiv) {
+                            statsDiv.innerHTML = `<span>CPU: ${stat.cpu.toFixed(1)}%</span><span>RAM: ${stat.ram.toFixed(0)}MB</span>` + (typeof drawSparkline === 'function' ? drawSparkline(stat.id, stat.cpu) : '');
+                        }
                     } else if (stat.status === 'stopped') {
                         badge.className = 'px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all';
                         badge.innerText = 'Stopped';
-                        statusSpan.innerText = 'Stopped';
-                        statusSpan.className = 'px-3 py-1 bg-rose-500/10 text-rose-400 text-xs rounded-full border border-rose-500/20 font-bold shadow-[0_0_10px_rgba(225,29,72,0.2)]';
                         
-                        // 🛡️ YAYINCI ZIRHI: Proje 'running' durumdan aniden 'stopped' durumuna düşerse OBS'e acil durum sinyali gönder
+                        if (statsDiv) {
+                            statsDiv.innerHTML = `<span>CPU: --</span><span>RAM: --</span>`;
+                        }
+
+                        // 🛡️ ÇÖKME (CRASH) TESPİT MOTORU VE OBS ENTEGRASYONU
                         if (prevStatus === 'running' && typeof triggerObsEmergencyScene === 'function') {
-                            const pName = proj ? (proj.name || proj.Name) : 'Proje';
-                            triggerObsEmergencyScene(pName);
+                            const statIdStr = String(stat.id); // Tip güvenliği sağlandı
+                            
+                            if (window.manualStopFlags && window.manualStopFlags.has(statIdStr)) {
+                                // Kullanıcı kendi durdurduysa OBS tetiklenmez
+                                window.manualStopFlags.delete(statIdStr); 
+                            } else {
+                                // Çökme durumu
+                                const pName = proj ? (proj.name || proj.Name) : 'Proje';
+                                triggerObsEmergencyScene(pName);
+                            }
                         }
                     }
                 });
-                return; 
+                return; // Metrikler işlendi, işlem sonlandırılıyor.
             }
             
-            let projName = "Unknown";
-            if (msg.id === 'system') projName = "DionyHub System Logs";
-            else { const p = cachedProjects.find(x => x.id === msg.id || x.ID === msg.id); projName = p ? (p.name || p.Name) : msg.id; }
-            
-            const termInstance = getOrCreateTerminal(msg.id, projName);
-            
-            // --- 🚀 YENİ: VS CODE TARZI CTRL + CLICK LİNK MOTORU ---
-            if (!termInstance.__linkEngineReady && termInstance.term && typeof termInstance.term.registerLinkProvider === 'function') {
-                termInstance.__linkEngineReady = true;
-                termInstance.term.registerLinkProvider({
-                    provideLinks: (bufferLineNumber, callback) => {
-                        const line = termInstance.term.buffer.active.getLine(bufferLineNumber - 1);
-                        if (!line) { callback([]); return; }
-                        const text = line.translateToString(true);
-                        const links = [];
-                        
-                        // Terminal içindeki temiz URL'leri yakalayan regex
-                        const regex = /(https?:\/\/[a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=\%]+)/g;
-                        let match;
-                        while ((match = regex.exec(text)) !== null) {
-                            links.push({
-                                range: { 
-                                    start: { x: match.index + 1, y: bufferLineNumber }, 
-                                    end: { x: match.index + match[0].length, y: bufferLineNumber } 
-                                },
-                                text: match[0],
-                                activate: (event, uri) => {
-                                    if (event.ctrlKey || event.metaKey) {
-                                        window.open(uri, '_blank'); // Yan sekmede tertemiz açar
-                                    } else {
-                                        // VS Code hissini tamamlayan o tatlı uyarı
-                                        if (typeof showToast === 'function') {
-                                            showToast("Linke gitmek için CTRL + Click yapın", "success");
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                        callback(links);
-                    }
-                });
+            // Eğer gelen mesaj bir Terminal Logu değilse, ekrana basma (Spam filtresi)
+            if (msg.action !== 'log' && msg.id !== 'system') {
+                return;
             }
-            
+
+            const termInstance = terminalPool[msg.id];
+            if (!termInstance || !termInstance.term) return;
+
             // --- SMART CANVAS (AKILLI VURGU MOTORU) ---
-            let textData = msg.data;
+            let textData = msg.data || "";
             if (msg.id !== 'system' && !textData.includes('\x1b[')) {
                 textData = textData.replace(/\b(ERROR|ERR|FAIL|FAILED|FATAL|EXCEPTION|PANIC)\b/gi, "\x1b[1;31m$1\x1b[0m");
                 textData = textData.replace(/\b(WARN|WARNING)\b/gi, "\x1b[1;33m$1\x1b[0m");
@@ -102,12 +83,14 @@ function connectWebSocket() {
             termInstance.term.write(textData); 
             
         } catch (err) {
-            if(terminalPool['system']) terminalPool['system'].term.write(e.data);
+            if (err instanceof SyntaxError) {
+                if(terminalPool['system']) terminalPool['system'].term.write(e.data + "\r\n");
+            } else {
+                console.error("UI Parsing Error:", err);
+            }
         }
     };
-    
-    socket.onclose = () => {
-        if (terminalPool['system']) terminalPool['system'].term.writeln('\x1b[31m=== Connection lost. Reconnecting in 3s... ===\x1b[0m');
-        setTimeout(connectWebSocket, 3000);
-    };
+
+    socket.onclose = () => { setTimeout(connectWebSocket, 3000); };
+    socket.onerror = (err) => { socket.close(); };
 }

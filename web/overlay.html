@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DionyHUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hud-item {
+            background: rgba(15, 23, 42, 0.95);
+            border-left-width: 4px;
+            border-left-style: solid;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease-in-out;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .hud-text {
+            text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 0 4px 4px rgba(0,0,0,0.9);
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body id="hud-body" class="bg-[#0a0d14] text-slate-200 overflow-hidden m-0 p-4 font-sans antialiased">
+    
+    <script>
+        // OBS Dedektifi: OBS içinden açıldığında VEYA url'de obs=true varsa arkaplanı şeffaf yap
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.obsstudio || urlParams.get('obs') === 'true') {
+            const bodyEl = document.getElementById('hud-body');
+            bodyEl.classList.remove('bg-[#0a0d14]');
+            bodyEl.style.backgroundColor = 'transparent';
+        }
+    </script>
+
+    <div id="hud-container" class="flex flex-col gap-3 w-max">
+        </div>
+
+    <script src="/js/overlay.js"></script>
+</body>
+</html>

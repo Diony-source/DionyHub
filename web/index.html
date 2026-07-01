@@ -177,6 +177,15 @@
             </button>
 
             <button
+              onclick="window.open('/overlay.html', 'DionyHUD', 'width=240,height=350,transparent=yes,frame=no,alwaysOnTop=yes')"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 shadow-sm"
+              title="Mini Overlay"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+              <span class="hidden sm:inline font-bold">HUD</span>
+            </button>
+
+            <button
               id="header-add-btn"
               onclick="openModal()"
               class="btn-action bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] font-medium flex items-center gap-2 border border-indigo-400/50"
@@ -586,7 +595,7 @@
                 </div>
                 <div class="bg-purple-500/10 border border-purple-500/30 p-3 rounded-lg flex items-center justify-between">
                     <span class="text-sm font-bold text-purple-400">Zen Modu (Odaklanma)</span>
-                    <kbd class="bg-purple-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + Z</kbd>
+                    <kbd class="bg-purple-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + X</kbd>
                 </div>
             </div>
           </div>
