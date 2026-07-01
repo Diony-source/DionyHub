@@ -584,9 +584,13 @@
                     <span class="text-sm font-bold text-rose-400">Yayıncı Zırhı (Privacy Mode)</span>
                     <kbd class="bg-rose-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + P</kbd>
                 </div>
+                <div class="bg-purple-500/10 border border-purple-500/30 p-3 rounded-lg flex items-center justify-between">
+                    <span class="text-sm font-bold text-purple-400">Zen Modu (Odaklanma)</span>
+                    <kbd class="bg-purple-600 text-white px-2 py-1 rounded text-[10px] font-mono shadow-sm">Alt + Z</kbd>
+                </div>
             </div>
           </div>
-          <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-2">
+          <div class="bg-[#11151f]/80 backdrop-blur-xl rounded-xl border border-gray-800/60 shadow-2xl p-6 modal-enter anim-delay-2 mt-6">
             <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
               <h2 class="text-lg font-bold text-white flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 
@@ -601,13 +605,13 @@
               <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">OBS IP / Port</label>
                 <div class="flex shadow-inner">
-                  <input type="text" id="obs-ip" value="localhost" class="w-2/3 bg-[#0a0d14] border border-gray-700 rounded-l-lg px-3 py-2 text-white font-mono text-sm neon-focus border-r-0" placeholder="localhost">
+                  <input type="text" id="obs-ip" value="127.0.0.1" class="w-2/3 bg-[#0a0d14] border border-gray-700 rounded-l-lg px-3 py-2 text-white font-mono text-sm neon-focus border-r-0" placeholder="127.0.0.1">
                   <input type="text" id="obs-port" value="4455" class="w-1/3 bg-[#0a0d14] border border-gray-700 rounded-r-lg px-3 py-2 text-indigo-400 font-mono text-sm neon-focus" placeholder="4455">
                 </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Şifre (Password)</label>
-                <input type="password" id="obs-password" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm neon-focus shadow-inner" placeholder="OBS Websocket Şifresi">
+                <input type="password" id="obs-password" class="w-full bg-[#0a0d14] border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm neon-focus shadow-inner" placeholder="Şifre yoksa boş bırakın">
               </div>
               <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Acil Durum Sahnesi</label>
@@ -615,12 +619,22 @@
               </div>
             </div>
             
+            <div class="bg-[#0a0d14] border border-gray-800 rounded-lg p-3 mb-4 flex items-start gap-3">
+              <svg class="w-5 h-5 text-gray-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <div class="text-[11px] text-gray-400 space-y-1 font-medium">
+                <p><strong class="text-gray-300">Nasıl Bağlanırım?</strong> OBS'i açın: <kbd class="bg-gray-800 border border-gray-700 px-1 py-0.5 rounded text-[10px]">Araçlar</kbd> > <kbd class="bg-gray-800 border border-gray-700 px-1 py-0.5 rounded text-[10px]">WebSocket Sunucu Ayarları</kbd> menüsüne girin.</p>
+                <p>1. <span class="text-indigo-400">"WebSocket sunucusunu etkinleştir"</span> kutusunu işaretleyin.</p>
+                <p>2. OBS'te bir şifre varsa yukarıdaki "Şifre" kutusuna yazın, yoksa boş bırakın.</p>
+                <p>3. DionyHub, "Siz durdurmadığınız halde" projeler çökerse yayını kurtarmak için otomatik olarak belirlediğiniz Sahneye geçer.</p>
+              </div>
+            </div>
+            
             <div class="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
-              <span class="text-xs text-blue-300/80 font-medium">Bir proje çöktüğünde DionyHub otomatik olarak yazdığınız Acil Durum Sahnesi'ne geçiş yapar.</span>
-              <button onclick="connectOBS(this)" class="btn-action bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded shadow-sm text-xs font-bold transition-colors">OBS'e Bağlan</button>
+              <span class="text-xs text-blue-300/80 font-medium leading-relaxed">Bağlantı kurulduğunda kaza kurşunlarına karşı <b class="text-rose-400">Yayıncı Zırhı</b> otomatik olarak devreye girer.</span>
+              <button id="obs-toggle-btn" onclick="toggleOBSConnection(this)" class="btn-action bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg shadow-sm text-xs font-bold transition-colors border border-blue-500/50">OBS'e Bağlan</button>
             </div>
           </div>
-          <div class="flex justify-end modal-enter anim-delay-2">
+          <div class="flex justify-end modal-enter anim-delay-2 mt-6">
             <button
               id="save-settings-btn"
               onclick="saveSettings()"

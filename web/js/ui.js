@@ -256,16 +256,68 @@ function cycleWorkspace(direction) {
     switchWorkspace(globalWorkspaces[nextIndex]);
 }
 
-function cycleWorkspace(direction) {
-    if (typeof globalWorkspaces === 'undefined' || globalWorkspaces.length <= 1) return;
-    let currentIndex = globalWorkspaces.indexOf(globalWorkspace);
-    if (currentIndex === -1) currentIndex = 0;
+// 🧘 ODAK MODU (ZEN MODE) MOTORU
+let isZenMode = false;
+function toggleZenMode() {
+    isZenMode = !isZenMode;
     
-    let nextIndex = currentIndex + direction;
-    if (nextIndex >= globalWorkspaces.length) nextIndex = 0;
-    if (nextIndex < 0) nextIndex = globalWorkspaces.length - 1;
+    const sidebar = document.querySelector('div.w-64');
+    const header = document.querySelector('header');
+    const resizer = document.getElementById('horizontal-resizer');
+    const tablePane = document.getElementById('table-pane');
+    const terminalPane = document.getElementById('terminal-pane');
     
-    switchWorkspace(globalWorkspaces[nextIndex]);
+    if (isZenMode) {
+        // Dikkati dağıtacak tüm kalabalığı ortadan kaldır
+        if (sidebar) sidebar.classList.add('hidden');
+        if (header) header.classList.add('hidden');
+        if (resizer) resizer.classList.add('hidden');
+        if (tablePane) tablePane.classList.add('hidden');
+        
+        // Terminal panelini tam ekran yap
+        if (terminalPane) {
+            terminalPane.style.height = '100vh';
+            terminalPane.style.maxHeight = '100vh';
+            terminalPane.classList.remove('px-8', 'pt-4', 'pb-8');
+            terminalPane.classList.add('p-0');
+        }
+        
+        // Eğer hâlihazırda büyütülmüş bir terminal yoksa, seçili projenin terminalini otomatik maksimize et
+        if (typeof toggleMaximizeTerminal === 'function' && !maximizedTerminalId) {
+            let targetId = 'system';
+            if (typeof selectedProjectIds !== 'undefined' && selectedProjectIds.size === 1) {
+                targetId = Array.from(selectedProjectIds)[0];
+            }
+            toggleMaximizeTerminal(targetId);
+        }
+        
+        if (typeof showToast === 'function') showToast("Zen Modu AKTİF. Odaklanma zamanı!", "success");
+    } else {
+        // Her şeyi eski düzenine geri getir
+        if (sidebar) sidebar.classList.remove('hidden');
+        if (header) header.classList.remove('hidden');
+        if (resizer) resizer.classList.remove('hidden');
+        if (tablePane) tablePane.classList.remove('hidden');
+        
+        if (terminalPane) {
+            terminalPane.style.height = '40vh';
+            terminalPane.style.maxHeight = '';
+            terminalPane.classList.add('px-8', 'pt-4', 'pb-8');
+            terminalPane.classList.remove('p-0');
+        }
+        
+        // Zen modundan çıkarken maksimize edilmiş terminali eski esnek grid moduna döndür
+        if (typeof toggleMaximizeTerminal === 'function' && maximizedTerminalId) {
+            toggleMaximizeTerminal(maximizedTerminalId);
+        }
+        
+        if (typeof showToast === 'function') showToast("Zen Modu KAPATILDI.", "success");
+    }
+    
+    // xterm.js pencerelerinin yeni tam ekran ebatlarına kusursuz uyması için fitaddon'ı tetikle
+    setTimeout(() => {
+        if (typeof refreshAllTerminalFits === 'function') refreshAllTerminalFits();
+    }, 150);
 }
 
 function createProjectRow(p, index, sourceArray) {
@@ -305,6 +357,20 @@ function createProjectRow(p, index, sourceArray) {
     const watchdogBadge = p.auto_restart ? `<span class="ml-1 text-amber-400 drop-shadow-md hover:scale-110 transition-transform cursor-help" title="Auto-Restart Enabled">🛡️</span>` : '';
     const safeName = p.name || p.Name || "Unknown";
 
+    // 🚀 DÜZELTME: "Loading..." yerine veritabanından gelen anlık veriyi anında bas!
+    const pStatus = p.status || p.Status || 'stopped';
+    let badgeHtml = '';
+    let statsHtml = `<span>CPU: --</span><span>RAM: --</span>`;
+    
+    if (pStatus === 'running') {
+        badgeHtml = `<span id="status-${pId}" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] animate-pulse">Running</span>`;
+        const cpuVal = p.cpu !== undefined ? p.cpu : 0;
+        const ramVal = p.ram !== undefined ? p.ram : 0;
+        statsHtml = `<span>CPU: ${cpuVal.toFixed(1)}%</span><span>RAM: ${ramVal.toFixed(0)}MB</span>` + (typeof drawSparkline === 'function' ? drawSparkline(pId, cpuVal) : '');
+    } else {
+        badgeHtml = `<span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Stopped</span>`;
+    }
+
     tr.innerHTML = `
         <td class="p-4 font-bold text-gray-200 flex items-center gap-4">
             <div class="cursor-grab text-gray-700 hover:text-gray-400 transition-colors" title="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
@@ -312,8 +378,8 @@ function createProjectRow(p, index, sourceArray) {
             <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadges} ${autoBadge} ${watchdogBadge}</div></div>
         </td>
         <td class="p-4 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${maskSensitiveData(p.path, true)}">${maskSensitiveData(p.path, true)}</td>
-        <td class="p-4"><span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
-        <td class="p-4 w-48"><div id="stats-${pId}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
+        <td class="p-4">${badgeHtml}</td>
+        <td class="p-4 w-48"><div id="stats-${pId}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3">${statsHtml}</div></td>
         <td class="p-4">
             <div class="flex items-center justify-end gap-3 whitespace-nowrap opacity-40 group-hover:opacity-100 transition-opacity duration-300">
                 <div class="flex items-center gap-2 border-r border-gray-800/60 pr-3">
