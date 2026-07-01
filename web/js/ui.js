@@ -311,7 +311,7 @@ function createProjectRow(p, index, sourceArray) {
             <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center text-indigo-400 font-black group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shrink-0 text-lg">${safeName.charAt(0).toUpperCase()}</div>
             <div class="flex flex-col"><div class="flex items-center">${safeName} ${tagBadges} ${autoBadge} ${watchdogBadge}</div></div>
         </td>
-        <td class="p-4 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${p.path}">${p.path}</td>
+        <td class="p-4 text-sm text-gray-500 font-mono text-xs truncate max-w-xs group-hover:text-gray-400 transition-colors" title="${maskSensitiveData(p.path, true)}">${maskSensitiveData(p.path, true)}</td>
         <td class="p-4"><span id="status-${pId}" class="px-3 py-1 bg-gray-800/60 text-gray-500 text-xs rounded-full border border-gray-700/50 font-bold transition-all">Loading...</span></td>
         <td class="p-4 w-48"><div id="stats-${pId}" class="text-xs text-gray-500 font-mono flex flex-row items-center gap-3"><span>CPU: --</span><span>RAM: --</span></div></td>
         <td class="p-4">
@@ -1312,4 +1312,52 @@ function showConfirmModal(title, message, btnText, btnClass, iconHtml, onConfirm
         modal.classList.replace('opacity-0', 'opacity-100');
         document.getElementById('customConfirmBox').classList.replace('scale-95', 'scale-100');
     });
+}
+
+// 🛡️ YAYINCI ZIRHI MOTORU (PRIVACY MODE)
+function togglePrivacyMode() {
+    if (typeof isPrivacyMode === 'undefined') window.isPrivacyMode = false;
+    isPrivacyMode = !isPrivacyMode;
+    
+    const btn = document.getElementById('privacy-toggle-btn');
+    if (btn) {
+        if (isPrivacyMode) {
+            btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all border border-rose-500/50 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 shadow-[0_0_15px_rgba(225,29,72,0.4)]";
+            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg><span class="hidden sm:inline font-bold">Privacy: ON</span>`;
+            showToast("Yayıncı Zırhı AKTİF. Hassas veriler ekrandan gizlendi.", "success");
+        } else {
+            btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 shadow-sm";
+            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg><span class="hidden sm:inline font-bold">Privacy: OFF</span>`;
+            showToast("Yayıncı Zırhı KAPALI. Veriler görünür durumda.", "success");
+        }
+    }
+    
+    // Yolları sansürlemek için listeyi yeniden çiz
+    if (typeof renderProjects === 'function') renderProjects();
+    
+    // Hassas input ve textarea'ları CSS ile buğulandır (veri kaybını önler)
+    const blurTargets = ['setting-global-env', 'projInitialEnv', 'editProjInitialEnv', 'projPath', 'editProjPath', 'setting-workspace', 'workspacePrefix'];
+    blurTargets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (isPrivacyMode) {
+                el.classList.add('blur-[6px]', 'select-none', 'transition-all', 'duration-300');
+            } else {
+                el.classList.remove('blur-[6px]', 'select-none');
+            }
+        }
+    });
+}
+
+function maskSensitiveData(str, isPath = false) {
+    if (typeof isPrivacyMode === 'undefined' || !isPrivacyMode) return str;
+    if (!str) return str;
+    if (isPath) {
+        const cleanPath = str.replace(/\\/g, '/');
+        const parts = cleanPath.split('/').filter(p => p !== '');
+        if (parts.length <= 1) return '********';
+        const lastPart = parts[parts.length - 1];
+        return `********/${lastPart}`;
+    }
+    return '********';
 }
